@@ -223,6 +223,18 @@ export const AudioSystem = {
             ambient: "bell"
         },
         {
+            // 삼국: 강바람과 쇠 두드리는 소리, 넓고 낮은 북
+            windCutoff: 480,
+            windLevel: 0.048,
+            waterLevel: 0.014,
+            drumMin: 3000, drumMax: 5400,
+            drumFreq: 68, drumDecay: 0.78, drumLevel: 0.19,
+            melodyMin: 6000, melodyMax: 11000,
+            melodyWave: "triangle", melodyLevel: 0.026, melodyLen: 2.4,
+            scale: [139, 165, 185, 220, 247, 277],
+            ambient: "forge"
+        },
+        {
             // 조선: 밤의 정적, 대금 같은 숨소리, 풀벌레
             windCutoff: 300,
             windLevel: 0.034,
@@ -308,7 +320,7 @@ export const AudioSystem = {
         this.noiseBurst(duration * 0.5, volume * 0.35, "bandpass", freq * 2.2);
     },
 
-    /** 시대별 환경음: 새 / 방울 / 풀벌레 */
+    /** 시대별 환경음: 새 / 방울 / 대장간 / 풀벌레 */
     scheduleAmbient() {
         const loop = () => {
             if (!this.started) return;
@@ -324,6 +336,13 @@ export const AudioSystem = {
                 const f = 1100 + Math.random() * 900;
                 this.tone(f, 1.6, "sine", 0.016);
                 this.tone(f * 1.51, 1.3, "sine", 0.010, 0.04);
+            } else if (cfg.ambient === "forge") {
+                // 대장간에서 쇠를 두드리는 소리
+                const hits = 2 + Math.floor(Math.random() * 3);
+                for (let i = 0; i < hits; i++) {
+                    this.tone(1400 + Math.random() * 600, 0.10, "triangle", 0.020, i * 0.26);
+                    this.noiseBurst(0.05, 0.014, "highpass", 3000);
+                }
             } else {
                 // 밤의 풀벌레
                 for (let i = 0; i < 5; i++) {

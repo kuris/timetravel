@@ -113,9 +113,62 @@ export const AGE_DATA = [
         }
     },
 
+    // ---------------------------------------------------------- 삼국시대
+    {
+        name: "삼국시대 · 낙동강 유역의 마을",
+        goal: "성벽이 꺾인 자리의 기록 3개를 조사하세요.",
+        total: 3,
+        // 화면 좌표 (0, -4) — 마을 한가운데, 성벽이 화면에 들어오는 자리
+        start: { x: 2.8, z: 2.8 },
+
+        // 이른 오후에서 늦은 오후로. 성벽 그림자가 길어진다.
+        weather: {
+            band: [0.48, 0.70],
+            speed: 0.0038,
+            start: "clear",
+            pool: ["clear", "haze", "overcast", "rain", "clear"]
+        },
+
+        fog: 0x7f6a48,
+        fogDensity: 0.0115,
+
+        sky: { top: 0x47412c, mid: 0x8c7a4e, bottom: 0xd0b581 },
+
+        ridges: [
+            { dist: 74, height: 34, color: 0x9a8f63, opacity: 0.55, base: -6 },
+            { dist: 56, height: 25, color: 0x847a52, opacity: 0.60, base: -5 },
+            { dist: 42, height: 17, color: 0x6a6340, opacity: 0.68, base: -4 },
+            { dist: 30, height: 10, color: 0x545033, opacity: 0.75, base: -3 }
+        ],
+
+        intro: "낙동강을 따라 자리한 마을입니다.\n토성과 고분, 논과 대장간이 어우러져 있습니다.\n성벽이 한 자리에서만 바깥으로 꺾여 있습니다.",
+
+        light: {
+            hemiSky: 0xffe6bc,
+            hemiGround: 0x4e4128,
+            hemiIntensity: 0.58,
+            ambient: 0xcaa878,
+            ambientIntensity: 0.26,
+            sun: 0xffe0ae,
+            sunIntensity: 2.05,
+            sunPos: [-14, 16, -15],
+            fillIntensity: 0.18
+        },
+
+        grade: {
+            tint: [1.07, 0.98, 0.79],
+            lift: [0.030, 0.020, 0.010],
+            sat: 0.60,
+            sepia: 0.30,
+            contrast: 1.22,
+            vignette: 1.0
+        }
+    },
+
     // ---------------------------------------------------------- 조선
     {
         name: "조선 시대 · 한양 외곽 마을",
+        night: true,
         goal: "저녁 마을의 기록 3개를 조사하세요.",
         total: 3,
         start: { x: 0.0, z: 0.0 },

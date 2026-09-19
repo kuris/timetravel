@@ -171,7 +171,7 @@ export function buildNeolithic() {
     addBirdFlock(11, 9.0, -9, 10);
 
     // ---- 시간의 문 (고인돌) ----
-    G.activeGate = createTimeGate(14.6, 11.0, -Math.PI / 5);
+    G.activeGate = createTimeGate(GATE_SPOT.x, GATE_SPOT.z, GATE_SPOT.rot);
 }
 
 /** 큰 바위: 여러 덩이를 겹쳐 자연스러운 형태로 만든다 */

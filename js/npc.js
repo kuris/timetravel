@@ -26,6 +26,12 @@ export const NPC_PALETTES = {
         skin: [0xd8a877, 0xc99a68],
         hair: [0x332315, 0x2a1c11]
     },
+    samguk: {
+        // 삼국시대는 염색한 옷이 나타난다. 붉은 기가 섞인다.
+        cloth: [0x8a6a45, 0x7d5a3c, 0x6b5636, 0x94764d, 0x8c4a38],
+        skin: [0xd8a877, 0xc99a68],
+        hair: [0x2e2015, 0x241a10]
+    },
     joseon: {
         // 흰 옷이 밤에도 눈에 띈다
         cloth: [0xd8d2c4, 0xc7c0ae, 0xe0dbcd, 0xb9b2a0],

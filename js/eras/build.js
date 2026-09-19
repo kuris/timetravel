@@ -6,6 +6,7 @@ import { updateCamera } from "../camera.js";
 import { AGE_DATA } from "../config.js";
 import { buildBronze } from "./bronze.js";
 import { buildJoseon } from "./joseon.js";
+import { buildSamguk } from "./samguk.js";
 import { buildNeolithic } from "./neolithic.js";
 import { resetHint } from "../hint.js";
 import { createPlayer } from "../player.js";
@@ -43,6 +44,17 @@ export const TEX_PALETTE = [
         wood: [0x66421f, 0x2d1c0c],
         water: [0x4e6a6d, 0xcfdcd2],
         cloth: [0x6b4f33, 0x2b1d10]
+    },
+    // 삼국: 다져 올린 흙과 기와
+    {
+        dirtBase: 0x8a7048,
+        dirtSpots: [0xa88a58, 0x6f5d3d, 0x9c7e4e, 0x5c5136, 0xbf9f66],
+        stoneBase: 0x736c63,
+        stoneSpots: [0x8f887c, 0x524c45, 0x6b7150],
+        thatch: [0xa88a4e, 0x63481f, 0xd0ac6a],
+        wood: [0x66421f, 0x2d1c0c],
+        water: [0x50666d, 0xcfdcd2],
+        cloth: [0x6b5236, 0x2b1d10]
     },
     // 조선: 밤의 흙길
     {
@@ -141,11 +153,12 @@ export function buildAge(index) {
 
     if (index === 0) buildNeolithic();
     if (index === 1) buildBronze();
-    if (index === 2) buildJoseon();
+    if (index === 2) buildSamguk();
+    if (index === 3) buildJoseon();
 
     // ---- 대기 연출: 지면 안개 + 떠도는 먼지 ----
-    addMistLayers(age.fog, index === 2 ? 5 : 4);
-    addDustMotes(index === 2 ? 0xb9c4d8 : 0xffe3b4, 140);
+    addMistLayers(age.fog, age.night ? 5 : 4);
+    addDustMotes(age.night ? 0xb9c4d8 : 0xffe3b4, 140);
 
     // ---- 날씨와 시간 (후처리 그레이딩도 여기서 관리한다) ----
     initWeather(index);

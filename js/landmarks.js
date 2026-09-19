@@ -75,7 +75,7 @@ export function S(u, v) {
 }
 
 /** 시간의 문이 서 있는 자리. 모든 시대에서 같다. */
-export const GATE_SPOT = { x: 14.6, z: 11.0, rot: -Math.PI / 5 };
+export const GATE_SPOT = { x: 17.0, z: -11.3, rot: -Math.PI / 5 };
 
 /**
  * 강: 반투명한 수면 + 흐르는 잔물결 + 물가 자갈.
