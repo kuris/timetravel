@@ -1,7 +1,9 @@
 /**
  * UI — DOM 참조, 메시지창, 인벤토리, 상단 정보
  */
+import { advisorText } from "./advisor.js";
 import { AGE_DATA } from "./config.js";
+import { population } from "./settlers.js";
 import { G , progressGoal } from "./state.js";
 import { weatherLabel } from "./weather.js";
 
@@ -11,6 +13,7 @@ export const dom = {
     objectiveText: document.getElementById("objectiveText"),
     countText: document.getElementById("countText"),
     weatherText: document.getElementById("weatherText"),
+    popText: document.getElementById("popText"),
     woodText: document.getElementById("woodText"),
     stoneText: document.getElementById("stoneText"),
     progressText: document.getElementById("progressText"),
@@ -45,9 +48,21 @@ function setResource(el, text) {
 }
 
 export function updateResourceUI() {
+    setResource(dom.popText, String(population()));
     setResource(dom.woodText, String(G.materials.wood));
     setResource(dom.stoneText, String(G.materials.stone));
     setResource(dom.progressText, G.progress + " / " + progressGoal());
+}
+
+/**
+ * 한국어 조사 고르기 — "집을 / 창고를" 처럼 받침에 따라 갈라진다.
+ * "을(를)" 같은 표기는 안내문을 읽다 걸리게 만든다.
+ */
+export function josa(word, pair = "을/를") {
+    const [withJong, without] = pair.split("/");
+    const code = String(word).charCodeAt(String(word).length - 1);
+    if (code < 0xac00 || code > 0xd7a3) return without;
+    return (code - 0xac00) % 28 !== 0 ? withJong : without;
 }
 
 export function showMessage(text) {
@@ -67,18 +82,8 @@ export function updateUI() {
     dom.eraText.textContent = age.name;
 
     // 목표는 "유물 몇 개"가 아니라 마을이 얼마나 자랐는가다.
-    // 무엇을 지을지는 플레이어가 고르므로 목표 문구도 그에 맞춘다.
-    let goal = "빈 땅에서 [E] — 마을을 세우세요";
-    if (G.activeGate && G.activeGate.active) {
-        goal = "깨어난 시간의 문 근처에서 E를 누르세요.";
-    } else if (G.progress > 0) {
-        goal = "마을을 더 키우세요 (발전도 " + (progressGoal() - G.progress) + " 남음)";
-    }
-    if (G.demoFinished) {
-        goal = "데모 완료";
-    }
-
-    dom.objectiveText.textContent = goal;
+    // 지금 당장 무엇을 하면 되는지는 advisor 가 한 줄로 정해 준다.
+    dom.objectiveText.textContent = advisorText();
     dom.countText.textContent = G.ageProgress + " / " + age.total;
     updateResourceUI();
     dom.weatherText.textContent = weatherLabel();

@@ -687,6 +687,20 @@ export const AudioSystem = {
         this.noiseBurst(0.7, 0.04, "lowpass", 520);
     },
 
+    /** 하늘이 열리는 소리 — 낮은 데서 길게 올라오고 배음이 뒤따른다 */
+    playGateAwaken() {
+        this.tone(62, 2.4, "sine", 0.055, 0, 300);
+        this.tone(93, 2.1, "triangle", 0.036, 0.06, 402);
+        this.noiseBurst(1.7, 0.05, "bandpass", 880);
+
+        // 하늘에 고리가 하나씩 떠오를 때마다 한 음씩
+        [523, 659, 784, 1047].forEach((f, i) => {
+            this.tone(f, 0.95, "sine", 0.032, 0.5 + i * 0.24);
+        });
+
+        this.playGate();
+    },
+
     playGlitch() {
         this.noiseBurst(0.45, 0.16, "highpass", 950);
         for (let i = 0; i < 12; i++) {

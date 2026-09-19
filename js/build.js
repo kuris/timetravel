@@ -70,10 +70,15 @@ export function makeMat(color, opts = {}) {
 export function makeBasicMat(color, opts = {}) {
     return new THREE.MeshBasicMaterial({
         color,
+        // 빛을 받지 않는 재질. 연기·먼지·빛기둥처럼 "스스로 밝은 것"에 쓴다.
+        map: opts.map ?? null,
         transparent: opts.transparent ?? false,
         opacity: opts.opacity ?? 1,
         side: opts.side ?? THREE.FrontSide,
-        depthWrite: opts.depthWrite ?? true
+        depthWrite: opts.depthWrite ?? true,
+        depthTest: opts.depthTest ?? true,
+        blending: opts.blending ?? THREE.NormalBlending,
+        fog: opts.fog ?? true
     });
 }
 

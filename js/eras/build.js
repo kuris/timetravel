@@ -1,6 +1,7 @@
 /**
  * 시대 빌드 — 질감 팔레트와 장면 조립
  */
+import { advisorText } from "../advisor.js";
 import { AudioSystem } from "../audio.js";
 import { updateCamera } from "../camera.js";
 import { AGE_DATA } from "../config.js";
@@ -12,6 +13,7 @@ import { build2000 } from "./modern2000.js";
 import { buildNeolithic } from "./neolithic.js";
 import { resetGather } from "../gather.js";
 import { resetHint } from "../hint.js";
+import { resetSettlers } from "../settlers.js";
 import { createPlayer } from "../player.js";
 import { seedRandom } from "../rng.js";
 import { G, cameraTarget } from "../state.js";
@@ -172,7 +174,8 @@ export function buildAge(index, opts = {}) {
     G.mapShapes = [];
     G.mapMarkers = [];
     resetHint();   // 이전 scene 에 붙어 있던 이정표를 버린다
-    resetGather(); // 캐던 것과 튀어 있던 파편을 버린다
+    resetGather();   // 캐던 것과 튀어 있던 파편을 버린다
+    resetSettlers(); // 주민은 집과 함께 이 시대의 모습으로 다시 들어온다
     G.backdrop = null;
     G.sunLight = null;
     G.terrainCarve = null;
@@ -252,5 +255,6 @@ export function buildAge(index, opts = {}) {
     updateCamera(0, true);
     updateUI();
     updateVillageUI();
-    showMessage(age.intro + "\n첫 키 입력 또는 클릭 후 소리가 켜집니다.");
+    showMessage(age.intro + "\n\n▶ " + advisorText()
+        + "\n첫 키 입력 또는 클릭 후 소리가 켜집니다.");
 }

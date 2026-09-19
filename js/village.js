@@ -16,13 +16,15 @@
  * tiers 표가 정한다. 그래서 같은 자리가 움집 → 청동기 집 → 기와집으로 이어진다.
  */
 import { addFlatCircle, makeBasicMat } from "./build.js";
-import { addBuildPad, startConstruction } from "./construct.js";
+import { recommendNote, USE_HINT } from "./advisor.js";
+import { addBuildPad, addOwnerMark, startConstruction } from "./construct.js";
+import { population, settleHouse } from "./settlers.js";
 import { openChoiceDialogue, closeDialogue } from "./dialogue.js";
 import { AudioSystem } from "./audio.js";
 import { addJournalEntry } from "./journal.js";
 import { G, progressGoal } from "./state.js";
 import { isUnderwater, terrainHeight } from "./terrain.js";
-import { dom, showMessage, updateResourceUI } from "./ui.js";
+import { dom, josa, showMessage, updateResourceUI } from "./ui.js";
 
 // 시대별 건물 빌더
 import { addPitHouse, addSmallAltar } from "./eras/neolithic.js";
@@ -48,7 +50,7 @@ export const BUILD_RANGE = 1.6;
 export const BUILDING_TYPES = {
     house: {
         name: "집",
-        desc: "사람이 산다. 마을의 기본.",
+        desc: "사람 하나가 들어와 산다. 그 사람이 나무와 돌을 모아 온다.",
         cost: { wood: 3, stone: 1 },
         progress: 10,
         tiers: [
@@ -63,7 +65,7 @@ export const BUILDING_TYPES = {
 
     store: {
         name: "창고",
-        desc: "거둔 것을 쌓아 둔다.",
+        desc: "거둔 것을 쌓아 둔다. 주민이 더 자주 날라 온다.",
         cost: { wood: 2, stone: 3 },
         progress: 12,
         tiers: [
@@ -194,8 +196,9 @@ export function openBuildMenu() {
         const b = BUILDING_TYPES[t];
         const afford = canAfford(t);
         return {
-            text: b.name + "  (" + costText(t) + ")" + (afford ? "" : "  — 재료 부족"),
-            response: b.desc,
+            text: b.name + "  (" + costText(t) + ")"
+                + (afford ? "" : "  — 재료 부족") + recommendNote(t),
+            response: b.desc + "\n" + (USE_HINT[t] || ""),
             onSelect: () => {
                 closeDialogue();
                 build(t, x, z);
@@ -241,9 +244,18 @@ export function build(type, x, z) {
     G.progress += b.progress;
     applyEffect(type);
     AudioSystem.playBuildStart();
-    addJournalEntry("system", b.name + " 건설", "마을에 " + b.name + "을(를) 세웠습니다.");
+    addJournalEntry("system", b.name + " 건설", "마을에 " + b.name + josa(b.name) + " 세웠습니다.");
 
-    showMessage(b.name + "을(를) 세웠습니다.\n마을 발전도 " + G.progress + " / " + progressGoal());
+    let note = "";
+    if (type === "house") {
+        note = "\n사람 하나가 들어와 삽니다. (주민 " + population() + "명)"
+            + "\n주민은 스스로 나무와 돌을 모아 옵니다.";
+    } else if (type === "store") {
+        note = "\n주민이 재료를 더 자주 날라 옵니다.";
+    }
+
+    showMessage(b.name + josa(b.name) + " 세웠습니다." + note
+        + "\n마을 발전도 " + G.progress + " / " + progressGoal());
     updateVillageUI();
 
     // 발전도가 차면 시간의 문이 깨어난다
@@ -298,6 +310,10 @@ function spawnBuilding(entry, eraIndex, opts = {}) {
 
     const before = G.world.children.length;
     tier(entry.x, entry.z, entry.rot);
+    addOwnerMark(entry.x, entry.z, entry.rot);
+
+    // 집에는 사람이 산다. 그 사람이 재료를 모아 온다.
+    if (entry.type === "house") settleHouse(entry);
     if (!opts.animate) return;
 
     startConstruction(G.world.children.slice(before), entry.x, entry.z, pad);

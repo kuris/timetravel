@@ -8,7 +8,8 @@
  * 시대 변이(morph.js)가 쓰는 "솟아오르는" 어법을 그대로 빌려 온다.
  * 거기서는 시간이 건물을 세우고, 여기서는 사람이 세운다.
  */
-import { addFlatCircle, makeBasicMat, makeMat } from "./build.js";
+import { addBox, addCylinder, addFlatCircle, makeBasicMat, makeMat } from "./build.js";
+import { addMapMarker } from "./minimap.js";
 import { randRange } from "./rng.js";
 import { G } from "./state.js";
 import { terrainHeight } from "./terrain.js";
@@ -37,6 +38,60 @@ export function addBuildPad(x, z, radius = 1.7) {
     });
     pad.renderOrder = 2;
     return pad;
+}
+
+/**
+ * 내 것이라는 표식 — 깃대.
+ *
+ * 청동기부터는 남의 마을 한가운데에 내 집이 섞여 선다.
+ * 같은 시대의 같은 재료로 지어지니 생김새로는 구분이 안 된다.
+ * 그래서 집마다 깃대를 하나씩 세운다.
+ *
+ * 깃폭은 빛을 받지 않는 재질(basic)이라 밤의 조선에서도 같은 밝기로 보인다.
+ * 여섯 시대 내내 같은 물건이므로, 이것이 곧 "내가 지은 것"의 표시가 된다.
+ */
+export function addOwnerMark(x, z, rot = 0) {
+    const g = new THREE.Group();
+    // 건물 옆으로 조금 비켜 세운다 (문 앞을 막지 않게)
+    g.position.set(
+        x + Math.cos(rot + 0.95) * 1.6,
+        terrainHeight(x + Math.cos(rot + 0.95) * 1.6, z + Math.sin(rot + 0.95) * 1.6),
+        z + Math.sin(rot + 0.95) * 1.6
+    );
+    g.rotation.y = rot;
+    G.world.add(g);
+
+    // 깃대
+    addCylinder(g, 0.035, 0.05, 2.05, 5, 0x5e4423, 0, 1.02, 0, { map: G.TEX.wood });
+    // 꼭대기 매듭
+    addCylinder(g, 0.055, 0.055, 0.09, 5, 0x3d2a14, 0, 2.06, 0);
+
+    // 깃폭 (바람에 흔들리는 축)
+    const flag = new THREE.Group();
+    flag.position.set(0, 1.86, 0);
+    g.add(flag);
+
+    addBox(flag, 0.58, 0.3, 0.02, 0xf2dcae, 0.31, 0, 0, 0, {
+        material: makeBasicMat(0xf2dcae, { side: THREE.DoubleSide }),
+        castShadow: false, receiveShadow: false
+    });
+    // 붉은 띠 — 멀리서도 눈에 걸린다
+    addBox(flag, 0.58, 0.085, 0.022, 0xb5502c, 0.31, -0.085, 0.002, 0, {
+        material: makeBasicMat(0xb5502c, { side: THREE.DoubleSide }),
+        castShadow: false, receiveShadow: false
+    });
+
+    G.animated.push({
+        type: "sway",
+        group: flag,
+        amp: randRange(0.10, 0.17),
+        speed: randRange(1.7, 2.4),
+        phase: randRange(0, Math.PI * 2)
+    });
+
+    // 지도에도 남의 건물과 다르게 찍는다
+    addMapMarker(x, z, "#ffd071", 3.5, "mine");
+    return g;
 }
 
 /** 발밑에서 피어오르는 흙먼지 (한 번만 일고 가라앉는다) */

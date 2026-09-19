@@ -13,7 +13,7 @@ import { addBlob } from "./build.js";
 import { pick, randRange } from "./rng.js";
 import { G } from "./state.js";
 import { terrainHeight } from "./terrain.js";
-import { showMessage } from "./ui.js";
+import { josa, showMessage } from "./ui.js";
 
 /** 재료별 채집 방식 */
 const KIND = {
@@ -49,7 +49,7 @@ export function isGathering(item = null) {
 /** 지금 무엇을 하고 있는지 — 프롬프트에 쓴다 */
 export function gatherLabel() {
     if (!job) return "";
-    return job.item.name + "을(를) " + job.cfg.verb + " 중… (" +
+    return job.item.name + josa(job.item.name) + " " + job.cfg.verb + " 중… (" +
         Math.min(job.hits, job.cfg.swings) + " / " + job.cfg.swings + ")";
 }
 

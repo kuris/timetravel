@@ -9,10 +9,11 @@ import { randRange } from "./rng.js";
 import { G , progressGoal } from "./state.js";
 import { terrainHeight } from "./terrain.js";
 import { transitionToAge } from "./transition.js";
-import { addInventoryItem, dom, showMessage, updateUI } from "./ui.js";
+import { addInventoryItem, dom, josa, showMessage, updateUI } from "./ui.js";
 import { addJournalEntry } from "./journal.js";
 import { openChoiceDialogue } from "./dialogue.js";
 import { gatherLabel, isGathering, startGather } from "./gather.js";
+import { awakenGate } from "./gateaura.js";
 
 export function registerInteractable({
     name,
@@ -272,7 +273,7 @@ export function collectMaterial(item) {
     AudioSystem.playPickup();
 
     const label = { wood: "나무", stone: "돌" }[item.material] || item.material;
-    showMessage(label + "을(를) " + (item.amount || 1) + "개 얻었습니다.\n"
+    showMessage(label + josa(label) + " " + (item.amount || 1) + "개 얻었습니다.\n"
         + "가진 것 — 나무 " + G.materials.wood + ", 돌 " + G.materials.stone);
 
     import("./village.js").then((m) => m.updateVillageUI());
@@ -383,6 +384,7 @@ export function activateGate() {
     G.activeGate.ring.material.opacity = 0.95;
     G.activeGate.light.intensity = 1.35;
 
-    AudioSystem.playGate();
+    // 하늘이 열린다 — 빛기둥과 고리, 충격파 (gateaura.js)
+    awakenGate(G.activeGate);
     updateUI();
 }

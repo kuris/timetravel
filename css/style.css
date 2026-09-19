@@ -290,6 +290,13 @@ body {
     box-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
 }
 
+/* 사람 = 주민 */
+.res-icon.people {
+    width: 10px;
+    clip-path: polygon(50% 0, 74% 22%, 62% 40%, 92% 62%, 92% 100%, 8% 100%, 8% 62%, 38% 40%, 26% 22%);
+    background: linear-gradient(180deg, #f0dcb2, #9c8354);
+}
+
 /* 통나무 */
 .res-icon.wood {
     height: 9px;
@@ -597,6 +604,34 @@ body.fpv-mode #prompt {
     background: #fff6e2;
     opacity: 0;
     mix-blend-mode: screen;
+}
+
+/* 시간의 문이 열릴 때 — 흰 섬광이 아니라 푸르게 번진다 */
+#flash.gate {
+    background: #bfeaff;
+    animation: gateFlash 1000ms steps(7, end) forwards;
+}
+
+@keyframes gateFlash {
+    0% {
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 0.72;
+    }
+
+    22% {
+        opacity: 0.18;
+    }
+
+    38% {
+        opacity: 0.42;
+    }
+
+    100% {
+        opacity: 0;
+    }
 }
 
 #flash.play {

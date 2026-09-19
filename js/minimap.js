@@ -112,6 +112,15 @@ export function drawMinimap() {
             ctx.arc(px, py, 4, 0, Math.PI * 2);
             ctx.stroke();
             ctx.globalAlpha = 1;
+        } else if (m.kind === "mine") {
+            // 내가 지은 것 — 남의 건물(흙색 네모)과 달리 금빛이고 테두리가 있다
+            ctx.fillStyle = "#ffd071";
+            ctx.fillRect(px - m.size, py - m.size, m.size * 2, m.size * 2);
+            ctx.strokeStyle = "rgba(24,14,6,0.9)";
+            ctx.lineWidth = 1.2;
+            ctx.strokeRect(px - m.size, py - m.size, m.size * 2, m.size * 2);
+            ctx.fillStyle = "rgba(60,32,10,0.85)";
+            ctx.fillRect(px - 1, py - 1, 2, 2);
         } else if (m.kind === "building") {
             ctx.fillStyle = m.color;
             ctx.fillRect(px - m.size, py - m.size, m.size * 2, m.size * 2);

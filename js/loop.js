@@ -5,6 +5,8 @@ import { AudioSystem } from "./audio.js";
 import { updateCamera } from "./camera.js";
 import { updateConstruction } from "./construct.js";
 import { updateGather } from "./gather.js";
+import { updateGateAura } from "./gateaura.js";
+import { updateSettlers } from "./settlers.js";
 import { updateHint } from "./hint.js";
 import { updatePrompt } from "./interaction.js";
 import { drawMinimap, updateExploration } from "./minimap.js";
@@ -193,6 +195,10 @@ export function updateAnimated(t, delta) {
             a.gate.light.intensity = 1.15 + Math.sin(t * 4.2) * 0.32;
         }
 
+        if (a.type === "gateAura") {
+            updateGateAura(a, delta);
+        }
+
         // 한 채가 솟아오르는 중 (건설 연출)
         if (a.type === "construct" && !a.done) {
             updateConstruction(a, delta, AudioSystem);
@@ -252,6 +258,7 @@ export function animate() {
     updateMorph(delta);
     updateAnimated(t, delta);
     updateGather(delta);
+    updateSettlers(delta);
     updateExploration();
     updateBuildGhost();
     G.buildReady = canBuildNow()
