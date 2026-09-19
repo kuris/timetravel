@@ -3,12 +3,14 @@
  */
 import { AGE_DATA } from "./config.js";
 import { G } from "./state.js";
+import { weatherLabel } from "./weather.js";
 
 export const dom = {
     game: document.getElementById("game"),
     eraText: document.getElementById("eraText"),
     objectiveText: document.getElementById("objectiveText"),
     countText: document.getElementById("countText"),
+    weatherText: document.getElementById("weatherText"),
     prompt: document.getElementById("prompt"),
     message: document.getElementById("message"),
     slots: [...document.querySelectorAll(".slot")],
@@ -47,6 +49,7 @@ export function updateUI() {
 
     dom.objectiveText.textContent = goal;
     dom.countText.textContent = G.ageProgress + " / " + age.total;
+    dom.weatherText.textContent = weatherLabel();
 
     const visibleItems = G.inventory.slice(-5);
     for (let i = 0; i < dom.slots.length; i++) {

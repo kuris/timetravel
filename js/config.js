@@ -17,8 +17,15 @@ export const AGE_DATA = [
         total: 3,
         start: { x: -7.0, z: 9.0 },
 
+        // 늦은 오후에서 해질녘 사이를 오간다
+        weather: {
+            band: [0.60, 0.80],
+            speed: 0.0042,
+            start: "clear",
+            pool: ["clear", "haze", "overcast", "haze", "rain", "clear"]
+        },
         fog: 0x7b6343,
-        fogDensity: 0.0135,
+        fogDensity: 0.0105,
 
         // 지평선 하늘 그라데이션 (위 -> 아래)
         sky: { top: 0x4a3a28, mid: 0x8e7148, bottom: 0xd2ad78 },
@@ -63,8 +70,15 @@ export const AGE_DATA = [
         total: 3,
         start: { x: -8.2, z: 7.5 },
 
+        // 해질녘 고정에 가깝다. 제의의 시간.
+        weather: {
+            band: [0.72, 0.88],
+            speed: 0.0030,
+            start: "clear",
+            pool: ["clear", "haze", "overcast", "clear"]
+        },
         fog: 0x6d5334,
-        fogDensity: 0.0150,
+        fogDensity: 0.0115,
 
         sky: { top: 0x4e3320, mid: 0x9a6236, bottom: 0xd9a05c },
 
@@ -106,8 +120,15 @@ export const AGE_DATA = [
         total: 3,
         start: { x: -7.5, z: -7.2 },
 
+        // 저녁에서 밤으로. 등불이 살아나는 시간.
+        weather: {
+            band: [0.88, 0.99],
+            speed: 0.0026,
+            start: "clear",
+            pool: ["clear", "haze", "rain", "overcast", "clear"]
+        },
         fog: 0x353140,
-        fogDensity: 0.0190,
+        fogDensity: 0.0150,
 
         sky: { top: 0x161a26, mid: 0x3b3546, bottom: 0x7d6154 },
 

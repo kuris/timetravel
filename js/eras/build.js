@@ -9,13 +9,13 @@ import { buildJoseon } from "./joseon.js";
 import { buildNeolithic } from "./neolithic.js";
 import { resetHint } from "../hint.js";
 import { createPlayer } from "../player.js";
-import { applyGrade } from "../postprocess.js";
 import { seedRandom } from "../rng.js";
 import { G, cameraTarget } from "../state.js";
 import { terrainHeight } from "../terrain.js";
 import { makeMistTexture, makeStoneTexture, makeTerrainTexture, makeThatchTexture, makeWaterTexture, makeWoodTexture } from "../textures.js";
 import { dom, showMessage, updateUI } from "../ui.js";
 import { addBackdrop, addDustMotes, addLights, addMistLayers, cssHex, cssRGBA } from "../world.js";
+import { initWeather } from "../weather.js";
 
 /**
  * 시대별 텍스처 팔레트.
@@ -147,8 +147,8 @@ export function buildAge(index) {
     addMistLayers(age.fog, index === 2 ? 5 : 4);
     addDustMotes(index === 2 ? 0xb9c4d8 : 0xffe3b4, 140);
 
-    // ---- 후처리 그레이딩 ----
-    applyGrade(age.grade);
+    // ---- 날씨와 시간 (후처리 그레이딩도 여기서 관리한다) ----
+    initWeather(index);
 
     // ---- 시대에 맞는 배경음으로 전환 ----
     if (AudioSystem.started) AudioSystem.setEra(index);

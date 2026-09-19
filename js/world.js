@@ -31,6 +31,10 @@ export function addLights(age) {
     const ambient = new THREE.AmbientLight(l.ambient, l.ambientIntensity);
     G.scene.add(ambient);
 
+    // 날씨/시간 시스템이 세기를 조절할 수 있도록 보관한다
+    G.hemiLight = hemi;
+    G.ambientLight = ambient;
+
     const sun = new THREE.DirectionalLight(l.sun, l.sunIntensity);
     sun.position.set(l.sunPos[0], l.sunPos[1], l.sunPos[2]);
     sun.castShadow = true;
@@ -121,6 +125,7 @@ export function addGround(baseColor, patchColors) {
     const ground = new THREE.Mesh(geo, mat);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
+    ground.userData.base = true; // 시대 변이 때 한 번에 교체된다
     G.world.add(ground);
 
     return ground;
@@ -237,6 +242,7 @@ export function addMistLayers(color, count = 4) {
         // 지면을 스치듯 낮게 깔린다
         mesh.position.set(randRange(-16, 16), 0.28 + i * 0.30, randRange(-16, 16));
         mesh.renderOrder = 6;
+        mesh.userData.base = true;
         G.world.add(mesh);
 
         G.animated.push({
@@ -271,6 +277,7 @@ export function addDustMotes(color, count = 190) {
         fog: true
     }));
 
+    points.userData.base = true;
     G.world.add(points);
     G.animated.push({ type: "dust", points, geo });
 }
@@ -389,6 +396,7 @@ export function addPond(x, z, radius) {
     water.rotation.x = -Math.PI / 2;
     water.position.set(x, y + 0.035, z);
     water.renderOrder = 1;
+    water.userData.base = true;
     G.world.add(water);
 
     // 가장자리 돌

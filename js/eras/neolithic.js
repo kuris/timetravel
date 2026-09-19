@@ -6,33 +6,16 @@ import { registerInteractable } from "../interaction.js";
 import { addMapMarker, addMapShape } from "../minimap.js";
 import { smooth } from "../noise.js";
 import { pick, rand, randRange, seedRandom } from "../rng.js";
+import { addAnimalPen, addCanoe, addCropField, addFishingNet, addHayStack, addJarPlatform, addLaundryLine, addStoragePit, addStoneWallRun } from "../props.js";
+import { addBirdFlock, addCow, addDog, addPig, addVillager, addWorker } from "../npc.js";
+import { GATE_SPOT, RIVER, SHARED_ROCKS, addRiver, carveRiver, riverPerp, riverPoint } from "../landmarks.js";
 import { G } from "../state.js";
 import { terrainHeight } from "../terrain.js";
 import { addGround, addInstanced, addTreeLine, scatterGrass, scatterStones } from "../world.js";
 
-// 강의 중심선 (등각 화면에서 가로로 흐르도록 45° 회전)
-export const RIVER = {
-    center: { x: 0, z: -15 },
-    rot: Math.PI / 4,
-    // 강 쪽으로 파고드는 경계까지의 거리
-    bank: 4.0
-};
-
-/** 강 중심선 기준 수직 거리. 양수 = 뭍, 음수 = 물 */
-export function riverPerp(x, z) {
-    return (x - RIVER.center.x + z - RIVER.center.z) * Math.SQRT1_2;
-}
-
 export function buildNeolithic() {
     // ---- 강바닥을 파낸다 (지형 생성 전에 등록해야 한다) ----
-    G.terrainCarve = (x, z, h) => {
-        const u = riverPerp(x, z);
-        if (u > RIVER.bank) return h;
-
-        // 둔덕 -> 얕은 물 -> 깊은 물로 완만하게 내려간다
-        const t = smooth(THREE.MathUtils.clamp((RIVER.bank - u) / 7.5, 0, 1));
-        return h * (1 - t) - t * 1.9;
-    };
+    G.terrainCarve = carveRiver;
 
     // ---- 지면 ----
     addGround(0x9d7249, [0xc59a62, 0x8a7644, 0xb5854f, 0x6f5637, 0xd6b47f]);
@@ -67,11 +50,53 @@ export function buildNeolithic() {
     addTreeLine([0x77714a, 0x655f3c, 0x837a52, 0x6d6742], 40, 26, 36);
 
     // ---- 마을 ----
-    // 움집 4채. 각각 크기와 각도를 다르게 해서 정렬감을 없앤다.
-    addPitHouse(1.6, 1.2, 0.35, 1.0);
+    // 움집 8채. 크기와 각도를 전부 다르게 해서 정렬감을 없앤다.
+    addPitHouse(1.6, 1.2, 0.35, 1.00);
     addPitHouse(5.2, 6.6, -0.65, 1.14);
     addPitHouse(9.4, 3.2, 0.22, 0.88);
     addPitHouse(-1.4, 7.8, 1.05, 0.96);
+    addPitHouse(4.0, 11.4, -0.30, 1.05);
+    addPitHouse(-5.2, 12.6, 0.62, 0.92);
+    addPitHouse(12.0, 7.8, -0.85, 0.84);
+    addPitHouse(-9.4, 6.2, 0.18, 1.02);
+
+    // ---- 생활의 밀도 ----
+    // 하나하나는 단순하지만, 모이면 사람이 살던 자리가 된다.
+    addStoragePit(2.8, 4.6);
+    addStoragePit(-3.6, 10.2);
+    addStoragePit(7.2, 8.8);
+
+    addHayStack(6.8, 13.0, 0.85);
+    addHayStack(8.0, 12.2, 0.7);
+    addHayStack(-7.6, 9.4, 0.78);
+
+    addJarPlatform(3.0, 8.4, 0.4);
+    addJarPlatform(-2.4, 5.0, -0.7);
+
+    addLaundryLine(-6.4, 3.2, -6.0, 6.4);
+    addLaundryLine(10.6, 9.4, 13.4, 9.0);
+
+    addFishingNet(-9.0, -4.4, 0.7);
+    addFishingNet(-13.0, -1.0, -0.3);
+
+    // 강가에 올려 둔 통나무배
+    addCanoe(-6.6, -7.4, 0.9);
+    addCanoe(1.2, -9.4, 0.55);
+    addCanoe(8.4, -6.2, 1.25);
+
+    // 작은 밭 (신석기 후기의 원시 농경)
+    addCropField(-13.5, 9.5, 0.3, 5, 4, [0x7a7a3e, 0x62652f, 0x8a8848]);
+    addCropField(13.5, 1.5, -0.5, 4, 4, [0x7a7a3e, 0x62652f, 0x8a8848]);
+
+    // 가축 우리와 짐승
+    addAnimalPen(-12.5, 3.0, 2.6);
+    addPig(-12.9, 3.4);
+    addPig(-11.8, 2.4);
+    addPig(-12.2, 3.9);
+
+    // 마을을 두른 낮은 돌담 (울타리와 겹치지 않는 구간)
+    addStoneWallRun([[13.0, 3.4], [14.2, 8.0], [13.0, 13.2]], 0.75);
+    addStoneWallRun([[-11.0, 10.4], [-6.2, 13.6]], 0.7);
 
     // 나무 울타리 (일부러 구부러진 선)
     addFence([
@@ -123,6 +148,28 @@ export function buildNeolithic() {
         description: "불탄 나무 조각\n\n오래된 화덕에서 발견된 탄화된 나무입니다.\n이곳에서 사람들이 불을 사용했음을 보여줍니다."
     });
 
+    // ---- 사람과 짐승 ----
+    // 적이 아니다. 각자 자기 일을 한다.
+    addVillager([[0.5, 3.0], [4.6, 4.4], [6.4, 8.8], [2.0, 10.4], [-1.0, 6.0]], "neolithic");
+    addVillager([[-4.0, 9.0], [-7.6, 11.2], [-9.0, 6.6], [-5.0, 4.2]], "neolithic");
+    addVillager([[9.0, 10.6], [12.4, 9.0], [11.6, 5.0], [7.6, 6.2]], "neolithic");
+    addVillager([[-7.4, -3.0], [-10.6, -5.2], [-12.4, -1.6], [-8.4, 0.6]], "neolithic", { speed: 0.8 });
+    addVillager([[3.4, -6.4], [7.0, -5.0], [9.2, -2.0], [5.0, -1.4]], "neolithic");
+
+    // 화덕 앞에서 불을 지피는 사람
+    addWorker(6.9, 1.5, "neolithic", { rot: -2.3 });
+    // 조개더미에서 일하는 사람
+    addWorker(-4.9, -5.9, "neolithic", { rot: 0.7 });
+    // 그물 손질
+    addWorker(-8.4, -3.6, "neolithic", { rot: -0.9 });
+
+    // 마을 개
+    addDog([[2.0, 5.0], [7.0, 3.0], [4.0, 9.0], [-1.0, 7.0]]);
+
+    // 강 위를 도는 새떼
+    addBirdFlock(-4, 7.5, -13, 16);
+    addBirdFlock(11, 9.0, -9, 10);
+
     // ---- 시간의 문 (고인돌) ----
     G.activeGate = createTimeGate(14.6, 11.0, -Math.PI / 5);
 }
@@ -154,181 +201,7 @@ export function addBoulder(x, z, scale) {
     }
 }
 
-/**
- * 강: 반투명한 수면 + 흐르는 잔물결 + 물가 자갈.
- * 색은 일부러 파랗지 않게, 탁한 청회색으로 둔다.
- */
-export function addRiver() {
-    // 미니맵용 강 영역: 중심선 기준 perp <= 3 인 띠
-    const along = 60, nearPerp = 3, farPerp = -60;
-    const pt = (a, pp) => [
-        RIVER.center.x + a * Math.SQRT1_2 + pp * Math.SQRT1_2,
-        RIVER.center.z - a * Math.SQRT1_2 + pp * Math.SQRT1_2
-    ];
-    addMapShape([
-        pt(-along, nearPerp), pt(along, nearPerp),
-        pt(along, farPerp), pt(-along, farPerp)
-    ], "#3e5257");
 
-    const g = new THREE.Group();
-    g.position.set(RIVER.center.x, 0, RIVER.center.z);
-    g.rotation.y = RIVER.rot;
-    G.world.add(g);
-
-    // 수면
-    const water = new THREE.Mesh(
-        new THREE.PlaneGeometry(160, 70),
-        new THREE.MeshStandardMaterial({
-            map: G.TEX.water,
-            color: 0x3c4c54,
-            transparent: true,
-            opacity: 0.96,
-            // 직교 카메라에서는 매끈한 수면이 화면 전체에 균일한
-            // 스펙큘러를 만들어 하얗게 타버린다. 일부러 거칠게 둔다.
-            roughness: 0.82,
-            metalness: 0.0,
-            depthWrite: true
-        })
-    );
-    water.rotation.x = -Math.PI / 2;
-    // 수면이 파낸 둔덕(perp <= 3)까지 덮도록 살짝 앞으로 뺀다
-    water.position.set(0, -0.14, -32);
-    water.receiveShadow = false;
-    g.add(water);
-
-    // 수면에 비치는 햇빛 (참조 이미지의 강 반짝임)
-    // 넓게 퍼진 반사
-    const glare = new THREE.Mesh(
-        new THREE.PlaneGeometry(15, 30),
-        new THREE.MeshBasicMaterial({
-            map: G.TEX.mist,
-            color: 0xffe6bd,
-            transparent: true,
-            opacity: 0.38,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-            fog: true
-        })
-    );
-    glare.rotation.x = -Math.PI / 2;
-    glare.position.set(3, -0.11, -12);
-    g.add(glare);
-
-    // 중심의 강한 빛기둥 (참조 이미지의 강 반짝임)
-    const glareCore = new THREE.Mesh(
-        new THREE.PlaneGeometry(5.5, 24),
-        new THREE.MeshBasicMaterial({
-            map: G.TEX.mist,
-            color: 0xfff6e2,
-            transparent: true,
-            opacity: 0.62,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-            fog: true
-        })
-    );
-    glareCore.rotation.x = -Math.PI / 2;
-    glareCore.position.set(3, -0.10, -11);
-    g.add(glareCore);
-
-    // 잔물결: 가로로 아주 천천히 흐른다
-    seedRandom(3300);
-    for (let i = 0; i < 130; i++) {
-        const wave = new THREE.Mesh(
-            new THREE.BoxGeometry(randRange(1.0, 5.0), 0.02, 0.06),
-            makeBasicMat(0xffeed2, {
-                transparent: true,
-                opacity: randRange(0.20, 0.46),
-                depthWrite: false
-            })
-        );
-        wave.position.set(randRange(-40, 40), -0.10, randRange(-30, 1));
-        wave.rotation.y = randRange(-0.15, 0.15);
-        wave.castShadow = false;
-        wave.receiveShadow = false;
-        g.add(wave);
-
-        G.animated.push({
-            type: "wave",
-            mesh: wave,
-            speed: randRange(0.2, 0.75),
-            minX: -42,
-            maxX: 42
-        });
-    }
-
-    // ---- 젖은 모래 띠: 물과 뭍의 경계를 흐린다 ----
-    seedRandom(3350);
-    for (let i = 0; i < 120; i++) {
-        const along = randRange(-38, 38);
-        const perp = randRange(0.2, 4.6);
-        const x = RIVER.center.x + along * Math.SQRT1_2 + perp * Math.SQRT1_2;
-        const z = RIVER.center.z - along * Math.SQRT1_2 + perp * Math.SQRT1_2;
-
-        // 물에 가까울수록 진하게 젖어 있다
-        const wet = 1 - THREE.MathUtils.clamp((perp - 0.2) / 4.4, 0, 1);
-
-        addFlatCircle(G.world, randRange(1.0, 2.8), 0x6d5a45,
-            x, terrainHeight(x, z) + 0.03, z, 8, {
-            material: makeMat(0x6d5a45, {
-                transparent: true,
-                opacity: 0.12 + wet * 0.34,
-                side: THREE.DoubleSide,
-                depthWrite: false,
-                roughness: 0.55,
-                map: G.TEX.dirtObj
-            })
-        });
-    }
-
-    // ---- 포말선: 물과 뭍이 만나는 밝은 띠 ----
-    const foam = new THREE.Mesh(
-        new THREE.PlaneGeometry(150, 3.0),
-        new THREE.MeshBasicMaterial({
-            map: G.TEX.mist,
-            color: 0xf6e6c8,
-            transparent: true,
-            opacity: 0.45,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-            fog: true
-        })
-    );
-    foam.rotation.x = -Math.PI / 2;
-    // 로컬 z 가 곧 강 중심선 기준 perp 거리다
-    foam.position.set(0, -0.05, 1.5);
-    foam.renderOrder = 3;
-    g.add(foam);
-
-    // 물가 자갈 (인스턴싱)
-    seedRandom(3400);
-    const pebbleCols = [0x8d8579, 0xa2988a, 0x6f685f].map((c) => new THREE.Color(c));
-    const pebbles = [];
-
-    for (let i = 0; i < 260; i++) {
-        const along = randRange(-38, 38);
-        const perp = randRange(-2.6, 5.2);
-        const x = RIVER.center.x + along * Math.SQRT1_2 + perp * Math.SQRT1_2;
-        const z = RIVER.center.z - along * Math.SQRT1_2 + perp * Math.SQRT1_2;
-        const sc = randRange(0.07, 0.22);
-
-        pebbles.push({
-            x, y: terrainHeight(x, z) + sc * 0.4, z,
-            sx: sc * randRange(1, 1.8),
-            sy: sc * randRange(0.3, 0.7),
-            sz: sc * randRange(0.9, 1.4),
-            ry: randRange(0, Math.PI),
-            color: pebbleCols[Math.floor(rand() * pebbleCols.length)]
-        });
-    }
-
-    addInstanced(
-        new THREE.DodecahedronGeometry(1, 0),
-        makeMat(0xffffff, { roughness: 1, map: G.TEX.stone }),
-        pebbles,
-        { castShadow: false }
-    );
-}
 
 /** 갈대 다발: 가늘고 긴 판이 바람에 흔들린다 */
 export function addReedCluster(x, z, count = 6) {

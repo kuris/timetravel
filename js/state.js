@@ -17,6 +17,8 @@ export const G = {
     player: null,
     backdrop: null,  // 지평선 배경판 (카메라를 따라다닌다)
     sunLight: null,  // 그림자 카메라를 플레이어에 맞추기 위해 보관
+    hemiLight: null, // 날씨에 따라 세기가 바뀐다
+    ambientLight: null,
 
     // --- 진행 상태 ---
     currentAge: 0,

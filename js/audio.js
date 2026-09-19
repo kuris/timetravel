@@ -14,6 +14,7 @@ export const AudioSystem = {
     windFilter: null,
     windGain: null,
     waterGain: null,
+    rainGain: null,
 
     start() {
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -27,6 +28,7 @@ export const AudioSystem = {
 
             this.createWind();
             this.createWater();
+            this.createRain();
             this.started = true;
             this.scheduleDrum();
             this.scheduleMelody();
@@ -132,6 +134,42 @@ export const AudioSystem = {
         lfo.start();
 
         this.waterGain = gain;
+    },
+
+    /**
+     * 빗소리 레이어.
+     * 넓은 대역 노이즈를 살짝 눌러서 "쏴" 하는 소리를 만든다.
+     * 날씨 시스템이 setRain() 으로 세기만 조절한다.
+     */
+    createRain() {
+        const src = this.ctx.createBufferSource();
+        src.buffer = this.createNoiseBuffer(4.0);
+        src.loop = true;
+
+        const hp = this.ctx.createBiquadFilter();
+        hp.type = "highpass";
+        hp.frequency.value = 700;
+
+        const lp = this.ctx.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.frequency.value = 5200;
+
+        const gain = this.ctx.createGain();
+        gain.gain.value = 0;
+
+        src.connect(hp);
+        hp.connect(lp);
+        lp.connect(gain);
+        gain.connect(this.master);
+        src.start();
+
+        this.rainGain = gain;
+    },
+
+    /** 비의 세기 (0..1). 날씨 시스템에서 매 프레임 호출된다. */
+    setRain(amount) {
+        if (!this.ctx || !this.rainGain) return;
+        this.rainGain.gain.setTargetAtTime(amount * 0.055, this.ctx.currentTime, 0.8);
     },
 
     /**
