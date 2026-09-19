@@ -9,6 +9,7 @@
  */
 import { addBlob, addBox, addCone, addCylinder, addCylinderBetween, addFlatCircle, makeBasicMat, makeMat } from "./build.js";
 import { addMapMarker } from "./minimap.js";
+import { addInstanced } from "./world.js";
 import { pick, rand, randRange } from "./rng.js";
 import { G } from "./state.js";
 import { terrainHeight } from "./terrain.js";
@@ -28,7 +29,9 @@ function groundGroup(x, z, rot) {
  * points 를 따라 이어진다.
  */
 export function addStoneWallRun(points, height = 1.0, colors) {
-    const cols = colors || [0x7a736a, 0x8d8579, 0x655f58, 0x918a7d];
+    const cols = (colors || [0x7a736a, 0x8d8579, 0x655f58, 0x918a7d]).map((c) => new THREE.Color(c));
+    // 돌 하나하나가 메시가 되면 담 하나에 백 개가 넘는다
+    const list = [];
 
     for (let i = 0; i < points.length - 1; i++) {
         const [x1, z1] = points[i];
@@ -46,21 +49,23 @@ export function addStoneWallRun(points, height = 1.0, colors) {
             const layers = Math.floor(randRange(2, 4));
             for (let l = 0; l < layers; l++) {
                 const r = randRange(0.16, 0.27);
-                addBlob(G.world, r, pick(cols),
-                    x + randRange(-0.09, 0.09),
-                    y + 0.13 + l * (height / layers) * 0.92,
-                    z + randRange(-0.09, 0.09), {
-                    sx: randRange(1.0, 1.5),
-                    sy: randRange(0.6, 0.95),
-                    sz: randRange(1.0, 1.4),
+                list.push({
+                    x: x + randRange(-0.09, 0.09),
+                    y: y + 0.13 + l * (height / layers) * 0.92,
+                    z: z + randRange(-0.09, 0.09),
+                    sx: r * randRange(1.0, 1.5),
+                    sy: r * randRange(0.6, 0.95),
+                    sz: r * randRange(1.0, 1.4),
                     ry: randRange(0, Math.PI),
                     rz: randRange(-0.15, 0.15),
-                    roughness: 1,
-                    map: G.TEX.stone
+                    color: cols[Math.floor(rand() * cols.length)]
                 });
             }
         }
     }
+
+    addInstanced(new THREE.DodecahedronGeometry(1, 0),
+        makeMat(0xffffff, { roughness: 1, map: G.TEX.stone }), list);
 }
 
 /* ------------------------------------------------------------------ 텃밭 */
@@ -82,6 +87,11 @@ export function addCropField(x, z, rot, cols = 5, rows = 4, cropColors) {
         })
     });
 
+    // 잎 한 장마다 메시를 만들면 밭 하나에 100개가 넘는다.
+    // 전부 모아 인스턴싱 한 번으로 그린다.
+    const cols3 = crops.map((c) => new THREE.Color(c));
+    const leafList = [];
+
     for (let r = 0; r < rows; r++) {
         // 이랑
         const ridge = addBox(g, W, 0.11, 0.22, 0x7a5c3c,
@@ -95,13 +105,22 @@ export function addCropField(x, z, rot, cols = 5, rows = 4, cropColors) {
             // 작물 한 포기: 잎 몇 장
             const leaves = Math.floor(randRange(3, 6));
             for (let l = 0; l < leaves; l++) {
-                const leaf = addBox(g, randRange(0.06, 0.13), randRange(0.16, 0.34), 0.03,
-                    pick(crops), cx + randRange(-0.09, 0.09), 0.2, cz + randRange(-0.09, 0.09),
-                    randRange(0, Math.PI), { roughness: 1, castShadow: false });
-                leaf.rotation.z = randRange(-0.5, 0.5);
+                leafList.push({
+                    x: cx + randRange(-0.09, 0.09),
+                    y: 0.2,
+                    z: cz + randRange(-0.09, 0.09),
+                    sx: randRange(0.06, 0.13), sy: randRange(0.16, 0.34), sz: 0.03,
+                    ry: randRange(0, Math.PI), rz: randRange(-0.5, 0.5),
+                    color: cols3[Math.floor(rand() * cols3.length)]
+                });
             }
         }
     }
+
+    addInstanced(new THREE.BoxGeometry(1, 1, 1),
+        makeMat(0xffffff, { roughness: 1 }), leafList,
+        { castShadow: false, receiveShadow: false, parent: g });
+
     return g;
 }
 

@@ -23,6 +23,8 @@ const MORPH = {
     newWorld: null,
     oldItems: [],
     newItems: [],
+    extraDispose: [],
+    oldTextures: null,
     curtain: null,
     sparks: null,
     onDone: null
@@ -132,12 +134,15 @@ function makeSparks() {
  * @param {THREE.Group} oldWorld 이전 시대의 월드 (새 scene 에 이미 붙어 있어야 한다)
  * @param {THREE.Group} newWorld 새 시대의 월드
  */
-export function startMorph(oldWorld, newWorld, onDone) {
+export function startMorph(oldWorld, newWorld, onDone, extraDispose, oldTextures) {
     MORPH.active = true;
     MORPH.t = 0;
     MORPH.oldWorld = oldWorld;
     MORPH.newWorld = newWorld;
     MORPH.onDone = onDone;
+    // 이전 시대의 배경판·플레이어처럼 world 밖에 있던 것들
+    MORPH.extraDispose = extraDispose || [];
+    MORPH.oldTextures = oldTextures || null;
 
     // 경계선이 지나갈 범위를 플레이어 주변으로 맞춘다
     const cx = (cameraTarget.x - cameraTarget.z) * Math.SQRT1_2;
@@ -272,8 +277,30 @@ function finishMorph() {
         disposeGroup(MORPH.oldWorld);
         MORPH.oldWorld = null;
     }
-    if (MORPH.curtain) { G.scene.remove(MORPH.curtain); MORPH.curtain = null; }
-    if (MORPH.sparks) { G.scene.remove(MORPH.sparks); MORPH.sparks = null; }
+
+    // world 밖에 있던 이전 시대 자원 (배경판, 플레이어, 하늘 텍스처)
+    for (const obj of MORPH.extraDispose) {
+        if (!obj) continue;
+        if (obj.parent) obj.parent.remove(obj);
+        disposeGroup(obj);
+    }
+    MORPH.extraDispose = [];
+
+    // 이전 시대가 구운 텍스처 (재질에 안 붙은 것까지)
+    disposeTextures(MORPH.oldTextures);
+    MORPH.oldTextures = null;
+    // 경계선 연출에 쓴 것들도 버린다 (전환마다 쌓인다)
+    if (MORPH.curtain) {
+        G.scene.remove(MORPH.curtain);
+        disposeGroup(MORPH.curtain);
+        MORPH.curtain = null;
+    }
+    if (MORPH.sparks) {
+        G.scene.remove(MORPH.sparks);
+        MORPH.sparks.geometry.dispose();
+        MORPH.sparks.material.dispose();
+        MORPH.sparks = null;
+    }
 
     MORPH.oldItems = [];
     MORPH.newItems = [];
@@ -283,10 +310,35 @@ function finishMorph() {
     if (cb) cb();
 }
 
+/**
+ * 한 시대가 구운 절차적 텍스처를 통째로 버린다.
+ *
+ * 어떤 텍스처는 그 시대에 쓰이지 않는다 (예: 고대 시대의 아스팔트).
+ * 재질을 타고 내려가는 방식으로는 그런 것들이 잡히지 않아
+ * 시대마다 조금씩 쌓였다.
+ */
+export function disposeTextures(tex) {
+    if (!tex) return;
+    for (const key in tex) {
+        const t = tex[key];
+        if (t && typeof t.dispose === "function") t.dispose();
+    }
+}
+
 /** 이전 시대가 쓰던 GPU 자원을 정리한다 */
-function disposeGroup(group) {
+export function disposeGroup(group) {
+    if (!group) return;
+
     group.traverse((child) => {
-        if (child.geometry) child.geometry.dispose();
+        // 그림자를 만드는 조명은 깊이 텍스처를 하나씩 들고 있다.
+        // 재질을 타고 내려가는 정리로는 안 잡혀서 시대마다 하나씩 쌓였다.
+        if (child.isLight && child.shadow) {
+            if (child.shadow.map) child.shadow.map.dispose();
+            if (typeof child.shadow.dispose === "function") child.shadow.dispose();
+        }
+
+        // 공유 지오메트리(단위 상자 / 기둥 / 원뿔 ...)는 다음 시대도 쓴다
+        if (child.geometry && !child.geometry.userData.shared) child.geometry.dispose();
         if (child.material) {
             const mats = Array.isArray(child.material) ? child.material : [child.material];
             for (const m of mats) {

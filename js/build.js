@@ -1,6 +1,55 @@
 /**
  * 기본 도형 조합 헬퍼
+ *
+ * ── 지오메트리 공유 ──
+ * 상자 하나, 기둥 하나마다 BufferGeometry 를 새로 만들면
+ * 한 시대에 2만 개 가까이 쌓인다. 크기는 전부 다르지만 모양은 몇 가지뿐이므로,
+ * "단위 크기" 도형 하나를 만들어 두고 mesh.scale 로 크기를 준다.
+ * 공유 지오메트리는 시대가 바뀌어도 버리지 않는다 (SHARED 표시).
  */
+
+const GEO_CACHE = new Map();
+
+function shared(key, make) {
+    let g = GEO_CACHE.get(key);
+    if (!g) {
+        g = make();
+        g.userData.shared = true; // 시대 전환 때 dispose 하면 안 된다
+        GEO_CACHE.set(key, g);
+    }
+    return g;
+}
+
+/** 1x1x1 상자 */
+function unitBox() {
+    return shared("box", () => new THREE.BoxGeometry(1, 1, 1));
+}
+
+/** 반지름 1, 높이 1 원뿔 */
+function unitCone(segments) {
+    return shared("cone:" + segments, () => new THREE.ConeGeometry(1, 1, segments));
+}
+
+/**
+ * 아래 반지름 1, 높이 1 기둥.
+ * 위아래 반지름 비율만 캐시 키로 쓰고 나머지는 scale 로 준다.
+ */
+function unitCylinder(ratio, segments) {
+    const r = Math.round(ratio * 100) / 100;
+    return shared("cyl:" + r + ":" + segments,
+        () => new THREE.CylinderGeometry(r, 1, 1, segments));
+}
+
+/** 반지름 1 원판 */
+function unitCircle(segments) {
+    return shared("circle:" + segments, () => new THREE.CircleGeometry(1, segments));
+}
+
+/** 반지름 1 다면체 (돌덩이) */
+function unitBlob() {
+    return shared("blob", () => new THREE.DodecahedronGeometry(1, 0));
+}
+
 export function makeMat(color, opts = {}) {
     return new THREE.MeshStandardMaterial({
         color,
@@ -35,10 +84,8 @@ export function setMeshFlags(mesh, opts = {}) {
 }
 
 export function addBox(parent, w, h, d, color, x, y, z, rotY = 0, opts = {}) {
-    const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(w, h, d),
-        opts.material || makeMat(color, opts)
-    );
+    const mesh = new THREE.Mesh(unitBox(), opts.material || makeMat(color, opts));
+    mesh.scale.set(w, h, d);
     mesh.position.set(x, y, z);
     mesh.rotation.y = rotY;
     setMeshFlags(mesh, opts);
@@ -47,10 +94,13 @@ export function addBox(parent, w, h, d, color, x, y, z, rotY = 0, opts = {}) {
 }
 
 export function addCylinder(parent, rTop, rBottom, h, segments, color, x, y, z, opts = {}) {
+    // 아래 반지름을 기준으로 삼고 위아래 비율만 지오메트리에 남긴다
+    const base = rBottom !== 0 ? rBottom : (rTop || 1);
     const mesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(rTop, rBottom, h, segments),
+        unitCylinder(rTop / base, segments),
         opts.material || makeMat(color, opts)
     );
+    mesh.scale.set(base, h, base);
     mesh.position.set(x, y, z);
     setMeshFlags(mesh, opts);
     parent.add(mesh);
@@ -58,10 +108,8 @@ export function addCylinder(parent, rTop, rBottom, h, segments, color, x, y, z, 
 }
 
 export function addCone(parent, radius, h, segments, color, x, y, z, opts = {}) {
-    const mesh = new THREE.Mesh(
-        new THREE.ConeGeometry(radius, h, segments),
-        opts.material || makeMat(color, opts)
-    );
+    const mesh = new THREE.Mesh(unitCone(segments), opts.material || makeMat(color, opts));
+    mesh.scale.set(radius, h, radius);
     mesh.position.set(x, y, z);
     setMeshFlags(mesh, opts);
     parent.add(mesh);
@@ -69,12 +117,9 @@ export function addCone(parent, radius, h, segments, color, x, y, z, opts = {}) 
 }
 
 export function addBlob(parent, radius, color, x, y, z, opts = {}) {
-    const mesh = new THREE.Mesh(
-        new THREE.DodecahedronGeometry(radius, 0),
-        opts.material || makeMat(color, opts)
-    );
+    const mesh = new THREE.Mesh(unitBlob(), opts.material || makeMat(color, opts));
     mesh.position.set(x, y, z);
-    mesh.scale.set(opts.sx ?? 1, opts.sy ?? 1, opts.sz ?? 1);
+    mesh.scale.set(radius * (opts.sx ?? 1), radius * (opts.sy ?? 1), radius * (opts.sz ?? 1));
     mesh.rotation.set(opts.rx ?? 0, opts.ry ?? 0, opts.rz ?? 0);
     setMeshFlags(mesh, opts);
     parent.add(mesh);
@@ -83,12 +128,13 @@ export function addBlob(parent, radius, color, x, y, z, opts = {}) {
 
 export function addFlatCircle(parent, radius, color, x, y, z, segments = 12, opts = {}) {
     const mesh = new THREE.Mesh(
-        new THREE.CircleGeometry(radius, segments),
+        unitCircle(segments),
         opts.material || makeMat(color, {
             ...opts,
             side: opts.side ?? THREE.DoubleSide
         })
     );
+    mesh.scale.set(radius, radius, 1);
     mesh.rotation.x = -Math.PI / 2;
     mesh.position.set(x, y, z);
     mesh.castShadow = opts.castShadow ?? false;
@@ -101,9 +147,10 @@ export function addCylinderBetween(parent, a, b, radius, color, opts = {}) {
     const dir = new THREE.Vector3(b.x - a.x, b.y - a.y, b.z - a.z);
     const len = dir.length();
     const mesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(radius, radius, len, opts.segments ?? 6),
+        unitCylinder(1, opts.segments ?? 6),
         opts.material || makeMat(color, opts)
     );
+    mesh.scale.set(radius, len, radius);
 
     mesh.position.set(
         (a.x + b.x) * 0.5,

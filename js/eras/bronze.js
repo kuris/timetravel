@@ -4,14 +4,14 @@
 import { addBlob, addBox, addCone, addCylinder, addCylinderBetween, addFlatCircle, makeBasicMat, makeMat } from "../build.js";
 import { registerInteractable } from "../interaction.js";
 import { addMapMarker } from "../minimap.js";
-import { pick, randRange } from "../rng.js";
+import { pick, rand, randRange } from "../rng.js";
 import { GATE_SPOT, S } from "../landmarks.js";
 import { addAnimalPen, addHayStack, addJarPlatform, addLaundryLine, addStoragePit } from "../props.js";
 import { addBirdFlock, addDog, addPig, addVillager, addWorker } from "../npc.js";
 import { addFirewood, addHearth, addStonePile, createTimeGate } from "./neolithic.js";
 import { G } from "../state.js";
 import { terrainHeight } from "../terrain.js";
-import { addGround, addStonePath, addTreeLine, scatterGrass, scatterStones } from "../world.js";
+import { addGround, addInstanced, addStonePath, addTreeLine, scatterGrass, scatterStones } from "../world.js";
 
 /**
  * 2시대 — 청동기 고인돌 제단
@@ -472,6 +472,8 @@ export function addRicePaddy(x, z, rot, cols = 2, rows = 2) {
     G.world.add(g);
 
     const CW = 3.4, CD = 2.8;
+    const riceCols = [0x7f8a44, 0x6b7538, 0x93a054].map((c) => new THREE.Color(c));
+    const blades = [];
 
     for (let c = 0; c < cols; c++) {
         for (let r = 0; r < rows; r++) {
@@ -508,22 +510,29 @@ export function addRicePaddy(x, z, rot, cols = 2, rows = 2) {
                     { roughness: 1, map: G.TEX.dirtObj, castShadow: false });
             }
 
-            // 모: 줄지어 심는다
+            // 모: 줄지어 심는다.
+            // 한 구획에 100포기가 넘으므로 전부 모아 인스턴싱한다.
             for (let i = 0; i < 7; i++) {
                 for (let j = 0; j < 5; j++) {
                     const sx = cx - CW / 2 + 0.4 + i * (CW - 0.8) / 6;
                     const sz = cz - CD / 2 + 0.4 + j * (CD - 0.8) / 4;
                     for (let b = 0; b < 3; b++) {
-                        const blade = addBox(g, 0.03, randRange(0.22, 0.4), 0.02,
-                            pick([0x7f8a44, 0x6b7538, 0x93a054]),
-                            sx + randRange(-0.07, 0.07), 0.2, sz + randRange(-0.07, 0.07),
-                            randRange(0, Math.PI), { castShadow: false });
-                        blade.rotation.z = randRange(-0.3, 0.3);
+                        blades.push({
+                            x: sx + randRange(-0.07, 0.07), y: 0.2, z: sz + randRange(-0.07, 0.07),
+                            sx: 0.03, sy: randRange(0.22, 0.4), sz: 0.02,
+                            ry: randRange(0, Math.PI), rz: randRange(-0.3, 0.3),
+                            color: riceCols[Math.floor(rand() * riceCols.length)]
+                        });
                     }
                 }
             }
         }
     }
+
+    addInstanced(new THREE.BoxGeometry(1, 1, 1),
+        makeMat(0xffffff, { roughness: 1 }), blades,
+        { castShadow: false, receiveShadow: false, parent: g });
+
     return g;
 }
 
@@ -532,6 +541,10 @@ export function addRicePaddy(x, z, rot, cols = 2, rows = 2) {
  * 청동기에 마을을 둘러싸기 시작한다. (지킬 것이 생겼다는 뜻이다)
  */
 export function addPalisade(points) {
+    // 통나무 하나하나가 메시가 되면 한 구간에 수십 개가 된다
+    const logs = [], tips = [];
+    const logCols = [0x5c3f20, 0x6b4826, 0x4c3218].map((c) => new THREE.Color(c));
+
     for (let i = 0; i < points.length - 1; i++) {
         const [x1, z1] = points[i];
         const [x2, z2] = points[i + 1];
@@ -545,16 +558,18 @@ export function addPalisade(points) {
             const y = terrainHeight(x, z);
             const h = randRange(1.7, 2.2);
 
-            const log = addCylinder(G.world, 0.09, 0.12, h, 5,
-                pick([0x5c3f20, 0x6b4826, 0x4c3218]),
-                x, y + h / 2, z, { map: G.TEX.wood });
-            log.rotation.z = randRange(-0.05, 0.05);
-
+            const col = logCols[Math.floor(rand() * logCols.length)];
+            logs.push({ x, y: y + h / 2, z, sx: 0.11, sy: h, sz: 0.11,
+                        rz: randRange(-0.05, 0.05), color: col });
             // 뾰족하게 깎은 끝
-            addCone(G.world, 0.1, 0.24, 5, 0x6b4826, x, y + h + 0.1, z,
-                { map: G.TEX.wood, castShadow: false });
+            tips.push({ x, y: y + h + 0.1, z, sx: 0.1, sy: 0.24, sz: 0.1, color: col });
         }
     }
+
+    addInstanced(new THREE.CylinderGeometry(0.75, 1, 1, 5),
+        makeMat(0xffffff, { roughness: 1, map: G.TEX.wood }), logs);
+    addInstanced(new THREE.ConeGeometry(1, 1, 5),
+        makeMat(0xffffff, { roughness: 1, map: G.TEX.wood }), tips, { castShadow: false });
 }
 
 /** 망루: 목책 안쪽에서 멀리 내다본다 */

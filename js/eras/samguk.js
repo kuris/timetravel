@@ -24,7 +24,7 @@ import {
 import { pick, rand, randRange } from "../rng.js";
 import { G } from "../state.js";
 import { terrainHeight } from "../terrain.js";
-import { addGround, addStonePath, addTreeLine, scatterGrass, scatterStones } from "../world.js";
+import { addGround, addInstanced, addStonePath, addTreeLine, scatterGrass, scatterStones } from "../world.js";
 import { addFirewood, addHearth, addReedCluster, addStonePile, createTimeGate } from "./neolithic.js";
 import { addHanokBody, addHanokRoof, addThatchRoof } from "./joseon.js";
 import { addPalisade, addRaisedGranary, addRicePaddy } from "./bronze.js";
@@ -36,6 +36,12 @@ import { addPalisade, addRaisedGranary, addRicePaddy } from "./bronze.js";
  * @param {Array<[number,number]>} points 성벽이 지나는 자리
  */
 export function addEarthWall(points, height = 2.2) {
+    // 성벽 한 줄에 흙덩이가 수백 개 생긴다. 전부 인스턴싱한다.
+    const lower = [], upper = [], posts = [], stones = [];
+    const dirtCols = [0x8a6a45, 0x7d6039, 0x93744c].map((c) => new THREE.Color(c));
+    const dirtCols2 = [0x93744c, 0x846a44].map((c) => new THREE.Color(c));
+    const stoneCols = [0x77706a, 0x635e57].map((c) => new THREE.Color(c));
+
     for (let i = 0; i < points.length - 1; i++) {
         const [x1, z1] = points[i];
         const [x2, z2] = points[i + 1];
@@ -50,33 +56,36 @@ export function addEarthWall(points, height = 2.2) {
             const ang = Math.atan2(x2 - x1, z2 - z1);
 
             // 다져 올린 흙 — 아래가 넓고 위가 좁다
-            const lower = addBox(G.world, 3.4, height * 0.55, 1.1,
-                pick([0x8a6a45, 0x7d6039, 0x93744c]),
-                x, y + height * 0.275, z, ang,
-                { roughness: 1, map: G.TEX.dirtObj });
-            lower.scale.x = 1;
-
-            addBox(G.world, 2.4, height * 0.5, 0.95,
-                pick([0x93744c, 0x846a44]),
-                x, y + height * 0.72, z, ang,
-                { roughness: 1, map: G.TEX.dirtObj });
+            lower.push({ x, y: y + height * 0.275, z, sx: 3.4, sy: height * 0.55, sz: 1.1,
+                         ry: ang, color: dirtCols[Math.floor(rand() * dirtCols.length)] });
+            upper.push({ x, y: y + height * 0.72, z, sx: 2.4, sy: height * 0.5, sz: 0.95,
+                         ry: ang, color: dirtCols2[Math.floor(rand() * dirtCols2.length)] });
 
             // 성벽 위의 목책
             if (s2 % 2 === 0) {
                 const ph = randRange(0.85, 1.1);
-                addCylinder(G.world, 0.07, 0.09, ph, 5, 0x5c3f20,
-                    x, y + height + ph / 2 - 0.05, z, { map: G.TEX.wood });
+                posts.push({ x, y: y + height + ph / 2 - 0.05, z, sx: 0.09, sy: ph, sz: 0.09 });
             }
 
             // 성벽 아랫단을 받치는 돌
             if (s2 % 3 === 0) {
-                addBlob(G.world, 0.28, pick([0x77706a, 0x635e57]),
-                    x + Math.cos(ang) * 1.6, y + 0.14, z - Math.sin(ang) * 1.6,
-                    { sx: 1.4, sy: 0.7, sz: 1.1, ry: ang, roughness: 1, map: G.TEX.stone,
-                      castShadow: false });
+                stones.push({
+                    x: x + Math.cos(ang) * 1.6, y: y + 0.14, z: z - Math.sin(ang) * 1.6,
+                    sx: 0.28 * 1.4, sy: 0.28 * 0.7, sz: 0.28 * 1.1, ry: ang,
+                    color: stoneCols[Math.floor(rand() * stoneCols.length)]
+                });
             }
         }
     }
+
+    const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+    addInstanced(boxGeo, makeMat(0xffffff, { roughness: 1, map: G.TEX.dirtObj }), lower);
+    addInstanced(new THREE.BoxGeometry(1, 1, 1),
+        makeMat(0xffffff, { roughness: 1, map: G.TEX.dirtObj }), upper);
+    addInstanced(new THREE.CylinderGeometry(0.78, 1, 1, 5),
+        makeMat(0xffffff, { roughness: 1, map: G.TEX.wood }), posts);
+    addInstanced(new THREE.DodecahedronGeometry(1, 0),
+        makeMat(0xffffff, { roughness: 1, map: G.TEX.stone }), stones, { castShadow: false });
 }
 
 /** 성문: 토성을 끊고 세운 기와지붕 문루 */

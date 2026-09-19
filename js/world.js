@@ -454,7 +454,7 @@ export function addInstanced(geometry, material, transforms, opts = {}) {
     // 월드 전체에 퍼져 있으므로 컬링 기준 구를 넉넉히 잡는다
     mesh.frustumCulled = false;
 
-    G.world.add(mesh);
+    (opts.parent || G.world).add(mesh);
     return mesh;
 }
 

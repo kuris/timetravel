@@ -26,9 +26,14 @@ export function transitionToAge(nextAge) {
     // 짧게 화면이 깨졌다가
     rampGlitch(0, 0.6, 240, () => {
         const oldWorld = G.world;
+        // 배경판과 플레이어는 world 밖에 있어서 따로 챙겨야 한다.
+        // 안 챙기면 하늘 텍스처가 시대마다 쌓인다.
+        // 태양광은 그림자 깊이 텍스처를 들고 있어서 같이 버려야 한다
+        const oldExtras = [G.backdrop, G.player, G.sunLight];
+        const oldTextures = G.TEX;
 
-        // 새 시대를 만든다 (scene / world 가 교체된다)
-        buildAge(nextAge);
+        // 새 시대를 만든다. 정리는 모프가 끝난 뒤에 한다.
+        buildAge(nextAge, { keepOld: true });
 
         // 이전 시대의 월드를 새 scene 으로 옮겨 와 나란히 둔다.
         // 여기서부터 두 시대가 한 화면에 공존한다.
@@ -40,7 +45,7 @@ export function transitionToAge(nextAge) {
         G.transitioning = true;
         startMorph(oldWorld, G.world, () => {
             G.transitioning = false;
-        });
+        }, oldExtras, oldTextures);
     });
 }
 

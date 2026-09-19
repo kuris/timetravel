@@ -18,6 +18,7 @@ import { terrainHeight } from "../terrain.js";
 import { makeMistTexture, makeStoneTexture, makeTerrainTexture, makeThatchTexture, makeWaterTexture, makeWoodTexture } from "../textures.js";
 import { dom, showMessage, updateUI } from "../ui.js";
 import { addBackdrop, addDustMotes, addLights, addMistLayers, cssHex, cssRGBA } from "../world.js";
+import { disposeGroup, disposeTextures } from "../morph.js";
 import { initWeather } from "../weather.js";
 
 /**
@@ -130,7 +131,26 @@ export function buildTextures(index) {
     };
 }
 
-export function buildAge(index) {
+/**
+ * 시대를 만든다.
+ *
+ * @param {object} opts
+ *   keepOld  true 면 이전 시대의 자원을 여기서 버리지 않는다.
+ *            시대 변이(모프)는 두 시대를 잠시 함께 보여 주므로,
+ *            정리를 모프가 끝난 뒤로 미뤄야 한다.
+ */
+export function buildAge(index, opts = {}) {
+    // 모프가 뒤처리를 맡지 않는 경로(디버그용 ?era=, 첫 실행)에서는
+    // 여기서 이전 시대를 정리한다. 안 그러면 텍스처가 계속 쌓인다.
+    if (!opts.keepOld && G.scene) {
+        const stale = [G.world, G.backdrop, G.player, G.sunLight].filter(Boolean);
+        for (const obj of stale) {
+            if (obj.parent) obj.parent.remove(obj);
+            disposeGroup(obj);
+        }
+        disposeTextures(G.TEX);
+    }
+
     G.currentAge = index;
     G.ageProgress = 0;
     G.ageCompleteTriggered = false;
