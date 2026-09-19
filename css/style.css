@@ -248,7 +248,7 @@ body {
 #minimapPanel {
     position: absolute;
     right: 16px;
-    top: 120px;
+    top: 238px;
     padding: 9px;
 }
 
@@ -273,7 +273,7 @@ body {
 #hintBtn {
     position: absolute;
     right: 16px;
-    top: 308px;
+    top: 498px;
     width: 164px;
     box-sizing: border-box;
     padding: 8px 10px;
@@ -620,7 +620,7 @@ body.fpv-mode #prompt {
 #statusBars {
     position: absolute;
     right: 16px;
-    top: 296px;
+    top: 448px;
     width: 180px;
     display: flex;
     flex-direction: column;
