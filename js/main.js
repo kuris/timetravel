@@ -22,7 +22,8 @@ const seedParam = parseInt(new URLSearchParams(location.search).get("seed"), 10)
 G.runSeed = Number.isFinite(seedParam) ? seedParam : 20260920;
 generateBaseMap(G.runSeed);
 
-// 개발 편의: index.html?era=1 로 특정 시대부터 시작할 수 있다 (?era=prologue 제외)
+// 시작은 언제나 선사시대의 빈 땅이다 (AoE 처럼, 아무것도 없는 데서 시작한다).
+// 현대 프롤로그(밤 귀갓길)는 ?era=prologue 로만 볼 수 있게 남겨 둔다.
 const eraParam = new URLSearchParams(location.search).get("era");
 if (eraParam === "prologue") {
     buildPrologue();
@@ -33,8 +34,8 @@ if (eraParam === "prologue") {
     );
     buildAge(startEra);
 } else {
-    // 기본: 현대 프롤로그(밤 골목) → 낯선 돌 → 신석기
-    buildPrologue();
+    // 기본: 신석기 빈 들판
+    buildAge(0);
 }
 animate();
 

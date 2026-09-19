@@ -1,18 +1,23 @@
 /**
- * 1시대 — 신석기 강가 마을
+ * 1시대 — 신석기 강가 (빈 땅)
+ *
+ * 여기에는 마을이 없다. 강과 숲과 바위뿐이다.
+ * 플레이어는 나무와 돌을 주워 첫 집을 세우고, 거기서부터 마을이 시작된다.
+ * 땅에 남은 사람의 자취는 셋뿐이다 — 오래된 조개더미, 불탄 그루터기, 그리고 고인돌.
+ *
+ * 다른 시대의 빌더들이 이 파일의 부품(움집·화덕·갈대·돌무더기·시간의 문)을
+ * 가져다 쓰므로, 빌더 함수는 전부 그대로 export 해 둔다.
  */
 import { addBlob, addBox, addCone, addCylinder, addCylinderBetween, addFlatCircle, makeBasicMat, makeMat } from "../build.js";
 import { paintBaseMap } from "../basemap.js";
 import { registerInteractable } from "../interaction.js";
-import { addMapMarker, addMapShape } from "../minimap.js";
-import { smooth } from "../noise.js";
+import { addMapMarker } from "../minimap.js";
 import { pick, rand, randRange, seedRandom } from "../rng.js";
-import { addAnimalPen, addCanoe, addCropField, addFishingNet, addHayStack, addJarPlatform, addLaundryLine, addStoragePit, addStoneWallRun } from "../props.js";
-import { addBirdFlock, addCow, addDog, addPig, addVillager, addWorker, registerNPC } from "../npc.js";
-import { GATE_SPOT, RIVER, S, addRiver, carveRiver, riverPerp, riverPoint } from "../landmarks.js";
+import { addBirdFlock, addVillager } from "../npc.js";
+import { GATE_SPOT, S, addRiver, carveRiver, riverPoint } from "../landmarks.js";
 import { G } from "../state.js";
 import { terrainHeight } from "../terrain.js";
-import { addGround, addInstanced, addTreeLine } from "../world.js";
+import { addGround } from "../world.js";
 
 export function buildNeolithic() {
     const P = S;
@@ -46,166 +51,92 @@ export function buildNeolithic() {
     });
 
     // ================================================================
-    // 마을 — 화면 좌표 S(u, v) 로 배치한다. u = 오른쪽, v = 위쪽.
-    // 강은 화면 위쪽(v > 8)을 흐르므로 마을은 그 아래 둔덕에 앉는다.
+    // 여기에는 아직 아무것도 없다.
+    //
+    // 움집도 울타리도 밭도 놓지 않는다. 마을은 플레이어가 세우는 것이다.
+    // 땅에 남은 것은 사람이 지은 것이 아니라, 사람이 떠난 뒤에 남은 것들뿐이다.
+    //   조개더미  — 예전에도 누군가 이 강가에서 먹고 살았다
+    //   불탄 자리 — 불이 이 땅을 지나갔고, 돌 한 자리만 비껴갔다
     // ================================================================
 
-    // 움집 11채. 크기와 각도를 전부 다르게 해서 정렬감을 없앤다.
-    const huts = [
-        [-4, 4, 0.35, 1.00],
-        [3, 6, -0.65, 1.14],
-        [9, 2, 0.22, 0.88],
-        [-11, 1, 1.05, 0.96],
-        [-2, -3, -0.30, 1.05],
-        [7, -5, 0.62, 0.92],
-        [15, 5, -0.85, 0.84],
-        [-16, 6, 0.18, 1.02],
-        [-9, -8, 0.48, 0.98],
-        [5, -12, -0.22, 0.90],
-        [18, -2, 0.75, 0.94]
-    ];
-    for (const [u, v, rot, sc] of huts) {
-        const c = P(u, v);
-        addPitHouse(c[0], c[1], rot, sc);
-    }
-
-    // ---- 나무 울타리 ----
-    addFence([P(-8, 6), P(-6, 2), P(-7, -6), P(-4, -13)]);
-    addFence([P(12, 6), P(14, 2), P(13, -5)]);
-    addFence([P(-20, 2), P(-18, -5)]);
-
-    // 낮은 돌담 (울타리와 겹치지 않는 구간)
-    addStoneWallRun([P(0, 6), P(8, 6.5)], 0.75);
-    addStoneWallRun([P(-14, -10), P(-6, -11)], 0.7);
-
-    // ---- 생활의 밀도 ----
-    // 하나하나는 단순하지만, 모이면 사람이 살던 자리가 된다.
     let q;
-    for (const [pu, pv] of [[0, 2], [-6, 7], [6, 9], [-13, -3], [11, -8], [-1, -9]]) {
-        q = P(pu, pv); addStoragePit(q[0], q[1]);
-    }
 
-    for (const [hu, hv, hs] of [[10, 6, 0.85], [11, 5, 0.7], [-14, 3, 0.78],
-                                 [-3, -15, 0.82], [16, -6, 0.75]]) {
-        q = P(hu, hv); addHayStack(q[0], q[1], hs);
-    }
-
-    for (const [ju, jv, jr] of [[2, 3, 0.4], [-5, 0, -0.7], [8, -2, 0.2], [-12, 5, 0.6]]) {
-        q = P(ju, jv); addJarPlatform(q[0], q[1], jr);
-    }
-
-    for (const [au, av, bu, bv] of [[-9, 4, -6, 5], [13, 7, 16, 6], [1, -6, 4, -7]]) {
-        const c1 = P(au, av), c2 = P(bu, bv);
-        addLaundryLine(c1[0], c1[1], c2[0], c2[1]);
-    }
-
-    // 화덕 — 마을의 중심
-    q = P(0, 0); addHearth(q[0], q[1]);
-    q = P(-12, -6); addHearth(q[0], q[1]);
-    q = P(12, 0); addHearth(q[0], q[1]);
-
-    // 작은 제단
-    q = P(17, 2); addSmallAltar(q[0], q[1]);
-
-    // 돌무더기 / 조개더미
-    for (const [su, sv] of [[-15, 0], [5, -8], [20, 5], [-7, -12]]) {
+    // ---- 자연 그대로의 돌무더기 ----
+    for (const [su, sv] of [[-15, 0], [5, -8], [20, 5], [-7, -12], [-22, -3], [11, 10]]) {
         q = P(su, sv); addStonePile(q[0], q[1]);
     }
-    for (const [su, sv] of [[-2, 6], [7, 6.5], [-11, 5.5]]) {
-        q = P(su, sv); addShellHeap(q[0], q[1]);
-    }
 
-    // 장작과 나무 걸이
-    for (const [fu, fv] of [[2, 1], [-7, 2], [10, -3], [-16, -8], [14, -10]]) {
-        q = P(fu, fv); addFirewood(q[0], q[1]);
-    }
-    for (const [du, dv, dr] of [[-4, 6, 0.4], [9, 7, -0.3], [-17, 2, 0.8], [3, -10, 0.2]]) {
-        q = P(du, dv); addDryingRack(q[0], q[1], dr);
-    }
+    // ---- 오래된 조개더미 ----
+    q = P(-3, 6.2); addShellHeap(q[0], q[1]);
+    q = P(8, 6.8); addShellHeap(q[0], q[1]);
 
-    // ---- 강가 ----
-    // 강변에 올려 둔 통나무배
-    for (const [cu, cv, cr] of [[-13, 6.6], [-1, 7.0], [9, 6.8], [17, 6.4]].map((a,i)=>[a[0],a[1],[0.9,0.55,1.25,0.3][i]])) {
-        q = P(cu, cv); addCanoe(q[0], q[1], cr);
+    // ---- 불탄 자리 ----
+    // 고인돌 자리(화면 좌표로 약 (20, -4)) 둘레만 새까맣게 탔다.
+    // 이야기의 시작점이다. 그 한복판은 타지 않았다.
+    for (const [bu, bv, bs] of [[15, -1, 1.0], [17, 2, 0.8], [22, 1, 0.9], [24, -3, 1.1],
+                                [23, -8, 0.85], [18, -9, 1.0], [14, -5, 0.75]]) {
+        q = P(bu, bv); addBurntStump(q[0], q[1], bs);
     }
-    // 그물 말리는 틀
-    for (const [nu, nv, nr] of [[-18, 6.2, 0.7], [4, 6.8, -0.3], [14, 6.0, 0.4]]) {
-        q = P(nu, nv); addFishingNet(q[0], q[1], nr);
-    }
-
-    // ---- 밭과 가축 ----
-    // 신석기 후기의 원시 농경
-    q = P(-22, -4); addCropField(q[0], q[1], 0.3, 5, 4, [0x7a7a3e, 0x62652f, 0x8a8848]);
-    q = P(20, -8); addCropField(q[0], q[1], -0.5, 4, 4, [0x7a7a3e, 0x62652f, 0x8a8848]);
-    q = P(-19, -12); addCropField(q[0], q[1], 0.6, 4, 3, [0x7a7a3e, 0x62652f, 0x8a8848]);
-
-    q = P(-21, 6); addAnimalPen(q[0], q[1], 2.8);
-    for (const [pu, pv] of [[-21.5, 6.5], [-20.5, 5.5], [-21, 7]]) {
-        q = P(pu, pv); addPig(q[0], q[1]);
+    for (const [au, av, ar] of [[16, -2, 1.6], [22, -1, 2.0], [23, -6, 1.7], [16, -7, 1.4]]) {
+        q = P(au, av); addAshPatch(q[0], q[1], ar);
     }
 
     // ================================================================
-    // 사람과 짐승 — 적이 아니다. 각자 자기 일을 한다.
+    // 사람 — 나와 함께 이 강가에 닿은 무리. 셋뿐이고, 아직 집이 없다.
     // ================================================================
-    addVillager([P(-2, 2), P(4, 3), P(8, 6), P(1, 6), P(-5, 5)], "neolithic");
-    addVillager([P(-12, 3), P(-16, 5), P(-18, 0), P(-13, -3)], "neolithic");
-    addVillager([P(10, 4), P(15, 6), P(17, 1), P(12, -2)], "neolithic");
-    addVillager([P(-6, -8), P(-12, -10), P(-15, -5), P(-9, -3)], "neolithic", { speed: 0.8 });
-    addVillager([P(4, -7), P(9, -10), P(14, -7), P(8, -4)], "neolithic");
-    addVillager([P(-8, 5), P(-2, 6.5), P(4, 6), P(-4, 4)], "neolithic", { speed: 0.9 });
-    addVillager([P(16, 6), P(20, 6.5), P(18, 3), P(13, 5)], "neolithic", { speed: 0.85 });
 
-    // 장로: 선택지 대화 NPC — 화재와 단서를 알려준다
+    // 장로: 선택지 대화 NPC — 이 땅의 내력과 첫 단서를 알려준다
     addVillager([P(-4, -2), P(0, 0), P(-3, 2), P(-5, 0)], "neolithic", {
-        name: "마을 장로",
+        name: "무리의 장로",
         hat: "straw",
         speed: 0.4,
-        greeting: "음... 길을 잃은 나그네인가? 무엇이든 물어보게.",
+        greeting: "여기서 멈추세. 강이 있고 돌이 있고 나무가 있으니, 겨울은 날 만하다.",
         choices: [
             {
-                text: "마을이 불탄 적이 있다고 들었습니다.",
-                response: "그래... 옛날에 큰불이 마을을 집어삼켰지. 하지만 저 동쪽 화덕 옆 땅만은 신기하게도 불길이 비껴갔어. 그곳 흙을 잘 살펴보게.",
+                text: "예전에 이 땅에 누가 살았습니까?",
+                response: "살았지. 오래전에. 저 동쪽 큰 돌 둘레를 보게. 그루터기가 새까맣게 타서 아직 서 있어.\n불이 이 땅을 다 삼켰는데, 그 돌 한 자리만은 비껴갔네. 그 흙을 파 보게.",
                 clue: "neolithic_fire",
                 journal: true,
-                followUp: "...(먼 산을 바라보며 깊은 생각에 잠긴다)"
+                followUp: "...(동쪽을 오래 바라본다)"
             },
             {
-                text: "부러진 간석기는 왜 묻어둔 건가요?",
-                response: "간석기는 쓰던 이와 함께 묻는 것이라네. 부러뜨려 묻는 것은 물건의 명을 다하게 하여 저승에서도 쓰게 하려는 선조들의 뜻이지.",
+                text: "부러진 돌도구가 땅에 묻혀 있습니다.",
+                response: "간석기는 쓰던 이와 함께 묻는 것이라네. 부러뜨려 묻는 것은 물건의 명을 다하게 하여 저승에서도 쓰게 하려는 뜻이지.",
                 journal: true,
-                followUp: "선대의 돌에 대해 더 알고 싶다면 돌무더기를 조사해보게."
+                followUp: "돌무더기 사이를 잘 뒤져 보게."
             },
             {
-                text: "마을 숲 쪽으로 가도 됩니까?",
-                response: "가 보게. 쓰러진 나무와 돌무더기가 널려 있으니 쓸 만한 것을 주워 오게나. 집 한 채가 서면 마을이 그만큼 자라는 걸세.",
-                followUp: "...(숲 쪽을 가리킨다)"
+                text: "무엇부터 해야 합니까?",
+                response: "쓰러진 나무와 돌을 주워 오게. 빈 땅에 서서 짓겠다고 하면 집 한 채가 선다네.\n집이 서야 사람이 머물고, 사람이 머물러야 마을일세.",
+                followUp: "...(빈 들판을 둘러본다)"
             }
         ]
     });
 
-
-    // 화덕 앞에서 불을 지피는 사람
-    q = P(0.8, 0.6); addWorker(q[0], q[1], "neolithic", { rot: -2.3 });
-    q = P(-11.4, -6.4); addWorker(q[0], q[1], "neolithic", { rot: 0.9 });
-    // 조개더미에서 일하는 사람
-    q = P(-2, 5.4); addWorker(q[0], q[1], "neolithic", { rot: 0.7 });
-    // 그물 손질
-    q = P(-17, 5.6); addWorker(q[0], q[1], "neolithic", { rot: -0.9 });
-    // 배 손질
-    q = P(0, 6.2); addWorker(q[0], q[1], "neolithic", { rot: 1.6 });
-    // 밭일
-    q = P(-21, -4); addWorker(q[0], q[1], "neolithic", { rot: 0.3 });
-
-    // 마을 개
-    addDog([P(0, 4), P(6, 2), P(2, 6), P(-5, 3)]);
-    addDog([P(-12, -6), P(-6, -9), P(-15, -2)]);
+    // 동행 둘 — 집이 없으니 하루 종일 걸어다닌다
+    addVillager([P(3, 2), P(7, -1), P(2, -5), P(-1, 1)], "neolithic", {
+        name: "동행",
+        speed: 0.85,
+        dialogue: [
+            "쓸 만한 나무는 저쪽 숲에 쓰러져 있더군.",
+            "오늘 밤은 어디서 자야 하나. 지붕이 있으면 좋겠는데."
+        ]
+    });
+    addVillager([P(-9, 3), P(-4, 6), P(-11, 6), P(-12, 1)], "neolithic", {
+        name: "동행",
+        speed: 0.95,
+        dialogue: [
+            "강가에 조개껍데기가 수북해. 우리 말고도 여기서 살던 이들이 있었어.",
+            "물은 가깝고 땅은 평평하다. 여기면 되겠어."
+        ]
+    });
 
     // 강 위를 도는 새떼
     addBirdFlock(P(-4, 18)[0], 7.5, P(-4, 18)[1], 16);
     addBirdFlock(P(12, 16)[0], 9.0, P(12, 16)[1], 10);
 
     // ================================================================
-    // 조사 대상 3개
+    // 조사 대상 3개 — 세운 것이 아니라 남겨진 것들
     // ================================================================
     q = P(-3, 5.6);
     const pottery = createPotteryShard(q[0], q[1]);
@@ -214,7 +145,7 @@ export function buildNeolithic() {
         group: pottery,
         pickup: true,
         range: 1.9,
-        description: "빗살무늬 토기 조각\n\n조개더미 옆 재 섞인 흙에서 나왔습니다.\n표면에 빗살무늬가 남아 있습니다.\n한쪽 면만 검게 그을렸습니다. 불에 한 번 닿았던 자리입니다."
+        description: "빗살무늬 토기 조각\n\n강가 조개더미 옆, 재 섞인 흙에서 나왔습니다.\n표면에 빗살무늬가 남아 있습니다.\n한쪽 면만 검게 그을렸습니다. 불에 한 번 닿았던 자리입니다."
     });
 
     q = P(-15, 0);
@@ -227,7 +158,7 @@ export function buildNeolithic() {
         description: "간석기\n\n돌무더기 사이에서 회수했습니다.\n매끈하게 갈아 만든 돌도구입니다.\n쓰던 물건인데 부러뜨려서 묻었습니다. 누군가와 함께 보낸 것입니다."
     });
 
-    q = P(1, -1);
+    q = P(17, -7);
     const burntWood = createBurntWoodArtifact(q[0], q[1]);
     registerInteractable({
         name: "탄목",
@@ -236,8 +167,8 @@ export function buildNeolithic() {
         range: 1.9,
         locked: true,
         unlockClue: "neolithic_fire",
-        lockedMsg: "흙 속에 무언가 묻혀 있으나 어디를 파야 할지 알 수 없습니다.\n(마을 장로와 대화하여 단서를 얻으세요)",
-        description: "불탄 나무 조각\n\n화덕 옆 땅에서 회수했습니다.\n마을이 한 번 크게 탄 적이 있습니다.\n장로의 말대로 마을 동쪽 한 자리만 불길이 비껴갔습니다."
+        lockedMsg: "탄 그루터기 사이 흙 속에 무언가 묻혀 있으나 어디를 파야 할지 알 수 없습니다.\n(무리의 장로와 대화하여 단서를 얻으세요)",
+        description: "불탄 나무 조각\n\n탄 그루터기 사이의 땅에서 회수했습니다.\n오래전 이 강가가 한 번 크게 탔습니다.\n장로의 말대로, 큰 돌이 선 한 자리만은 불길이 비껴갔습니다."
     });
 
     // ---- 시간의 문 (고인돌) ----
@@ -525,6 +456,63 @@ export function addStonePile(x, z) {
             randRange(-0.7, 0.7), randRange(0.08, 0.35), randRange(-0.55, 0.55),
             { sx: randRange(1, 1.7), sy: randRange(0.45, 0.9), sz: randRange(0.8, 1.4), ry: randRange(0, Math.PI) }
         );
+    }
+}
+
+/**
+ * 불탄 그루터기: 오래전 이 땅을 지나간 불의 흔적.
+ * 집이 아니라 "집이 있었던 자리"를 알려 주는 유일한 물건이다.
+ */
+export function addBurntStump(x, z, scale = 1) {
+    const g = new THREE.Group();
+    g.position.set(x, terrainHeight(x, z), z);
+    g.rotation.y = randRange(0, Math.PI);
+    g.scale.setScalar(scale);
+    G.world.add(g);
+
+    const h = randRange(0.7, 1.5);
+    const trunk = addCylinder(g, 0.19, 0.31, h, 6, 0x2b211a, 0, h * 0.5, 0, {
+        roughness: 1, map: G.TEX.wood
+    });
+    trunk.rotation.z = randRange(-0.12, 0.12);
+
+    // 쪼개진 꼭대기 — 잘린 것이 아니라 타다 부러진 것이다
+    for (let i = 0; i < 3; i++) {
+        const sh = randRange(0.15, 0.45);
+        const sp = addCylinder(g, 0.035, 0.07, sh, 4, 0x1a1311,
+            randRange(-0.13, 0.13), h + sh * 0.4, randRange(-0.13, 0.13),
+            { castShadow: false });
+        sp.rotation.z = randRange(-0.4, 0.4);
+        sp.rotation.x = randRange(-0.4, 0.4);
+    }
+
+    // 발치에 떨어진 숯
+    for (let i = 0; i < 5; i++) {
+        addBlob(g, randRange(0.07, 0.15), pick([0x241b16, 0x33281f, 0x181211]),
+            randRange(-0.8, 0.8), 0.05, randRange(-0.8, 0.8),
+            { sx: randRange(1, 1.6), sy: 0.4, sz: randRange(0.8, 1.3),
+              ry: randRange(0, Math.PI), castShadow: false });
+    }
+}
+
+/** 재 자국: 땅에 남은 검은 얼룩. 비에 씻기고 남은 만큼만 진하다. */
+export function addAshPatch(x, z, r = 1.6) {
+    const g = new THREE.Group();
+    g.position.set(x, terrainHeight(x, z), z);
+    G.world.add(g);
+
+    addFlatCircle(g, r, 0x352c25, 0, 0.02, 0, 12, {
+        material: makeMat(0x352c25, {
+            transparent: true, opacity: 0.42, side: THREE.DoubleSide,
+            depthWrite: false, roughness: 1
+        })
+    });
+
+    for (let i = 0; i < 7; i++) {
+        addBlob(g, randRange(0.05, 0.11), pick([0x2a221c, 0x1d1815, 0x3b322a]),
+            randRange(-r * 0.8, r * 0.8), 0.045, randRange(-r * 0.8, r * 0.8),
+            { sx: randRange(1, 1.6), sy: 0.35, sz: randRange(0.8, 1.3),
+              ry: randRange(0, Math.PI), castShadow: false });
     }
 }
 
