@@ -15,6 +15,7 @@
  * 주민은 시대를 넘어 따라온다. 내가 지은 집이 그 자리에 다시 서기 때문이다.
  */
 import { addVillager } from "./npc.js";
+import { wolvesNear } from "./raid.js";
 import { pick, rand, randRange } from "./rng.js";
 import { G } from "./state.js";
 import { isUnderwater, terrainHeight } from "./terrain.js";
@@ -91,6 +92,12 @@ export function updateSettlers(delta) {
     if (!settlers.length || G.transitioning) return;
 
     for (const s of settlers) {
+        // 들개가 가까이 있으면 겁을 먹고 일을 멈춘다.
+        // 화톳불이나 울타리가 들개를 막아 주면 그럴 일이 없다.
+        const p = s.group.position;
+        if (wolvesNear(p.x, p.z)) { s.scared = true; continue; }
+        s.scared = false;
+
         s.timer -= delta;
         if (s.timer > 0) continue;
 

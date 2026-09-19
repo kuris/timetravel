@@ -27,13 +27,14 @@ import { isUnderwater, terrainHeight } from "./terrain.js";
 import { dom, josa, showMessage, updateResourceUI } from "./ui.js";
 
 // 시대별 건물 빌더
-import { addPitHouse, addSmallAltar } from "./eras/neolithic.js";
-import { addBronzeHouse, addRaisedGranary, addBronzeAltar, addWatchtower } from "./eras/bronze.js";
+import { addFence, addHearth, addPitHouse, addSmallAltar } from "./eras/neolithic.js";
+import { addBronzeHouse, addRaisedGranary, addBronzeAltar, addPalisade, addWatchtower } from "./eras/bronze.js";
 import { addSamgukHouse, addTowerTall, addTumulus } from "./eras/samguk.js";
-import { addChoga, addJangseung, addGovernmentGate } from "./eras/joseon.js";
+import { addChoga, addJangseung, addGovernmentGate, addLantern } from "./eras/joseon.js";
 import { addSlateHouse, addWarehouse, addFlagPole, addSaemaulSign } from "./eras/modern1970.js";
 import { addShopBuilding, addConvenienceStore, addApartment, addHeritageEnclosure } from "./eras/modern2000.js";
-import { addJarPlatform, addStoragePit } from "./props.js";
+import { addJarPlatform, addStoragePit, addStoneWallRun } from "./props.js";
+import { addConcreteWall, addStreetLamp } from "./props_modern.js";
 
 /**
  * 건물 사이 최소 간격.
@@ -46,6 +47,23 @@ const MIN_GAP = 2.9;
 
 /** 지을 수 있는지 살피는 거리 */
 export const BUILD_RANGE = 1.6;
+
+/**
+ * 울타리용 고리 좌표.
+ * 울타리 빌더들은 점 목록을 받으므로, 한 채를 두르는 고리를 만들어 넘긴다.
+ * 마지막 점을 첫 점과 같게 두어 닫힌 고리가 되게 한다.
+ */
+function ringPoints(x, z, r = 3.4, rot = 0, n = 7) {
+    const pts = [];
+    for (let i = 0; i <= n; i++) {
+        const a = rot + (i % n) / n * Math.PI * 2;
+        pts.push([x + Math.cos(a) * r, z + Math.sin(a) * r]);
+    }
+    return pts;
+}
+
+/** 점 목록을 받는 빌더를 (x, z, rot) 꼴로 감싼다 */
+const ring = (fn, r = 3.4) => (x, z, rot) => fn(ringPoints(x, z, r, rot || 0));
 
 /**
  * 건물 종류.
@@ -99,6 +117,41 @@ export const BUILDING_TYPES = {
         ]
     },
 
+    campfire: {
+        name: "화톳불",
+        desc: "불빛이 닿는 곳에는 들개가 들어오지 못한다.",
+        cost: { wood: 3 },
+        progress: 6,
+        gap: 1.5,          // 집 바로 옆에 피울 수 있어야 한다
+        noMark: true,      // 깃대까지 세우면 마을이 깃발밭이 된다
+        tiers: [
+            (x, z) => addHearth(x, z),
+            (x, z) => addHearth(x, z),
+            (x, z) => addHearth(x, z),
+            (x, z) => addLantern(x, z),
+            (x, z) => addStreetLamp(x, z, { height: 4.6, intensity: 1.7, distance: 11 }),
+            (x, z) => addStreetLamp(x, z, { height: 5.4, intensity: 2.6, distance: 16, color: 0xcfe0ea })
+        ]
+    },
+
+    fence: {
+        name: "울타리",
+        desc: "한 채를 빙 둘러 막는다. 안쪽은 들개가 넘지 못한다.",
+        cost: { wood: 4 },
+        progress: 8,
+        gap: 0,            // 이미 선 집을 두르는 것이므로 간격을 보지 않는다
+        noMark: true,
+        noPad: true,
+        tiers: [
+            ring((pts) => addFence(pts)),
+            ring((pts) => addPalisade(pts)),
+            ring((pts) => addPalisade(pts)),
+            ring((pts) => addStoneWallRun(pts, 0.95)),
+            ring((pts) => addConcreteWall(pts, 1.5)),
+            ring((pts) => addConcreteWall(pts, 1.6))
+        ]
+    },
+
     altar: {
         name: "제단",
         desc: "무언가를 기린다. 유물이 있는 쪽을 알려 준다.",
@@ -124,7 +177,7 @@ export const BUILDING_TYPES = {
  * 플레이어가 서 있는 자리를 기준으로 하므로 도달 가능성은 이미 보장된다.
  * 남는 것은 물가와 건물 간격뿐이다.
  */
-export function canBuildHere(x, z) {
+export function canBuildHere(x, z, type = null) {
     if (isUnderwater(x, z)) return { ok: false, why: "물가에는 지을 수 없습니다." };
 
     // 경사가 급하면 안 된다 (주변 높이차로 가늠한다)
@@ -137,12 +190,33 @@ export function canBuildHere(x, z) {
     );
     if (slope > 0.55) return { ok: false, why: "땅이 너무 기울어 있습니다." };
 
-    for (const b of G.village) {
-        if (Math.hypot(b.x - x, b.z - z) < MIN_GAP) {
-            return { ok: false, why: "다른 건물과 너무 가깝습니다." };
+    // 종류마다 필요한 간격이 다르다.
+    // 울타리는 이미 선 집을 두르는 것이라 아예 보지 않고,
+    // 화톳불은 집 바로 옆에 피울 수 있어야 한다.
+    const gap = type
+        ? (BUILDING_TYPES[type] && BUILDING_TYPES[type].gap !== undefined
+            ? BUILDING_TYPES[type].gap : MIN_GAP)
+        : minGapHere();
+
+    if (gap > 0) {
+        for (const b of G.village) {
+            if (Math.hypot(b.x - x, b.z - z) < gap) {
+                return { ok: false, why: "다른 건물과 너무 가깝습니다." };
+            }
         }
     }
     return { ok: true };
+}
+
+/** 지금 이 시대에 세울 수 있는 것들 중 가장 너그러운 간격 */
+function minGapHere() {
+    let g = MIN_GAP;
+    for (const t of availableTypes()) {
+        const b = BUILDING_TYPES[t];
+        const bg = b.gap !== undefined ? b.gap : MIN_GAP;
+        if (bg < g) g = bg;
+    }
+    return g;
 }
 
 /** 재료가 충분한가 */
@@ -201,9 +275,11 @@ export function openBuildMenu() {
     const choices = types.map((t) => {
         const b = BUILDING_TYPES[t];
         const afford = canAfford(t);
+        const room = canBuildHere(x, z, t).ok;
         return {
             text: b.name + "  (" + costText(t) + ")"
-                + (afford ? "" : "  — 재료 부족") + recommendNote(t),
+                + (afford ? "" : "  — 재료 부족")
+                + (room ? "" : "  — 자리 없음") + recommendNote(t),
             response: b.desc + "\n" + (USE_HINT[t] || ""),
             onSelect: () => {
                 closeDialogue();
@@ -234,6 +310,12 @@ export function build(type, x, z) {
         return false;
     }
 
+    const room = canBuildHere(x, z, type);
+    if (!room.ok) {
+        showMessage(room.why);
+        return false;
+    }
+
     for (const k in b.cost) G.materials[k] -= b.cost[k];
 
     const entry = {
@@ -258,6 +340,12 @@ export function build(type, x, z) {
             + "\n주민은 스스로 나무와 돌을 모아 옵니다.";
     } else if (type === "store") {
         note = "\n주민이 재료를 더 자주 날라 옵니다.";
+    } else if (type === "campfire") {
+        note = "\n불빛이 닿는 곳(반경 8)에는 들개가 들어오지 못합니다.";
+    } else if (type === "fence") {
+        note = "\n울타리 안(반경 5)은 들개가 넘지 못합니다.";
+    } else if (type === "tower") {
+        note = "\n들개가 내려오기 전에 망루가 미리 알려 줍니다.";
     }
 
     showMessage(b.name + josa(b.name) + " 세웠습니다." + note
@@ -311,12 +399,14 @@ function spawnBuilding(entry, eraIndex, opts = {}) {
     const tier = BUILDING_TYPES[entry.type].tiers[eraIndex];
     if (!tier) return; // 이 시대에는 이 건물이 없다 — 건너뛴다
 
+    const def = BUILDING_TYPES[entry.type];
+
     // 다져진 땅은 시대가 바뀌어도 같은 자리에 다시 깔린다
-    const pad = addBuildPad(entry.x, entry.z);
+    const pad = def.noPad ? null : addBuildPad(entry.x, entry.z);
 
     const before = G.world.children.length;
     tier(entry.x, entry.z, entry.rot);
-    addOwnerMark(entry.x, entry.z, entry.rot);
+    if (!def.noMark) addOwnerMark(entry.x, entry.z, entry.rot);
 
     // 집에는 사람이 산다. 그 사람이 재료를 모아 온다.
     if (entry.type === "house") settleHouse(entry);

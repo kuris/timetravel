@@ -688,6 +688,13 @@ export const AudioSystem = {
     },
 
     /** 하늘이 열리는 소리 — 낮은 데서 길게 올라오고 배음이 뒤따른다 */
+    /** 들개 울음 — 멀리서 길게 올라갔다 떨어진다 */
+    playHowl() {
+        this.tone(210, 1.25, "sawtooth", 0.030, 0, 330);
+        this.tone(158, 1.35, "triangle", 0.024, 0.12, 246);
+        this.noiseBurst(0.5, 0.018, "bandpass", 620);
+    },
+
     playGateAwaken() {
         this.tone(62, 2.4, "sine", 0.055, 0, 300);
         this.tone(93, 2.1, "triangle", 0.036, 0.06, 402);

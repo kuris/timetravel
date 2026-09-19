@@ -12,6 +12,7 @@ import { pick, rand, randRange } from "./rng.js";
 import { G } from "./state.js";
 import { terrainHeight } from "./terrain.js";
 import { addJournalEntry } from "./journal.js";
+import { addMapMarker } from "./minimap.js";
 
 /* ------------------------------------------------------------------ 주민 */
 
@@ -341,6 +342,43 @@ export function addDog(waypoints) {
     g.userData.anim = animData;
 
     registerNPC({ name: "바둑이", group: g, lines: ["멍! 멍! (반갑게 꼬리를 세차게 흔든다)", "손을 핥으며 발치 주위를 맴돈다."], isAnimal: true, range: 2.2 });
+    return g;
+}
+
+/**
+ * 들개: 마을로 내려오는 위협.
+ *
+ * 물지 않는다. 이 게임에는 체력이 없다.
+ * 가까이 붙으면 주민이 겁을 먹고 일을 멈출 뿐이다 (raid.js).
+ * 목적지는 raid.js 가 매 프레임 갈아 끼우고, 걷는 것은 loop.js 의 npc 애니메이터가 맡는다.
+ */
+export function addWolf(x, z) {
+    const g = createQuadruped({
+        bodyW: 0.26, bodyH: 0.28, bodyL: 0.68, legH: 0.31, legR: 0.042,
+        color: pick([0x4a4640, 0x565049, 0x3e3a35]), snout: 0x27241f,
+        shadow: 0.30, horns: false
+    });
+
+    // 어둠 속에서 눈만 보인다
+    for (const sx of [-1, 1]) {
+        addBlob(g.userData.body, 0.035, 0xffcf6b,
+            sx * 0.07, 0.24, 0.40, {
+            material: makeBasicMat(0xffcf6b, { transparent: true, opacity: 0.9 }),
+            castShadow: false, receiveShadow: false
+        });
+    }
+
+    g.position.set(x, terrainHeight(x, z), z);
+    G.world.add(g);
+
+    const animData = {
+        type: "npc", group: g, waypoints: [[x, z]], index: 0,
+        speed: randRange(2.0, 2.9), pauseLeft: 0, pauseRange: [0, 0], quad: true
+    };
+    G.animated.push(animData);
+
+    g.userData.anim = animData;
+    g.userData.marker = addMapMarker(x, z, "#c0392b", 3, "prop");
     return g;
 }
 

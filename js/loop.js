@@ -6,6 +6,7 @@ import { updateCamera } from "./camera.js";
 import { updateConstruction } from "./construct.js";
 import { updateGather } from "./gather.js";
 import { updateGateAura } from "./gateaura.js";
+import { updateRaid } from "./raid.js";
 import { updateSettlers } from "./settlers.js";
 import { updateHint } from "./hint.js";
 import { updatePrompt } from "./interaction.js";
@@ -259,6 +260,7 @@ export function animate() {
     updateAnimated(t, delta);
     updateGather(delta);
     updateSettlers(delta);
+    updateRaid(delta);
     updateExploration();
     updateBuildGhost();
     G.buildReady = canBuildNow()

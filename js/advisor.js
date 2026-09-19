@@ -10,6 +10,7 @@
  * 여기서는 그 순서를 한 줄로 일러 주기만 한다. 강제하지는 않는다.
  * 무엇을 지을지는 여전히 플레이어가 고른다.
  */
+import { raidActive } from "./raid.js";
 import { G, progressGoal } from "./state.js";
 import { josa } from "./ui.js";
 import { BUILDING_TYPES } from "./village.js";
@@ -55,10 +56,13 @@ function costText(type) {
  */
 export function recommendedType() {
     if (countOf("house") < 1 && buildable("house")) return "house";
+    // 첫 집이 서면 지킬 것이 생긴다. 들개가 내려오기 전에 불을 피워 둔다.
+    if (countOf("campfire") < 1 && buildable("campfire")) return "campfire";
     if (countOf("house") < 2 && buildable("house")) return "house";
     if (countOf("store") < 1 && buildable("store")) return "store";
     if (countOf("tower") < 1 && buildable("tower")) return "tower";
     if (countOf("altar") < 1 && buildable("altar")) return "altar";
+    if (countOf("campfire") < 2 && buildable("campfire")) return "campfire";
     if (buildable("house")) return "house";
 
     for (const t in BUILDING_TYPES) if (buildable(t)) return t;
@@ -75,6 +79,10 @@ export function advisorText() {
 
     if (G.activeGate && G.activeGate.active) {
         return "시간의 문이 열렸습니다 — 고인돌로 가서 [E]";
+    }
+
+    if (raidActive()) {
+        return "들개가 내려왔습니다 — 다가가면 물러섭니다. 화톳불을 피우세요";
     }
 
     const type = recommendedType();
@@ -96,7 +104,10 @@ export function advisorText() {
     }
 
     const why = { house: "사람이 하나 늘어난다", store: "주민이 더 자주 날라 온다",
-                  tower: "지도가 넓게 열린다", altar: "이정표가 두 번 충전된다" }[type];
+                  tower: "지도가 넓게 열리고 들개를 미리 알려 준다",
+                  altar: "이정표가 두 번 충전된다",
+                  campfire: "들개가 불빛 안으로 못 들어온다",
+                  fence: "울타리 안은 들개가 못 넘는다" }[type];
 
     return b.name + josa(b.name) + " 세우세요 — 빈 땅에 서서 [E] · " + costText(type)
         + (why ? " · " + why : "") + " (발전도 " + left + " 남음)";
@@ -109,6 +120,8 @@ export function recommendNote(type) {
 
 /** 그 건물이 무엇에 쓸모가 있는지 (메뉴에 같이 보여 준다) */
 export const USE_HINT = {
+    campfire: "불빛이 닿는 곳(반경 8)에는 들개가 들어오지 못한다.",
+    fence: "두른 안쪽(반경 5)은 들개가 넘지 못한다.",
     house: "사람 하나가 들어와 산다. 그 사람이 나무와 돌을 모아 온다.",
     store: "주민이 재료를 더 자주 날라 온다.",
     tower: "지도가 한 번에 넓게 열린다.",

@@ -13,6 +13,7 @@ import { build2000 } from "./modern2000.js";
 import { buildNeolithic } from "./neolithic.js";
 import { resetGather } from "../gather.js";
 import { resetHint } from "../hint.js";
+import { resetRaid } from "../raid.js";
 import { resetSettlers } from "../settlers.js";
 import { createPlayer } from "../player.js";
 import { seedRandom } from "../rng.js";
@@ -176,6 +177,7 @@ export function buildAge(index, opts = {}) {
     resetHint();   // 이전 scene 에 붙어 있던 이정표를 버린다
     resetGather();   // 캐던 것과 튀어 있던 파편을 버린다
     resetSettlers(); // 주민은 집과 함께 이 시대의 모습으로 다시 들어온다
+    resetRaid();     // 들개는 시대마다 처음부터 센다
     G.backdrop = null;
     G.sunLight = null;
     G.terrainCarve = null;
