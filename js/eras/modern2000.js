@@ -435,13 +435,15 @@ export function createExcavationPit(x, z) {
 /* ================================================================
    신도시
    ================================================================ */
-export function build2000() {
+export function build2000(opts = {}) {
     // 배치용 화면 좌표.
     //
     // 육지는 화면 좌표 v < 7.6 까지만 있다 (그 위는 강이다).
     // 이 시대의 배치는 v 를 넓게 잡아 두었으므로, 여기서 한 번에
     // 육지 범위 안으로 눌러 넣는다. 덕분에 배치 코드는 읽기 쉬운 값을 그대로 쓴다.
     const P = (u, v) => S(u, v * 0.72500 + -9.50000);
+    // 프롤로그: 마지막 맵을 밤 귀갓길로 재사용. 돌 1개만 남긴다.
+    const isPrologue = !!opts.prologue;
 
     G.terrainCarve = carveRiver;
 
@@ -679,7 +681,12 @@ export function build2000() {
 
     // ================================================================
     // 조사 대상 3개 — 여기서 모든 것이 이어진다
+    // (프롤로그에서는 낯선 돌 1개만 남긴다)
     // ================================================================
+    if (isPrologue) {
+        buildPrologueStone();
+        return;
+    }
     q = P(14, -6);
     const report = createExcavationReport(q[0], q[1]);
     // 인과: 청동기 제사장의 선택이 보고서 마지막 줄에 반영된다
@@ -722,4 +729,33 @@ export function build2000() {
 
     // 마지막 시대에는 시간의 문이 없다. 여기가 끝이다.
     G.activeGate = null;
+}
+
+/**
+ * 프롤로그 낯선 돌 — 2000년 맵의 그 돌을 귀갓길 시점으로 조사한다.
+ * 조사 즉시 신석기로 전이한다.
+ */
+function buildPrologueStone() {
+    const g = new THREE.Group();
+    g.position.set(GATE_SPOT.x, terrainHeight(GATE_SPOT.x, GATE_SPOT.z), GATE_SPOT.z);
+    g.rotation.y = -0.3;
+    G.world.add(g);
+
+    addBox(g, 0.7, 2.1, 0.8, 0x6e6a64, -0.9, 1.05, 0, 0.05, { roughness: 1 });
+    addBox(g, 0.7, 2.0, 0.8, 0x77716a, 0.9, 1.0, 0, -0.05, { roughness: 1 });
+    addBox(g, 2.8, 0.55, 0.9, 0x817970, 0, 2.2, 0, 0.02, { roughness: 1 });
+    addBlob(g, 0.2, 0x8ee6ff, 0, 1.2, 0.3, {
+        material: makeBasicMat(0x8ee6ff, { transparent: true, opacity: 0.75 })
+    });
+
+    registerInteractable({
+        name: "낯선 돌",
+        group: g,
+        pickup: false,
+        range: 2.6,
+        glowColor: 0x8ee6ff,
+        description: "낯선 돌\n\n어제까지 없던 돌이 길 한가운데 서 있다.\n손을 대자 돌 틈에서 푸른빛이 새어 나온다.\n눈앞이 하얘진다…"
+    });
+    const item = G.interactables[G.interactables.length - 1];
+    item.prologueGate = true;
 }

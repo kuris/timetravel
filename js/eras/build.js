@@ -213,7 +213,7 @@ export function buildAge(index, opts = {}) {
     if (index === 2) buildSamguk();
     if (index === 3) buildJoseon();
     if (index === 4) build1970();
-    if (index === 5) build2000();
+    if (index === 5) build2000({ prologue: !!opts.prologue2000 });
 
     // ---- 대기 연출: 지면 안개 + 떠도는 먼지 ----
     addMistLayers(age.fog, age.night ? 5 : 4);

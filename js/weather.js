@@ -322,11 +322,7 @@ export function updateWeather(delta) {
     }
     if (W.blend < 1) W.blend = Math.min(1, W.blend + delta / 8);
 
-    if (G.prologue && G.prologueAge) {
-        apply(G.currentAge, delta, false, G.prologueAge);
-    } else {
-        apply(G.currentAge, delta, false);
-    }
+    apply(G.currentAge, delta, false);
 
     // --- 빗줄기 낙하 ---
     if (W.rainMesh && W.rainMesh.visible) {
@@ -394,7 +390,7 @@ export function cycleWeather() {
     W.type = nextType;
     W.next = nextType;
     W.blend = 1;
-    apply(G.currentAge, 0, true, G.prologue ? G.prologueAge : null);
+    apply(G.currentAge, 0, true);
     return WEATHER_TYPES[nextType].name;
 }
 
@@ -409,6 +405,6 @@ export function cycleTime() {
         }
     }
     W.dayT = TIME_PRESETS[nextIdx].t;
-    apply(G.currentAge, 0, true, G.prologue ? G.prologueAge : null);
+    apply(G.currentAge, 0, true);
     return TIME_PRESETS[nextIdx].name;
 }
