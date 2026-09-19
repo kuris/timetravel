@@ -1,0 +1,562 @@
+/* ================================================================
+   시간유적 — 1997년식 한국사 CD-ROM 게임 UI
+   금속판 / 황동 테두리 / CRT / 낡은 인쇄물 느낌
+   ================================================================ */
+:root {
+    --brass: #c09354;
+    --brass-hi: #e8c489;
+    --brass-lo: #6d4e24;
+    --ink: #efd6a2;
+    --ink-dim: #bb9a68;
+    --plate-hi: rgba(62, 41, 23, 0.72);
+    --plate-lo: rgba(21, 14, 9, 0.78);
+    /* 낡은 금속판 모서리를 살짝 깎아낸 형태 (둥근 모서리 대신) */
+    --notch: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+}
+
+html,
+body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #070504;
+    font-family: "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "AppleGothic", sans-serif;
+    /* 안티앨리어싱을 끄면 글자도 옛날 PC 게임처럼 거칠어진다 */
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: unset;
+    font-smooth: never;
+}
+
+#game {
+    position: fixed;
+    inset: 0;
+    background: #070504;
+}
+
+/* 저해상도 캔버스를 화면 크기로 확대 → 굵은 픽셀 */
+/* (#game 안의 WebGL 캔버스에만 적용. 미니맵 캔버스는 제외) */
+#game canvas {
+    display: block;
+    width: 100vw !important;
+    height: 100vh !important;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    cursor: crosshair;
+}
+
+/* ---------- CRT 스캔라인 (풀 해상도의 얇은 줄) ---------- */
+#scan {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 4;
+    opacity: 0.30;
+    background: repeating-linear-gradient(to bottom,
+            rgba(0, 0, 0, 0.42) 0px,
+            rgba(0, 0, 0, 0.42) 1px,
+            rgba(255, 245, 225, 0.05) 1px,
+            rgba(255, 245, 225, 0.05) 3px);
+}
+
+/* ---------- 섀도우 마스크 / 미세한 색 분리 ---------- */
+#mask {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0.12;
+    background: repeating-linear-gradient(to right,
+            rgba(255, 90, 60, 0.5) 0px,
+            rgba(90, 255, 120, 0.5) 1px,
+            rgba(80, 120, 255, 0.5) 2px,
+            rgba(0, 0, 0, 0) 3px);
+    mix-blend-mode: overlay;
+}
+
+/* ---------- 비네팅 + CRT 유리 반사 ---------- */
+#vignette {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 6;
+    background:
+        radial-gradient(ellipse 120% 105% at 50% 46%,
+            rgba(0, 0, 0, 0) 40%,
+            rgba(18, 10, 4, 0.30) 74%,
+            rgba(8, 4, 2, 0.72) 100%),
+        radial-gradient(ellipse 60% 42% at 34% 12%,
+            rgba(255, 238, 205, 0.055), rgba(255, 238, 205, 0) 70%);
+}
+
+/* ---------- 모니터 베젤 안쪽 그림자 ---------- */
+#bezel {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 7;
+    box-shadow:
+        inset 0 0 70px rgba(0, 0, 0, 0.75),
+        inset 0 0 180px rgba(10, 5, 2, 0.45);
+}
+
+#ui {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+    color: var(--ink);
+    text-shadow: 1px 1px 0 #170d05, 2px 2px 0 rgba(0, 0, 0, 0.45);
+    user-select: none;
+}
+
+/* ================= 낡은 금속판 패널 ================= */
+.panel {
+    position: relative;
+    clip-path: var(--notch);
+    background:
+        /* 긁힌 자국 */
+        repeating-linear-gradient(112deg,
+            rgba(255, 226, 180, 0.030) 0 1px,
+            rgba(0, 0, 0, 0.055) 1px 4px),
+        /* 얼룩 */
+        radial-gradient(ellipse at 22% 18%, rgba(129, 90, 45, 0.42), rgba(0, 0, 0, 0) 62%),
+        radial-gradient(ellipse at 84% 88%, rgba(84, 52, 24, 0.38), rgba(0, 0, 0, 0) 58%),
+        linear-gradient(168deg, var(--plate-hi), var(--plate-lo));
+    box-shadow:
+        inset 0 0 0 1px rgba(15, 9, 4, 0.9),
+        inset 0 0 26px rgba(0, 0, 0, 0.70),
+        inset 0 1px 0 rgba(224, 186, 129, 0.10);
+}
+
+/* 황동 테두리 (안쪽으로 한 겹 더) */
+.panel::before {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    clip-path: var(--notch);
+    border: 1px solid var(--brass);
+    box-shadow:
+        inset 0 0 0 1px rgba(0, 0, 0, 0.55),
+        0 0 0 1px rgba(0, 0, 0, 0.5);
+    opacity: 0.82;
+    pointer-events: none;
+}
+
+/* 깎인 모서리를 채우는 황동 사선 */
+.panel::after {
+    content: "";
+    position: absolute;
+    left: -2px;
+    top: -2px;
+    width: 17px;
+    height: 17px;
+    background: linear-gradient(45deg, var(--brass) 0 1.5px, rgba(0, 0, 0, 0) 1.5px);
+    transform: rotate(0deg);
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* ================= 좌측 상단 ================= */
+#topLeft {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    width: 372px;
+    padding: 13px 17px 14px;
+}
+
+#title {
+    font-size: 31px;
+    line-height: 1.05;
+    font-weight: 900;
+    letter-spacing: 5px;
+    color: #ffdf9e;
+    margin-bottom: 9px;
+    text-shadow:
+        1px 1px 0 #180d04,
+        2px 2px 0 #2c180a,
+        0 0 14px rgba(196, 136, 54, 0.45);
+}
+
+/* 제목 아래 황동 구분선 */
+#titleRule {
+    height: 2px;
+    margin: 0 0 9px;
+    background: linear-gradient(to right,
+            rgba(214, 166, 96, 0.85),
+            rgba(214, 166, 96, 0.22) 72%,
+            rgba(214, 166, 96, 0));
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+}
+
+.stat {
+    font-size: 13.5px;
+    line-height: 1.62;
+    color: var(--ink-dim);
+}
+
+.stat b {
+    color: #f5cd7e;
+    font-weight: 700;
+}
+
+/* ================= 우측 상단 조작 안내 ================= */
+#controls {
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    padding: 11px 15px;
+    font-size: 12.5px;
+    line-height: 1.62;
+    color: var(--ink-dim);
+    text-align: right;
+}
+
+/* ================= 미니맵 ================= */
+#minimapPanel {
+    position: absolute;
+    right: 16px;
+    top: 120px;
+    padding: 9px;
+}
+
+#minimap {
+    display: block;
+    width: 146px;
+    height: 146px;
+    image-rendering: pixelated;
+    background: rgba(12, 8, 5, 0.55);
+    box-shadow: inset 0 0 0 1px rgba(10, 6, 3, 0.9);
+}
+
+#minimapLabel {
+    margin-top: 6px;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-align: center;
+    color: #b08c4e;
+}
+
+/* ================= 힌트 / 이정표 ================= */
+#hintBtn {
+    position: absolute;
+    right: 16px;
+    top: 308px;
+    width: 164px;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-align: center;
+    color: #e6c88d;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: color 120ms steps(2, end);
+}
+
+#hintBtn:hover {
+    color: #ffe2a3;
+}
+
+#hintBtn.on {
+    color: #ffd071;
+}
+
+/* 화면 하단의 작은 나무 이정표 표시 */
+#signpost {
+    position: absolute;
+    left: 50%;
+    bottom: 148px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 18px 9px 14px;
+    font-size: 12.5px;
+    color: #f0d49a;
+    opacity: 0;
+    transition: opacity 260ms steps(3, end);
+}
+
+#signpost.show {
+    opacity: 1;
+}
+
+/* 목표 방향을 가리키는 화살표 (CSS 삼각형) */
+#signArrow {
+    width: 0;
+    height: 0;
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+    border-bottom: 17px solid #e9b653;
+    filter: drop-shadow(1px 1px 0 #2a1608);
+    transform-origin: 50% 65%;
+}
+
+#signText b {
+    color: #ffd071;
+}
+
+#signDist {
+    color: #b8934f;
+    font-size: 11px;
+}
+
+/* ================= [E] 조사 프롬프트 ================= */
+#prompt {
+    position: absolute;
+    left: 50%;
+    top: 56%;
+    transform: translate(-50%, -50%);
+    padding: 5px 13px;
+    font-size: 13px;
+    letter-spacing: 1px;
+    font-weight: 700;
+    color: #ffeaae;
+    background: linear-gradient(180deg, rgba(48, 31, 16, 0.92), rgba(20, 13, 7, 0.94));
+    border: 1px solid var(--brass);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.7), 0 0 12px rgba(0, 0, 0, 0.6);
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+    transition: opacity 110ms steps(3, end);
+    animation: promptPulse 1.6s steps(2, end) infinite;
+}
+
+@keyframes promptPulse {
+
+    0%,
+    100% {
+        color: #ffeaae;
+    }
+
+    50% {
+        color: #ffc457;
+    }
+}
+
+#prompt.hidden {
+    opacity: 0;
+}
+
+/* ================= 하단 메시지 창 ================= */
+#message {
+    /* 가장 넓은 패널이라 더 투명하게 — 뒤 풍경이 비친다 */
+    --plate-hi: rgba(58, 38, 21, 0.60);
+    --plate-lo: rgba(18, 12, 8, 0.68);
+    backdrop-filter: blur(1px);
+    position: absolute;
+    left: 50%;
+    bottom: 88px;
+    transform: translateX(-50%);
+    width: min(820px, calc(100vw - 56px));
+    min-height: 40px;
+    padding: 11px 20px;
+    font-size: 13.5px;
+    line-height: 1.58;
+    color: #f3d9a4;
+    white-space: pre-line;
+}
+
+/* ================= 인벤토리 ================= */
+#inventory {
+    position: absolute;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 9px;
+    align-items: center;
+}
+
+.slot {
+    position: relative;
+    width: 118px;
+    height: 44px;
+    padding: 5px 7px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.2;
+    color: #9e8355;
+    clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+    background:
+        repeating-linear-gradient(112deg, rgba(255, 226, 180, 0.025) 0 1px, rgba(0, 0, 0, 0.06) 1px 4px),
+        linear-gradient(168deg, rgba(44, 29, 17, 0.62), rgba(15, 10, 7, 0.72));
+    box-shadow:
+        inset 0 0 0 1px rgba(10, 6, 3, 0.9),
+        inset 0 0 18px rgba(0, 0, 0, 0.8);
+}
+
+.slot::before {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+    border: 1px solid rgba(150, 110, 56, 0.55);
+    pointer-events: none;
+}
+
+.slot.filled {
+    color: #ffdf9f;
+    background:
+        repeating-linear-gradient(112deg, rgba(255, 226, 180, 0.04) 0 1px, rgba(0, 0, 0, 0.05) 1px 4px),
+        linear-gradient(168deg, rgba(92, 60, 28, 0.70), rgba(35, 23, 14, 0.78));
+    box-shadow:
+        inset 0 0 0 1px rgba(10, 6, 3, 0.9),
+        inset 0 0 16px rgba(0, 0, 0, 0.55),
+        0 0 12px rgba(160, 110, 45, 0.3);
+}
+
+.slot.filled::before {
+    border-color: var(--brass-hi);
+}
+
+/* ================= 시대 전환 연출 ================= */
+#flash {
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    pointer-events: none;
+    background: #fff6e2;
+    opacity: 0;
+    mix-blend-mode: screen;
+}
+
+#flash.play {
+    animation: whiteFlash 1000ms steps(6, end) forwards;
+}
+
+@keyframes whiteFlash {
+    0% {
+        opacity: 0;
+    }
+
+    8% {
+        opacity: 0.95;
+    }
+
+    16% {
+        opacity: 0.12;
+    }
+
+    27% {
+        opacity: 0.80;
+    }
+
+    43% {
+        opacity: 0.20;
+    }
+
+    62% {
+        opacity: 0.35;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+#glitch {
+    position: fixed;
+    inset: 0;
+    z-index: 26;
+    pointer-events: none;
+    opacity: 0;
+    background:
+        repeating-linear-gradient(to bottom,
+            rgba(180, 210, 255, 0.16) 0 3px,
+            rgba(255, 150, 120, 0.13) 3px 7px,
+            rgba(0, 0, 0, 0) 7px 14px);
+    mix-blend-mode: screen;
+}
+
+#glitch.play {
+    animation: glitchMove 1000ms steps(11, end) forwards;
+}
+
+@keyframes glitchMove {
+    0% {
+        opacity: 0;
+        transform: translate(0, 0) scaleY(1);
+    }
+
+    10% {
+        opacity: .85;
+        transform: translate(-9px, 3px) scaleY(1.03);
+    }
+
+    20% {
+        opacity: .25;
+        transform: translate(8px, -5px) scaleY(0.97);
+    }
+
+    35% {
+        opacity: .75;
+        transform: translate(-5px, -2px) scaleY(1.05);
+    }
+
+    55% {
+        opacity: .35;
+        transform: translate(6px, 4px) scaleY(0.98);
+    }
+
+    78% {
+        opacity: .5;
+        transform: translate(-3px, 1px) scaleY(1.01);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(0, 0) scaleY(1);
+    }
+}
+
+/* ================= 데모 완료 ================= */
+#completeOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 900ms ease;
+    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.82));
+}
+
+#completeOverlay.show {
+    opacity: 1;
+}
+
+#completeBox {
+    width: min(600px, calc(100vw - 48px));
+    padding: 34px 36px;
+    text-align: center;
+    color: #f3d9a4;
+}
+
+#completeBox h1 {
+    margin: 0 0 6px;
+    font-size: 36px;
+    font-weight: 900;
+    color: #ffdf9e;
+    letter-spacing: 8px;
+}
+
+#completeBox .sub {
+    font-size: 12px;
+    letter-spacing: 6px;
+    color: #b8934f;
+    margin-bottom: 18px;
+}
+
+#completeBox p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.85;
+    white-space: pre-line;
+}
