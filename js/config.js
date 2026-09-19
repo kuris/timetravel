@@ -20,14 +20,15 @@ export const AGE_DATA = [
         start: { x: 0.0, z: 0.0 },
 
         // 늦은 오후에서 해질녘 사이를 오간다
+        // 강가 습지. 안개가 잦다. 이 시대의 하늘은 대체로 흐릿하다.
         weather: {
             band: [0.60, 0.80],
             speed: 0.0042,
             start: "clear",
-            pool: ["clear", "haze", "overcast", "haze", "rain", "clear"]
+            pool: ["haze", "clear", "haze", "overcast", "rain", "haze", "clear"]
         },
         fog: 0x7b6343,
-        fogDensity: 0.0105,
+        fogDensity: 0.0125,
 
         // 지평선 하늘 그라데이션 (위 -> 아래)
         sky: { top: 0x4a3a28, mid: 0x8e7148, bottom: 0xd2ad78 },
@@ -74,14 +75,15 @@ export const AGE_DATA = [
         start: { x: 0.0, z: 0.0 },
 
         // 해질녘 고정에 가깝다. 제의의 시간.
+        // 메마른 황토 언덕. 제의를 지내는 날은 하늘이 맑다.
         weather: {
             band: [0.72, 0.88],
             speed: 0.0030,
             start: "clear",
-            pool: ["clear", "haze", "overcast", "clear"]
+            pool: ["clear", "clear", "haze", "overcast", "clear"]
         },
         fog: 0x6d5334,
-        fogDensity: 0.0115,
+        fogDensity: 0.0105,
 
         sky: { top: 0x4e3320, mid: 0x9a6236, bottom: 0xd9a05c },
 
@@ -126,15 +128,16 @@ export const AGE_DATA = [
         start: { x: 2.8, z: 2.8 },
 
         // 이른 오후에서 늦은 오후로. 성벽 그림자가 길어진다.
+        // 낙동강 유역. 강안개와 비가 번갈아 온다.
         weather: {
             band: [0.48, 0.70],
             speed: 0.0038,
             start: "clear",
-            pool: ["clear", "haze", "overcast", "rain", "clear"]
+            pool: ["clear", "haze", "rain", "haze", "overcast", "clear"]
         },
 
         fog: 0x7f6a48,
-        fogDensity: 0.0115,
+        fogDensity: 0.0120,
 
         sky: { top: 0x47412c, mid: 0x8c7a4e, bottom: 0xd0b581 },
 
@@ -179,11 +182,12 @@ export const AGE_DATA = [
         start: { x: 0.0, z: 0.0 },
 
         // 저녁에서 밤으로. 등불이 살아나는 시간.
+        // 저녁. 땅이 식으면서 안개가 내려앉는다.
         weather: {
             band: [0.80, 0.91],
             speed: 0.0026,
             start: "clear",
-            pool: ["clear", "haze", "rain", "overcast", "clear"]
+            pool: ["clear", "haze", "overcast", "haze", "rain", "clear"]
         },
         fog: 0x453f4e,
         fogDensity: 0.0150,
@@ -232,15 +236,16 @@ export const AGE_DATA = [
         start: { x: 6.7, z: 6.7 },
 
         // 한낮의 마른 햇볕
+        // 한낮. 대체로 맑고, 가끔 소나기가 지나간다.
         weather: {
             band: [0.40, 0.62],
             speed: 0.0040,
             start: "clear",
-            pool: ["clear", "haze", "overcast", "rain", "clear"]
+            pool: ["clear", "clear", "haze", "rain", "overcast", "clear"]
         },
 
         fog: 0x85714c,
-        fogDensity: 0.0110,
+        fogDensity: 0.0100,
 
         sky: { top: 0x4e4a30, mid: 0x928052, bottom: 0xd6bc8a },
 
@@ -286,15 +291,16 @@ export const AGE_DATA = [
         night: true,
 
         // 해질녘에서 초저녁. 간판과 가로등이 켜지는 시간.
+        // 도시. 맑은 날에도 박무가 걷히지 않는다.
         weather: {
             band: [0.78, 0.90],
             speed: 0.0028,
-            start: "clear",
-            pool: ["clear", "haze", "rain", "overcast", "clear"]
+            start: "haze",
+            pool: ["haze", "clear", "haze", "rain", "overcast", "haze"]
         },
 
         fog: 0x4a4c56,
-        fogDensity: 0.0135,
+        fogDensity: 0.0145,
 
         sky: { top: 0x2a3042, mid: 0x5a5462, bottom: 0xa08470 },
 
