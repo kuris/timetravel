@@ -118,19 +118,19 @@ export const AGE_DATA = [
         name: "조선 시대 · 한양 외곽 마을",
         goal: "저녁 마을의 기록 3개를 조사하세요.",
         total: 3,
-        start: { x: -7.5, z: -7.2 },
+        start: { x: 0.0, z: 0.0 },
 
         // 저녁에서 밤으로. 등불이 살아나는 시간.
         weather: {
-            band: [0.88, 0.99],
+            band: [0.80, 0.91],
             speed: 0.0026,
             start: "clear",
             pool: ["clear", "haze", "rain", "overcast", "clear"]
         },
-        fog: 0x353140,
+        fog: 0x453f4e,
         fogDensity: 0.0150,
 
-        sky: { top: 0x161a26, mid: 0x3b3546, bottom: 0x7d6154 },
+        sky: { top: 0x24283c, mid: 0x52465c, bottom: 0x9d7a63 },
 
         ridges: [
             { dist: 74, height: 32, color: 0x4b4557, opacity: 0.58, base: -6 },
