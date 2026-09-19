@@ -32,6 +32,12 @@ export const NPC_PALETTES = {
         skin: [0xd8a877, 0xc99a68],
         hair: [0x2e2015, 0x241a10]
     },
+    modern: {
+        // 근현대는 색이 다양해진다. 그게 시대 차이로 읽힌다.
+        cloth: [0x4a6a8a, 0x8a4a3a, 0x3f5a48, 0x6a5a8a, 0xb0a698, 0x5a5f6a, 0x8a7a3a],
+        skin: [0xd8a877, 0xc99a68, 0xe0b184],
+        hair: [0x241810, 0x1c120b, 0x3a2a1a]
+    },
     joseon: {
         // 흰 옷이 밤에도 눈에 띈다
         cloth: [0xd8d2c4, 0xc7c0ae, 0xe0dbcd, 0xb9b2a0],

@@ -189,33 +189,36 @@ export function investigateObject(item) {
     updateUI();
 }
 
+/**
+ * 한 시대의 조사를 모두 마쳤을 때.
+ *
+ * 마지막 시대가 아니면 시간의 문이 깨어나고,
+ * 마지막 시대라면 여기서 이야기가 끝난다.
+ */
 export function handleAgeCompletion() {
     const age = AGE_DATA[G.currentAge];
 
     if (G.ageProgress < age.total || G.ageCompleteTriggered) return "";
     G.ageCompleteTriggered = true;
 
-    if (G.currentAge === 0) {
+    const isLast = G.currentAge >= AGE_DATA.length - 1;
+
+    if (!isLast) {
         activateGate();
-        return "세 유물의 기억이 서로 맞물립니다.\n시간의 문이 깨어났습니다.";
+        return (age.completeText || "흩어진 기록이 서로 맞물립니다.") +
+            "\n시간의 문이 깨어났습니다.";
     }
 
-    if (G.currentAge === 1) {
-        activateGate();
-        return "고인돌 제단의 문양과 청동 방울 소리가 하나의 리듬이 됩니다.\n시간의 문이 깨어났습니다.";
-    }
+    // 마지막 시대 — 모든 시대가 하나로 이어진다
+    AudioSystem.playGate();
+    G.demoFinished = true;
+    setTimeout(() => {
+        dom.completeOverlay.classList.add("show");
+    }, 1200);
 
-    if (G.currentAge === 2) {
-        AudioSystem.playGate();
-        G.demoFinished = true;
-        setTimeout(() => {
-            dom.completeOverlay.classList.add("show");
-        }, 800);
-        return "저녁 마을의 기록이 모두 이어졌습니다.\n시간유적의 첫 복원이 완료되었습니다.";
-    }
-
-    return "";
+    return age.completeText || "모든 흔적을 조사했습니다.";
 }
+
 
 export function activateGate() {
     if (!G.activeGate || G.activeGate.active) return;

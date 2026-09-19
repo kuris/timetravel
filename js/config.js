@@ -13,6 +13,7 @@ export const AGE_DATA = [
     // ---------------------------------------------------------- 신석기
     {
         name: "신석기 시대 · 한반도 강가 마을",
+        completeText: "세 유물이 한 자리에서 나왔습니다.\\n마을이 불탄 해에, 누군가를 여기 묻었습니다.",
         goal: "마을 주변의 유물 3개를 조사하고 회수하세요.",
         total: 3,
         start: { x: -7.0, z: 9.0 },
@@ -66,6 +67,7 @@ export const AGE_DATA = [
     // ---------------------------------------------------------- 청동기
     {
         name: "청동기 시대 · 고인돌 제단",
+        completeText: "부러진 동검과 제단의 문양이 같은 곳을 가리킵니다.\\n사람들은 그 자리를 덮지 않고 표시해 두었습니다.",
         goal: "제단 주변의 청동기 흔적 3개를 조사하세요.",
         total: 3,
         start: { x: 0.0, z: 0.0 },
@@ -116,6 +118,7 @@ export const AGE_DATA = [
     // ---------------------------------------------------------- 삼국시대
     {
         name: "삼국시대 · 낙동강 유역의 마을",
+        completeText: "성을 쌓으면서도 그 돌만은 건드리지 않았습니다.\\n이유는 아무도 적어 두지 않았습니다.",
         goal: "성벽이 꺾인 자리의 기록 3개를 조사하세요.",
         total: 3,
         // 화면 좌표 (0, -4) — 마을 한가운데, 성벽이 화면에 들어오는 자리
@@ -168,6 +171,7 @@ export const AGE_DATA = [
     // ---------------------------------------------------------- 조선
     {
         name: "조선 시대 · 한양 외곽 마을",
+        completeText: "관아의 금기와 장승의 시선이 같은 곳을 향합니다.\\n기억이 문서로 넘어왔습니다.",
         night: true,
         goal: "저녁 마을의 기록 3개를 조사하세요.",
         total: 3,
@@ -214,6 +218,113 @@ export const AGE_DATA = [
             sepia: 0.22,
             contrast: 1.06,
             vignette: 0.78
+        }
+    },
+
+    // ---------------------------------------------------------- 1970년대
+    {
+        name: "1970년대 · 시골 마을",
+        completeText: "포크레인이 멈춘 자리에 삽이 그대로 남았습니다.\\n이유를 아는 사람은 이미 없었습니다.",
+        goal: "멈춘 공사의 흔적 3개를 조사하세요.",
+        total: 3,
+        // 화면 좌표 (0, 5) — 구멍가게 앞 신작로
+        start: { x: -3.5, z: -3.5 },
+
+        // 한낮의 마른 햇볕
+        weather: {
+            band: [0.40, 0.62],
+            speed: 0.0040,
+            start: "clear",
+            pool: ["clear", "haze", "overcast", "rain", "clear"]
+        },
+
+        fog: 0x85714c,
+        fogDensity: 0.0110,
+
+        sky: { top: 0x4e4a30, mid: 0x928052, bottom: 0xd6bc8a },
+
+        ridges: [
+            { dist: 74, height: 34, color: 0x9a9066, opacity: 0.55, base: -6 },
+            { dist: 56, height: 25, color: 0x847b56, opacity: 0.60, base: -5 },
+            { dist: 42, height: 17, color: 0x6a6444, opacity: 0.68, base: -4 },
+            { dist: 30, height: 10, color: 0x545037, opacity: 0.75, base: -3 }
+        ],
+
+        intro: "햇살이 비추는 시골 마을입니다.\n전봇대가 하늘을 가르고 신작로에 버스가 들어옵니다.\n마을 안길 공사가 한 자리에서 멈춰 있습니다.",
+
+        light: {
+            hemiSky: 0xffeecb,
+            hemiGround: 0x4e4630,
+            hemiIntensity: 0.62,
+            ambient: 0xd2b489,
+            ambientIntensity: 0.30,
+            sun: 0xfff0cd,
+            sunIntensity: 2.15,
+            sunPos: [-14, 19, -14],
+            fillIntensity: 0.20
+        },
+
+        grade: {
+            tint: [1.05, 0.99, 0.83],
+            lift: [0.032, 0.024, 0.014],
+            sat: 0.64,
+            sepia: 0.26,
+            contrast: 1.18,
+            vignette: 0.98
+        }
+    },
+
+    // ---------------------------------------------------------- 2000년대
+    {
+        name: "2000년대 · 한강변 신도시",
+        completeText: "모든 흔적을 조사했습니다.\\n\\n신석기의 아이가 묻힌 자리를,\\n여섯 시대의 사람들이 차례로 비껴갔습니다.\\n\\n아무도 기억하지 못했지만, 아무도 잊지 않았습니다.",
+        goal: "발굴 현장의 기록 3개를 조사하세요.",
+        total: 3,
+        // 화면 좌표 (0, 2) — 교차로 한가운데
+        start: { x: -1.4, z: -1.4 },
+        night: true,
+
+        // 해질녘에서 초저녁. 간판과 가로등이 켜지는 시간.
+        weather: {
+            band: [0.78, 0.90],
+            speed: 0.0028,
+            start: "clear",
+            pool: ["clear", "haze", "rain", "overcast", "clear"]
+        },
+
+        fog: 0x4a4c56,
+        fogDensity: 0.0135,
+
+        sky: { top: 0x2a3042, mid: 0x5a5462, bottom: 0xa08470 },
+
+        ridges: [
+            { dist: 74, height: 32, color: 0x585c6e, opacity: 0.55, base: -6 },
+            { dist: 56, height: 24, color: 0x484c5c, opacity: 0.62, base: -5 },
+            { dist: 42, height: 16, color: 0x393d4c, opacity: 0.72, base: -4 },
+            { dist: 30, height: 10, color: 0x2e313e, opacity: 0.80, base: -3 }
+        ],
+
+        intro: "한강이 흐르는 작은 신도시입니다.\n아파트와 상가, 편의점 불빛이 이어집니다.\n길 한가운데, 울타리에 둘러싸인 돌 하나가 남아 있습니다.",
+
+        light: {
+            hemiSky: 0x8d93bc,
+            hemiGround: 0x3a3630,
+            hemiIntensity: 1.70,
+            ambient: 0x827e9a,
+            ambientIntensity: 1.15,
+            sun: 0xe2e6f8,
+            sunIntensity: 1.85,
+            sunPos: [-12, 15, -14],
+            fillIntensity: 0.22
+        },
+
+        grade: {
+            tint: [1.02, 1.00, 1.02],
+            lift: [0.080, 0.076, 0.086],
+            sat: 0.66,
+            sepia: 0.18,
+            contrast: 1.08,
+            vignette: 0.82
         }
     }
 ];

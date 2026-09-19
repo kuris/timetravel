@@ -245,6 +245,30 @@ export const AudioSystem = {
             melodyWave: "sine", melodyLevel: 0.032, melodyLen: 2.8,
             scale: [196, 220, 262, 294, 349, 392],
             ambient: "cricket"
+        },
+        {
+            // 1970: 마른 바람, 멀리서 오는 라디오와 경운기
+            windCutoff: 520,
+            windLevel: 0.044,
+            waterLevel: 0.010,
+            drumMin: 7000, drumMax: 12000,
+            drumFreq: 78, drumDecay: 0.5, drumLevel: 0.10,
+            melodyMin: 8000, melodyMax: 14000,
+            melodyWave: "sine", melodyLevel: 0.026, melodyLen: 2.2,
+            scale: [196, 220, 262, 294, 349, 392],
+            ambient: "village"
+        },
+        {
+            // 2000: 낮은 도시 소음. 악기는 거의 없다.
+            windCutoff: 260,
+            windLevel: 0.030,
+            waterLevel: 0.008,
+            drumMin: 11000, drumMax: 18000,
+            drumFreq: 58, drumDecay: 0.9, drumLevel: 0.07,
+            melodyMin: 11000, melodyMax: 19000,
+            melodyWave: "sine", melodyLevel: 0.020, melodyLen: 3.4,
+            scale: [147, 175, 196, 233, 262, 294],
+            ambient: "city"
         }
     ],
 
@@ -342,6 +366,24 @@ export const AudioSystem = {
                 for (let i = 0; i < hits; i++) {
                     this.tone(1400 + Math.random() * 600, 0.10, "triangle", 0.020, i * 0.26);
                     this.noiseBurst(0.05, 0.014, "highpass", 3000);
+                }
+            } else if (cfg.ambient === "village") {
+                // 멀리서 개 짖는 소리 / 경운기 소리
+                if (Math.random() > 0.5) {
+                    this.tone(300, 0.16, "sawtooth", 0.014, 0, 210);
+                    this.tone(280, 0.14, "sawtooth", 0.011, 0.24, 200);
+                } else {
+                    for (let i = 0; i < 8; i++) {
+                        this.tone(70 + Math.random() * 20, 0.09, "square", 0.009, i * 0.12);
+                    }
+                }
+            } else if (cfg.ambient === "city") {
+                // 멀리 지나가는 차 한 대
+                this.noiseBurst(1.8, 0.016, "lowpass", 380);
+                if (Math.random() > 0.7) {
+                    // 아주 가끔 들리는 경적
+                    this.tone(440, 0.22, "square", 0.010, 0.6);
+                    this.tone(392, 0.18, "square", 0.008, 0.62);
                 }
             } else {
                 // 밤의 풀벌레

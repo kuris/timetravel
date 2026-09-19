@@ -2,13 +2,13 @@
  * 3시대 — 조선 한양 외곽 마을
  */
 import { addBlob, addBox, addCone, addCylinder, addCylinderBetween, addFlatCircle, makeBasicMat, makeMat } from "../build.js";
-import { addFence } from "./neolithic.js";
+import { addFence, createTimeGate } from "./neolithic.js";
 import { registerInteractable } from "../interaction.js";
 import { addMapMarker } from "../minimap.js";
 import { pick, rand, randRange } from "../rng.js";
 import { addBanner, addBridge, addCart, addCropField, addHayStack, addJarPlatform, addLaundryLine, addMarketStall, addStoneWallRun } from "../props.js";
 import { addCow, addDog, addVillager, addWorker } from "../npc.js";
-import { S } from "../landmarks.js";
+import { GATE_SPOT, S } from "../landmarks.js";
 import { G } from "../state.js";
 import { terrainHeight } from "../terrain.js";
 import { addGround, addPond, addStonePath, addTreeLine, scatterGrass, scatterStones } from "../world.js";
@@ -201,6 +201,9 @@ export function buildJoseon() {
         glowColor: 0x9fe0ff,
         description: "장승의 문양\n\n마을을 지키는 장승에 새겨진 표식입니다.\n세 장승이 모두 같은 곳을 바라보고 있습니다. 마을 동쪽, 그 돌이 있는 자리입니다."
     });
+
+    // ---- 시간의 문: 장승이 바라보는 그 돌 ----
+    G.activeGate = createTimeGate(GATE_SPOT.x, GATE_SPOT.z, GATE_SPOT.rot);
 }
 
 export function addHanokRoof(parent, w, d, y, opts = {}) {

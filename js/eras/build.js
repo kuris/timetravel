@@ -7,6 +7,8 @@ import { AGE_DATA } from "../config.js";
 import { buildBronze } from "./bronze.js";
 import { buildJoseon } from "./joseon.js";
 import { buildSamguk } from "./samguk.js";
+import { build1970 } from "./modern1970.js";
+import { build2000 } from "./modern2000.js";
 import { buildNeolithic } from "./neolithic.js";
 import { resetHint } from "../hint.js";
 import { createPlayer } from "../player.js";
@@ -66,6 +68,28 @@ export const TEX_PALETTE = [
         wood: [0x4d3620, 0x221609],
         water: [0x38414f, 0x9fb0bd],
         cloth: [0x4f4a52, 0x24202a]
+    },
+    // 1970: 마른 흙과 시멘트
+    {
+        dirtBase: 0x87724f,
+        dirtSpots: [0xa08a5e, 0x6b5b3e, 0x967f55, 0x5c5340, 0xb59a6a],
+        stoneBase: 0x8e8980,
+        stoneSpots: [0xa8a49a, 0x6f6a62, 0x7a8470],
+        thatch: [0xa88a4e, 0x63481f, 0xd0ac6a],
+        wood: [0x66421f, 0x2d1c0c],
+        water: [0x50666d, 0xcfdcd2],
+        cloth: [0x6f6a5c, 0x2f2b24]
+    },
+    // 2000: 아스팔트와 콘크리트
+    {
+        dirtBase: 0x6f6a60,
+        dirtSpots: [0x817b70, 0x57524a, 0x76705f, 0x8a8478, 0x615c54],
+        stoneBase: 0x9a958c,
+        stoneSpots: [0xb0aba2, 0x76716a, 0x86907c],
+        thatch: [0x9a8a62, 0x5c4f30, 0xc2ad7e],
+        wood: [0x5c4630, 0x2b2118],
+        water: [0x46606c, 0xcfdcd2],
+        cloth: [0x6a6a70, 0x2b2b30]
     }
 ];
 
@@ -100,6 +124,8 @@ export function buildTextures(index) {
         wood: makeWoodTexture("#dcd2c2", GRUNGE_DARK),
         water: makeWaterTexture("#cfd6d4", GRUNGE_LIGHT),
         cloth: makeWoodTexture("#dcd6cc", GRUNGE_DARK),
+        // 도로 포장 (근현대 시대에서만 쓴다)
+        asphalt: makeStoneTexture("#d6d2ca", [GRUNGE_DARK, "rgba(60,58,54,ALPHA)", GRUNGE_LIGHT]),
         mist: makeMistTexture()
     };
 }
@@ -155,6 +181,8 @@ export function buildAge(index) {
     if (index === 1) buildBronze();
     if (index === 2) buildSamguk();
     if (index === 3) buildJoseon();
+    if (index === 4) build1970();
+    if (index === 5) build2000();
 
     // ---- 대기 연출: 지면 안개 + 떠도는 먼지 ----
     addMistLayers(age.fog, age.night ? 5 : 4);
