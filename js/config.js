@@ -43,13 +43,13 @@ export const AGE_DATA = [
         light: {
             hemiSky: 0xffdcab,
             hemiGround: 0x4a3724,
-            hemiIntensity: 0.42,
+            hemiIntensity: 0.52,
             ambient: 0xc79a6e,
-            ambientIntensity: 0.16,
+            ambientIntensity: 0.24,
             sun: 0xffd9a4,
-            sunIntensity: 1.95,
+            sunIntensity: 2.10,
             sunPos: [-13, 14, -16],
-            fillIntensity: 0.13
+            fillIntensity: 0.16
         },
 
         // 후처리 그레이딩: 바랜 세피아 사진
@@ -68,7 +68,7 @@ export const AGE_DATA = [
         name: "청동기 시대 · 고인돌 제단",
         goal: "제단 주변의 청동기 흔적 3개를 조사하세요.",
         total: 3,
-        start: { x: -8.2, z: 7.5 },
+        start: { x: 0.0, z: 0.0 },
 
         // 해질녘 고정에 가깝다. 제의의 시간.
         weather: {
@@ -94,13 +94,13 @@ export const AGE_DATA = [
         light: {
             hemiSky: 0xffc78c,
             hemiGround: 0x482d1b,
-            hemiIntensity: 0.38,
-            ambient: 0xb87a49,
-            ambientIntensity: 0.15,
-            sun: 0xffb168,
-            sunIntensity: 1.85,
+            hemiIntensity: 0.50,
+            ambient: 0xc08a58,
+            ambientIntensity: 0.22,
+            sun: 0xffbb76,
+            sunIntensity: 2.15,
             sunPos: [-15, 13.5, -15],
-            fillIntensity: 0.12
+            fillIntensity: 0.14
         },
 
         grade: {
@@ -142,26 +142,25 @@ export const AGE_DATA = [
         intro: "저녁빛이 내려앉은 한양 외곽 마을입니다.\n등불 아래 돌담과 장승이 길게 그림자를 늘어뜨립니다.\n\n어사패, 낡은 문서, 장승의 문양을 조사하세요.",
 
         light: {
-            // 달빛. 밤이지만 길과 건물이 읽혀야 한다.
-            hemiSky: 0x7078a8,
-            hemiGround: 0x2b241d,
-            hemiIntensity: 1.05,
-            ambient: 0x5d5878,
-            ambientIntensity: 0.66,
-            sun: 0xc6d2f2,
-            sunIntensity: 1.55,
+            hemiSky: 0x8189b8,
+            hemiGround: 0x38302a,
+            hemiIntensity: 1.60,
+            ambient: 0x796f92,
+            ambientIntensity: 1.05,
+            sun: 0xdbe2f8,
+            sunIntensity: 2.05,
             sunPos: [-11, 15, -15],
             fillIntensity: 0.22
         },
 
         // 밤이지만 전체 게임의 낡은 필터는 유지한다
         grade: {
-            tint: [1.00, 1.00, 1.06],
-            lift: [0.072, 0.070, 0.088],
-            sat: 0.58,
-            sepia: 0.18,
-            contrast: 1.10,
-            vignette: 0.85
+            tint: [1.06, 1.00, 0.97],
+            lift: [0.092, 0.082, 0.090],
+            sat: 0.62,
+            sepia: 0.22,
+            contrast: 1.06,
+            vignette: 0.78
         }
     }
 ];
