@@ -69,12 +69,12 @@ export function buildNeolithic() {
     }
 
     // ---- 나무 울타리 ----
-    addFence([P(-8, 9), P(-6, 2), P(-7, -6), P(-4, -13)]);
-    addFence([P(12, 9), P(14, 2), P(13, -5)]);
+    addFence([P(-8, 6), P(-6, 2), P(-7, -6), P(-4, -13)]);
+    addFence([P(12, 6), P(14, 2), P(13, -5)]);
     addFence([P(-20, 2), P(-18, -5)]);
 
     // 낮은 돌담 (울타리와 겹치지 않는 구간)
-    addStoneWallRun([P(0, 10), P(8, 11)], 0.75);
+    addStoneWallRun([P(0, 6), P(8, 6.5)], 0.75);
     addStoneWallRun([P(-14, -10), P(-6, -11)], 0.7);
 
     // ---- 생활의 밀도 ----
@@ -110,7 +110,7 @@ export function buildNeolithic() {
     for (const [su, sv] of [[-15, 0], [5, -8], [20, 5], [-7, -12]]) {
         q = P(su, sv); addStonePile(q[0], q[1]);
     }
-    for (const [su, sv] of [[-2, 8], [7, 10], [-11, 8]]) {
+    for (const [su, sv] of [[-2, 6], [7, 6.5], [-11, 5.5]]) {
         q = P(su, sv); addShellHeap(q[0], q[1]);
     }
 
@@ -124,11 +124,11 @@ export function buildNeolithic() {
 
     // ---- 강가 ----
     // 강변에 올려 둔 통나무배
-    for (const [cu, cv, cr] of [[-13, 9, 0.9], [-1, 11, 0.55], [9, 12, 1.25], [17, 10, 0.3]]) {
+    for (const [cu, cv, cr] of [[-13, 6.6], [-1, 7.0], [9, 6.8], [17, 6.4]].map((a,i)=>[a[0],a[1],[0.9,0.55,1.25,0.3][i]])) {
         q = P(cu, cv); addCanoe(q[0], q[1], cr);
     }
     // 그물 말리는 틀
-    for (const [nu, nv, nr] of [[-18, 8, 0.7], [4, 13, -0.3], [14, 8, 0.4]]) {
+    for (const [nu, nv, nr] of [[-18, 6.2, 0.7], [4, 6.8, -0.3], [14, 6.0, 0.4]]) {
         q = P(nu, nv); addFishingNet(q[0], q[1], nr);
     }
 
@@ -146,28 +146,28 @@ export function buildNeolithic() {
     // ================================================================
     // 사람과 짐승 — 적이 아니다. 각자 자기 일을 한다.
     // ================================================================
-    addVillager([P(-2, 2), P(4, 3), P(8, 7), P(1, 8), P(-5, 5)], "neolithic");
+    addVillager([P(-2, 2), P(4, 3), P(8, 6), P(1, 6), P(-5, 5)], "neolithic");
     addVillager([P(-12, 3), P(-16, 5), P(-18, 0), P(-13, -3)], "neolithic");
     addVillager([P(10, 4), P(15, 6), P(17, 1), P(12, -2)], "neolithic");
     addVillager([P(-6, -8), P(-12, -10), P(-15, -5), P(-9, -3)], "neolithic", { speed: 0.8 });
     addVillager([P(4, -7), P(9, -10), P(14, -7), P(8, -4)], "neolithic");
-    addVillager([P(-8, 10), P(-2, 12), P(4, 11), P(-4, 8)], "neolithic", { speed: 0.9 });
-    addVillager([P(16, 9), P(20, 7), P(18, 3), P(13, 5)], "neolithic", { speed: 0.85 });
+    addVillager([P(-8, 5), P(-2, 6.5), P(4, 6), P(-4, 4)], "neolithic", { speed: 0.9 });
+    addVillager([P(16, 6), P(20, 6.5), P(18, 3), P(13, 5)], "neolithic", { speed: 0.85 });
 
     // 화덕 앞에서 불을 지피는 사람
     q = P(0.8, 0.6); addWorker(q[0], q[1], "neolithic", { rot: -2.3 });
     q = P(-11.4, -6.4); addWorker(q[0], q[1], "neolithic", { rot: 0.9 });
     // 조개더미에서 일하는 사람
-    q = P(-2, 9); addWorker(q[0], q[1], "neolithic", { rot: 0.7 });
+    q = P(-2, 5.4); addWorker(q[0], q[1], "neolithic", { rot: 0.7 });
     // 그물 손질
-    q = P(-17, 8); addWorker(q[0], q[1], "neolithic", { rot: -0.9 });
+    q = P(-17, 5.6); addWorker(q[0], q[1], "neolithic", { rot: -0.9 });
     // 배 손질
-    q = P(0, 11); addWorker(q[0], q[1], "neolithic", { rot: 1.6 });
+    q = P(0, 6.2); addWorker(q[0], q[1], "neolithic", { rot: 1.6 });
     // 밭일
     q = P(-21, -4); addWorker(q[0], q[1], "neolithic", { rot: 0.3 });
 
     // 마을 개
-    addDog([P(0, 4), P(6, 2), P(2, 8), P(-5, 3)]);
+    addDog([P(0, 4), P(6, 2), P(2, 6), P(-5, 3)]);
     addDog([P(-12, -6), P(-6, -9), P(-15, -2)]);
 
     // 강 위를 도는 새떼
@@ -177,7 +177,7 @@ export function buildNeolithic() {
     // ================================================================
     // 조사 대상 3개
     // ================================================================
-    q = P(-3, 9);
+    q = P(-3, 5.6);
     const pottery = createPotteryShard(q[0], q[1]);
     registerInteractable({
         name: "토기",

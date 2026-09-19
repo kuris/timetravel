@@ -544,7 +544,7 @@ export function buildSamguk() {
     // ================================================================
     q = P(19, 6); addTumulus(q[0], q[1], 3.6, 2.6);
     q = P(25, 2); addTumulus(q[0], q[1], 2.8, 2.0);
-    q = P(14, 9); addTumulus(q[0], q[1], 2.2, 1.6);
+    q = P(14, 5.5); addTumulus(q[0], q[1], 2.2, 1.6);
 
     // ================================================================
     // 마을 (화면 가운데)
@@ -570,7 +570,7 @@ export function buildSamguk() {
     q = P(-12, -9); addForge(q[0], q[1], 0.5);
 
     // 물레방아 — 강가에 붙여 세운다
-    q = P(-6, 9); addWaterMill(q[0], q[1], 0.9);
+    q = P(-6, 6.4); addWaterMill(q[0], q[1], 0.9);
 
     // 고상 창고
     q = P(0, 7); addRaisedGranary(q[0], q[1], 0.3);
@@ -592,7 +592,7 @@ export function buildSamguk() {
     q = P(-3, -12); addStonePile(q[0], q[1]);
 
     // 목책으로 두른 안마당
-    addPalisade([P(-8, 7), P(-2, 8)]);
+    addPalisade([P(-8, 5.5), P(-2, 6)]);
     addStoneWallRun([P(6, 0), P(11, 0)], 0.9);
     addStoneWallRun([P(-16, 1), P(-12, 1)], 0.9);
 
@@ -605,7 +605,7 @@ export function buildSamguk() {
     q = P(8, -9); addCropField(q[0], q[1], -0.3, 5, 4);
 
     // ---- 강을 건너는 나무다리 ----
-    const br1 = P(-14, 8), br2 = P(-16, 18);
+    const br1 = P(-14, 5), br2 = P(-16, 17);
     addBridge(br1[0], br1[1], br2[0], br2[1], 1.8);
 
     // ================================================================
@@ -615,7 +615,7 @@ export function buildSamguk() {
     addVillager([P(-12, 2), P(-17, 4), P(-19, -2), P(-13, -4)], "samguk", { speed: 0.85 });
     addVillager([P(10, -6), P(15, -9), P(19, -6), P(13, -3)], "samguk", { hat: "straw" });
     addVillager([P(-6, -12), P(-14, -16), P(-18, -12), P(-9, -8)], "samguk", { speed: 0.9 });
-    addVillager([P(18, 2), P(23, 5), P(20, 9), P(15, 5)], "samguk", { hat: "straw", speed: 0.75 });
+    addVillager([P(18, 2), P(23, 5), P(20, 6), P(15, 5)], "samguk", { hat: "straw", speed: 0.75 });
 
     // 대장간에서 쇠를 두드리는 사람
     q = P(-11.5, -9.5); addWorker(q[0], q[1], "samguk", { rot: -0.9 });
@@ -628,7 +628,7 @@ export function buildSamguk() {
 
     q = P(-8, -6); addCow(q[0], q[1], 0.7);
     q = P(-9.5, -4.5); addCow(q[0], q[1], 1.4);
-    q = P(-21, 8); addPig(q[0], q[1]);
+    q = P(-21, 5.5); addPig(q[0], q[1]);
     addDog([P(0, 4), P(7, 2), P(3, -4), P(-5, 0)]);
     addBirdFlock(P(-2, 16)[0], 10, P(-2, 16)[1], 14);
 
