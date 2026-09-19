@@ -65,82 +65,11 @@ export function buildJoseon() {
 
     addRiver();
 
-    // ---- 길: 마을을 가로지르는 큰길과 관아로 오르는 샛길 ----
-    let p1 = P(-26, -6), p2 = P(24, 6);
-    addStonePath(p1[0], p1[1], p2[0], p2[1], 2.6);
-    p1 = P(2, 2); p2 = P(13, 15);
-    addStonePath(p1[0], p1[1], p2[0], p2[1], 1.6);
-    p1 = P(-4, 0); p2 = P(-17, -10);
-    addStonePath(p1[0], p1[1], p2[0], p2[1], 1.4);
+    // 큰길도 관아도 기와집도 놓지 않는다.
+    // 조선의 밤에 남은 것은 장승 셋과 연못, 그리고 누가 걸어 두고 간 등불뿐이다.
+    let q;
 
-    // ---- 관아 (위-오른쪽) ----
-    let q = P(13, 18);
-    addGovernmentGate(q[0], q[1], 0.35);
 
-    addStoneWallRun([P(4, 15), P(8, 17), P(10, 19)], 1.35);
-    addStoneWallRun([P(18, 17), P(22, 13), P(22, 8)], 1.35);
-    addStoneWallRun([P(22, 8), P(16, 6)], 1.2);
-
-    q = P(7, 15); addBanner(q[0], q[1], 0.4, 0x8c3a2a);
-    q = P(19, 15); addBanner(q[0], q[1], -0.3, 0x8c3a2a);
-
-    // ---- 기와집 ----
-    q = P(1, 14); addGiwa(q[0], q[1], -0.28, 1.00);
-    q = P(-12, 12); addGiwa(q[0], q[1], 0.42, 0.92);
-    q = P(20, -4); addGiwa(q[0], q[1], -0.75, 0.88);
-
-    // ---- 초가집 ----
-    const chogas = [
-        [-20, 9, 0.35, 1.00],
-        [-14, 15, -0.55, 0.92],
-        [-8, 5, 0.22, 1.05],
-        [7, 7, -0.42, 0.95],
-        [-22, -2, 0.62, 0.88],
-        [14, 2, -0.20, 0.98],
-        [-6, -9, 1.05, 0.90],
-        [4, -12, -0.7, 0.96],
-        [19, 8, 0.5, 0.9]
-    ];
-    for (const [u, v, rot, sc] of chogas) {
-        const c = P(u, v);
-        addChoga(c[0], c[1], rot, sc);
-    }
-
-    // ---- 돌담: 마당을 나눈다 ----
-    addStoneWallRun([P(-16, 7), P(-10, 7), P(-9, 2)], 0.95);
-    addStoneWallRun([P(-3, 10), P(4, 10)], 0.9);
-    addStoneWallRun([P(10, 4), P(11, -3)], 0.9);
-    addStoneWallRun([P(-24, 3), P(-18, 3)], 0.85);
-    addStoneWallRun([P(0, -7), P(8, -7)], 0.85);
-
-    // 마을 바깥 목책
-    addFence([P(-26, 12), P(-24, -8), P(-10, -18)]);
-    addFence([P(24, 10), P(25, -4)]);
-
-    // ---- 마당과 우물 (가운데) ----
-    q = P(0, 2); addWell(q[0], q[1]);
-    q = P(-5, 4); addJarPlatform(q[0], q[1], 0.3);
-    q = P(8, 12); addJarPlatform(q[0], q[1], -0.6);
-    let l1 = P(-12, 2), l2 = P(-8, 0);
-    addLaundryLine(l1[0], l1[1], l2[0], l2[1]);
-    l1 = P(16, 4); l2 = P(20, 2);
-    addLaundryLine(l1[0], l1[1], l2[0], l2[1]);
-
-    // ---- 텃밭 (왼쪽) ----
-    q = P(-21, 2); addCropField(q[0], q[1], 0.25, 6, 5);
-    q = P(-22, -6); addCropField(q[0], q[1], -0.4, 5, 4);
-    q = P(-13, -3); addCropField(q[0], q[1], 0.8, 4, 4);
-
-    // ---- 볏가리와 수레 (아래-왼쪽) ----
-    q = P(-13, -12); addHayStack(q[0], q[1], 1.0);
-    q = P(-15, -14); addHayStack(q[0], q[1], 0.85);
-    q = P(-11, -15); addHayStack(q[0], q[1], 0.75);
-    q = P(-7, -13); addCart(q[0], q[1], 0.6);
-    q = P(6, 3); addCart(q[0], q[1], -0.9);
-
-    // ---- 장터 가판 (가운데) ----
-    q = P(4, 4); addMarketStall(q[0], q[1], 0.2);
-    q = P(7, 0); addMarketStall(q[0], q[1], -0.5);
 
     // ---- 연못과 나무다리 (아래-오른쪽) ----
     q = P(16, -11); addPond(q[0], q[1], 3.8);
@@ -153,11 +82,11 @@ export function buildJoseon() {
     q = P(-19, -10); addJangseung(q[0], q[1], 0.15);
     q = P(-15, -11); addJangseung(q[0], q[1], 0.42);
 
-    // ---- 등불: 밤 마을의 뼈대 ----
+    // ---- 등불 ----
+    // 마을이 없으니 등불도 거의 없다. 길을 잃지 않을 만큼만 남긴다.
+    // 밤을 밝히는 나머지는 내가 세운 집에서 나와야 한다.
     const lanternSpots = [
-        [-2, 6], [5, 1], [11, 9], [-9, 3], [-16, 5], [2, -5],
-        [14, -2], [-20, 12], [8, 16], [18, 12], [-6, -6], [20, 0],
-        [-12, -8], [12, -12]
+        [-2, 6], [11, 9], [-16, 5], [14, -2], [-12, -8]
     ];
     for (const [lu, lv] of lanternSpots) {
         const c = P(lu, lv);
@@ -165,26 +94,8 @@ export function buildJoseon() {
     }
 
     // ---- 사람과 짐승 ----
-    // 밤이라 많지는 않다. 흰 옷이 어둠 속에서 눈에 띈다.
-    addVillager([P(-2, 4), P(4, 2), P(8, 6), P(2, 9), P(-4, 7)], "joseon", { hat: "gat" });
-    addVillager([P(-14, 4), P(-18, 6), P(-20, 0), P(-15, -2)], "joseon", { hat: "straw", speed: 0.8 });
-    addVillager([P(10, -2), P(16, -4), P(18, 2), P(12, 4)], "joseon");
-    addVillager([P(6, 13), P(12, 14), P(14, 10), P(8, 9)], "joseon", { hat: "gat", speed: 0.9 });
-    addVillager([P(-8, -10), P(-2, -12), P(2, -8), P(-5, -6)], "joseon", { hat: "straw" });
+    // 밤이고, 아무도 없다.
 
-    // 우물가에서 물 긷는 사람
-    q = P(-1, 4); addWorker(q[0], q[1], "joseon", { rot: 0.8, hat: "straw" });
-    // 가판 지키는 사람
-    q = P(4, 6); addWorker(q[0], q[1], "joseon", { rot: 0.1, hat: "gat" });
-    // 빨래하는 사람
-    q = P(-11, 0); addWorker(q[0], q[1], "joseon", { rot: -0.6 });
-    // 볏가리 옆에서 일하는 사람
-    q = P(-12, -14); addWorker(q[0], q[1], "joseon", { rot: 1.2, hat: "straw" });
-
-    // 소와 개
-    q = P(-9, -13); addCow(q[0], q[1], 0.7);
-    q = P(-6, -15); addCow(q[0], q[1], 1.4);
-    addDog([P(0, 0), P(6, -2), P(2, -8), P(-4, -2)]);
 
     // ---- 조사 대상 3개 ----
     q = P(11, 14);
@@ -195,7 +106,7 @@ export function buildJoseon() {
         pickup: true,
         range: 1.8,
         glowColor: 0xffd36d,
-        description: "어사패\n\n관아 앞 흙 속에 반쯤 묻혀 있었습니다.\n패에 새긴 글자는 닳았지만, 누군가 이 마을을 살피러 왔었다는 뜻입니다."
+        description: "어사패\n\n허물어진 관아 터의 흙 속에 반쯤 묻혀 있었습니다.\n패에 새긴 글자는 닳았지만, 누군가 이 마을을 살피러 왔었다는 뜻입니다."
     });
 
     q = P(1, 1);
@@ -206,7 +117,7 @@ export function buildJoseon() {
         pickup: true,
         range: 1.8,
         glowColor: 0xffe0a0,
-        description: "낡은 문서\n\n우물 옆 탁자에 눌려 있던 관아의 기록입니다.\n세금과 길 이름 사이에, 마을 동쪽 \"옛 돌\"을 건드리지 말라는 줄이 끼어 있습니다."
+        description: "낡은 문서\n\n메워진 우물가 돌 밑에 눌려 있던 관아의 기록입니다.\n세금과 길 이름 사이에, 마을 동쪽 \"옛 돌\"을 건드리지 말라는 줄이 끼어 있습니다."
     });
 
     registerInteractable({
@@ -215,7 +126,7 @@ export function buildJoseon() {
         pickup: false,
         range: 2.0,
         glowColor: 0x9fe0ff,
-        description: "장승의 문양\n\n마을을 지키는 장승에 새겨진 표식입니다.\n세 장승이 모두 같은 곳을 바라보고 있습니다. 마을 동쪽, 그 돌이 있는 자리입니다."
+        description: "장승의 문양\n\n마을 어귀를 지키던 장승에 새겨진 표식입니다.\n세 장승이 모두 같은 곳을 바라보고 있습니다. 마을 동쪽, 그 돌이 있는 자리입니다."
     });
 
     // ---- 시간의 문: 장승이 바라보는 그 돌 ----

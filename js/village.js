@@ -35,8 +35,14 @@ import { addSlateHouse, addWarehouse, addFlagPole, addSaemaulSign } from "./eras
 import { addShopBuilding, addConvenienceStore, addApartment, addHeritageEnclosure } from "./eras/modern2000.js";
 import { addJarPlatform, addStoragePit } from "./props.js";
 
-/** 건물 사이 최소 간격 (너무 붙으면 겹쳐 보인다) */
-const MIN_GAP = 4.0;
+/**
+ * 건물 사이 최소 간격.
+ *
+ * 4.0 은 너무 넓었다. 집 다섯 채가 서로 멀찍이 떨어져 서면
+ * 마을이 아니라 "들판에 흩어진 집"이 된다.
+ * 겹쳐 보이지 않을 만큼만 남기고 좁혀서, 지을수록 촘촘해지게 한다.
+ */
+const MIN_GAP = 2.9;
 
 /** 지을 수 있는지 살피는 거리 */
 export const BUILD_RANGE = 1.6;

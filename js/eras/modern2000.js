@@ -487,42 +487,12 @@ export function build2000(opts = {}) {
     addBridge(br1[0], br1[1], br2[0], br2[1], 3.2);
 
     // ================================================================
-    // 아파트 단지 (화면 위쪽 — 멀리 보이는 벽)
+    // 아파트도 상가도 없다.
+    // 길과 가로등과 가로수만 남은 빈 신도시 부지다.
+    // 여기 선 집은 여섯 시대에 걸쳐 내가 지어 온 것뿐이다.
     // ================================================================
-    // 화면 위쪽 멀리. 안개에 반쯤 묻혀 스카이라인이 된다.
-    // 강 바로 앞 둔치에 선다. (더 뒤로 보내면 강물 위에 서게 된다)
-    const apts = [
-        [-24, 19, 0.2, 13, 7.5],
-        [-12, 20, -0.1, 15, 7.0],
-        [1, 20, 0.15, 12, 8.0],
-        [14, 19, -0.25, 14, 7.0],
-        [26, 17.5, 0.3, 11, 6.5],
-        [-34, 16.5, 0.1, 10, 6.5],
-        [34, 15.5, -0.2, 12, 6.0]
-    ];
-    for (const [u, v, rot, fl, w] of apts) {
-        const c = P(u, v);
-        addApartment(c[0], c[1], rot, fl, w);
-    }
 
-    // ================================================================
-    // 상가 (도로변)
-    // ================================================================
-    q = P(-9, 11); addConvenienceStore(q[0], q[1], 0.15);
-    q = P(4, 14); addShopBuilding(q[0], q[1], -0.2, 3, { signColor: 0x8c3a2a });
-    q = P(14, 12); addShopBuilding(q[0], q[1], 0.1, 2, { signColor: 0x2f6a4a, width: 5.5 });
-    q = P(-21, 11); addShopBuilding(q[0], q[1], 0.4, 3, { signColor: 0x2f4a7a });
-    q = P(23, 9); addShopBuilding(q[0], q[1], -0.5, 2, { signColor: 0xb07a2a, width: 6.0 });
-    q = P(-4, -12); addShopBuilding(q[0], q[1], 0.25, 2, { signColor: 0x2f6a8a, width: 7.0 });
-    q = P(-14, -9); addShopBuilding(q[0], q[1], -0.3, 3, { signColor: 0x8c3a2a, width: 5.8 });
-    q = P(9, -12); addShopBuilding(q[0], q[1], 0.4, 2, { signColor: 0xb07a2a, width: 6.2 });
-    q = P(-24, -4); addShopBuilding(q[0], q[1], 0.6, 2, { signColor: 0x2f6a4a, width: 5.2 });
-    q = P(24, -14); addShopBuilding(q[0], q[1], -0.2, 3, { signColor: 0x2f4a7a, width: 6.4 });
-    q = P(17, 16); addShopBuilding(q[0], q[1], 0.15, 2, { signColor: 0x8c3a2a, width: 5.6 });
-    q = P(-22, 16); addShopBuilding(q[0], q[1], -0.4, 3, { signColor: 0xb07a2a, width: 6.0 });
 
-    // 버스 정류장
-    q = P(-6, 6); addBusStop(q[0], q[1], 0.78);
 
     // ================================================================
     // 콘크리트 전봇대와 가로등
@@ -577,75 +547,11 @@ export function build2000(opts = {}) {
         addPlanter(c[0], c[1], prot, pw, 1.3);
     }
 
-    // ---- 거리 소품 ----
-    for (const [bu, bv, brot] of [
-        [-10, 5, 0.78], [8, 2, 0.78], [-4, 14, -0.78], [18, -3, 0.78],
-        [-20, 3, 0.78], [3, -10, -0.78]
-    ]) {
-        const c = P(bu, bv);
-        addBench(c[0], c[1], brot);
-    }
-
-    for (const [tu, tv] of [[-9, 4], [7, 1], [-3, 13], [17, -4], [-19, 2], [2, -11],
-                            [12, 7], [-14, -4]]) {
-        const c = P(tu, tv);
-        addTrashBin(c[0], c[1]);
-    }
-
-    for (const [uu, uv, urot] of [[-13, 3, 0.4], [11, -1, -0.3], [-1, 16, 0.8],
-                                   [21, -6, 0.2]]) {
-        const c = P(uu, uv);
-        addUtilityBox(c[0], c[1], urot);
-    }
-
-    for (const [su, sv, srot, scol] of [
-        [-7, 3, 0.78, 0x2f6a4a], [9, 0, -2.36, 0x2f4a7a], [-3, 10, 0.78, 0x8c3a2a],
-        [15, -5, 0.78, 0x2f6a4a]
-    ]) {
-        const c = P(su, sv);
-        addRoadSign(c[0], c[1], srot, scol);
-    }
-
-    // 편의점 앞 자전거
-    for (const [cu, cv, crot] of [[-11, 8, 0.4], [-12, 7, 1.1], [5, 9, -0.3],
-                                   [19, 5, 0.7]]) {
-        const c = P(cu, cv);
-        addBicycle(c[0], c[1], crot);
-    }
 
     // 문화재 둘레 볼라드
     let v1 = P(14, -1), v2 = P(26, -3);
     addBollards(v1[0], v1[1], v2[0], v2[1], 7);
 
-    // 담장
-    addConcreteWall([P(-26, 18), P(-16, 19)], 1.7);
-    addConcreteWall([P(16, 17), P(26, 16)], 1.7);
-
-    // ================================================================
-    // 차
-    // ================================================================
-    // 큰길을 달리거나 길가에 세워 둔 차들
-    const cars = [
-        [-12, 2, 0.42, "bus", 0x4a7a6a],
-        [6, -2, 0.42, "car", null],
-        [-20, 4, 0.42, "car", 0x9ba3aa],
-        [16, -4, -2.72, "truck", null],
-        [2, 8, -0.2, "car", 0x5c6470],
-        [-8, -14, 0.9, "car", 0xb0a696],
-        [-24, 2, 0.42, "car", 0x6f7a80],
-        [22, -6, 0.42, "bus", 0xc9c2b0],
-        [11, 4, -0.3, "car", 0x9ba3aa],
-        [-16, 10, 0.5, "truck", 0x5a6a52],
-        [-4, -18, 0.78, "car", 0x5c6470],
-        [24, 2, -0.6, "car", 0xb0a696],
-        [-2, 17, 0.1, "car", 0x6f7a80],
-        [13, -13, 0.78, "car", null],
-        [-21, -8, 0.42, "car", 0x9ba3aa]
-    ];
-    for (const [cu, cv, crot, ctype, ccol] of cars) {
-        const c = P(cu, cv);
-        addVehicle(c[0], c[1], crot, ctype, ccol);
-    }
 
     // ================================================================
     // 그 돌 — 이제 문화재다
@@ -660,31 +566,8 @@ export function build2000(opts = {}) {
     // ================================================================
     // 사람
     // ================================================================
-    addVillager([P(-6, 7), P(0, 6), P(4, 9), P(-2, 12), P(-8, 10)], "modern");
-    addVillager([P(-18, 6), P(-22, 9), P(-16, 12), P(-12, 8)], "modern", { speed: 0.95 });
-    addVillager([P(10, 6), P(16, 4), P(20, 8), P(13, 10)], "modern");
-    addVillager([P(2, -8), P(-4, -10), P(-6, -5), P(0, -3)], "modern", { speed: 0.85 });
+    // 거리에 아무도 없다.
 
-    // 정류장에서 기다리는 사람
-    q = P(-6, 5); addWorker(q[0], q[1], "modern", { rot: 0.8 });
-    // 발굴 현장의 조사원
-    q = P(13, -7); addWorker(q[0], q[1], "modern", { rot: -0.5 });
-    q = P(17, -10); addWorker(q[0], q[1], "modern", { rot: 1.4 });
-
-    addVillager([P(-14, 12), P(-20, 14), P(-24, 10), P(-18, 8)], "modern", { speed: 1.0 });
-    addVillager([P(14, 14), P(20, 12), P(22, 16), P(16, 17)], "modern", { speed: 0.9 });
-    addVillager([P(-10, -8), P(-16, -11), P(-12, -14), P(-6, -12)], "modern");
-    addVillager([P(8, -12), P(14, -15), P(20, -12), P(12, -9)], "modern", { speed: 0.95 });
-    addVillager([P(0, 16), P(6, 18), P(2, 12), P(-4, 15)], "modern", { speed: 0.85 });
-
-    // 편의점 앞, 벤치, 건널목에 선 사람들
-    q = P(-10, 9); addWorker(q[0], q[1], "modern", { rot: 1.2 });
-    q = P(8, 3); addWorker(q[0], q[1], "modern", { rot: -0.4 });
-    q = P(-3, 15); addWorker(q[0], q[1], "modern", { rot: 2.2 });
-    q = P(18, -2); addWorker(q[0], q[1], "modern", { rot: 0.6 });
-
-    addDog([P(-4, 8), P(2, 5), P(-1, 13)]);
-    addDog([P(16, -6), P(22, -8), P(19, -3)]);
     addBirdFlock(P(-4, 18)[0], 12, P(-4, 18)[1], 10);
 
     // ================================================================
