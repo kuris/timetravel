@@ -55,6 +55,11 @@ export function openChoiceDialogue(npc) {
 function selectChoice(choice) {
     AudioSystem.playInvestigate();
 
+    // 선택 콜백 (인과 분기 등) — 메시지/일지보다 먼저 실행
+    if (choice.onSelect) {
+        try { choice.onSelect(choice); } catch (e) { console.error(e); }
+    }
+
     // 단서 획득
     if (choice.clue && !G.clues.has(choice.clue)) {
         G.clues.add(choice.clue);

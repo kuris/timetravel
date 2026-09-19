@@ -164,6 +164,31 @@ export function buildBronze() {
 
     // 제단 앞에서 절하는 사람
     q = P(4, 10); addWorker(q[0], q[1], "bronze", { rot: 0 });
+    // 제사장: 인과 선택 NPC — 묻을지/세울지가 2000년 보고서를 바꾼다
+    q = P(5.5, 12);
+    addVillager([q, P(2, 14), P(8, 15), P(6, 11)], "bronze", {
+        name: "제사장",
+        speed: 0.4,
+        greeting: "이 돌 아래에 무엇을 둘지 정해야 하네. 자네는 어떻게 생각하나?",
+        choices: [
+            {
+                text: "깊이 묻고 표시 없이 둡시다.",
+                response: "그리하자. 땅이 기억할 것이다. 돌은 덮지 않고, 말도 남기지 않으리.",
+                clue: "bronze_fate",
+                journal: true,
+                followUp: "(제사장이 흙을 덮으며 고개를 끄덕인다)",
+                onSelect: () => { G.fateChoice = "bury"; }
+            },
+            {
+                text: "돌을 세워 후대에 알립시다.",
+                response: "그리하자. 돌을 세워 표시하리. 후대의 누군가 이 자리를 알아볼 것이다.",
+                clue: "bronze_fate",
+                journal: true,
+                followUp: "(제사장이 돌을 어루만지며 중얼거린다)",
+                onSelect: () => { G.fateChoice = "raise"; }
+            }
+        ]
+    });
     // 화덕 앞
     q = P(-14.8, -8.6); addWorker(q[0], q[1], "bronze", { rot: 1.1 });
     // 논일

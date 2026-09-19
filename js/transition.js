@@ -14,7 +14,7 @@ import { dom } from "./ui.js";
  * 짧은 섬광 뒤에 빛의 경계선이 화면을 쓸고 지나가면서
  * 건물이 하나씩 다음 시대의 모습으로 바뀐다.
  */
-export function transitionToAge(nextAge) {
+export function transitionToAge(nextAge, opts = {}) {
     if (G.transitioning) return;
 
     G.transitioning = true;
@@ -34,6 +34,10 @@ export function transitionToAge(nextAge) {
 
         // 새 시대를 만든다. 정리는 모프가 끝난 뒤에 한다.
         buildAge(nextAge, { keepOld: true });
+        if (opts.fromPrologue) {
+            G.prologue = false;
+            G.prologueDone = true;
+        }
 
         // 이전 시대의 월드를 새 scene 으로 옮겨 와 나란히 둔다.
         // 여기서부터 두 시대가 한 화면에 공존한다.

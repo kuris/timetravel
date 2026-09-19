@@ -234,6 +234,16 @@ export function talkToNPC(npc) {
 export function investigateObject(item) {
     if (item.done) return;
 
+    // 프롤로그 낯선 돌 — 전용 플로우 (카운트/게이트와 무관)
+    if (item.prologueGate) {
+        item.done = true;
+        if (item.marker) item.marker.done = true;
+        if (item.glow) item.glow.visible = false;
+        AudioSystem.playInvestigate();
+        import("./prologue.js").then((m) => m.finishPrologue(item));
+        return;
+    }
+
     // 잠금 확인
     if (item.locked && item.unlockClue && !G.clues.has(item.unlockClue)) {
         AudioSystem.playInvestigate();

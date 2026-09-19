@@ -164,6 +164,7 @@ export function buildAge(index, opts = {}) {
     G.lockedZones = [];
     G.exploredTiles = new Set();
     G.inventory = [];
+    // fateChoice는 시대를 잇는 인과 기록이라 유지, 단서는 시대마다 초기화
     G.clues = new Set();
     G.hp = G.maxHp;
     G.stamina = G.maxStamina;

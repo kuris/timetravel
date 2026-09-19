@@ -682,13 +682,19 @@ export function build2000() {
     // ================================================================
     q = P(14, -6);
     const report = createExcavationReport(q[0], q[1]);
+    // 인과: 청동기 제사장의 선택이 보고서 마지막 줄에 반영된다
+    const fateLine = G.fateChoice === "raise"
+        ? "\n\n마지막 줄: \"청동기 제단 기록 — 돌을 세워 표시하였다. 그 뜻대로 이 자리가 남았다.\""
+        : G.fateChoice === "bury"
+            ? "\n\n마지막 줄: \"청동기 제단 기록 — 깊이 묻고 표시 없이 두었다. 그 뜻대로 아무도 건드리지 않았다.\""
+            : "\n\n마지막 줄: \"모든 시대가 이 돌을 피해 갔다.\"";
     registerInteractable({
         name: "발굴 보고서",
         group: report,
         pickup: true,
         range: 1.9,
         glowColor: 0xffd36d,
-        description: "발굴 보고서\n\n층위 도면이 펼쳐져 있습니다.\n맨 아래 신석기 불탄 층, 그 위에 청동기 고인돌 기초,\n삼국시대 성벽이 비껴간 자리, 조선 관아 기록,\n1970년대에 파다 만 자국까지 순서대로 적혀 있습니다.\n\n마지막 줄: \"모든 시대가 이 돌을 피해 갔다.\""
+        description: "발굴 보고서\n\n층위 도면이 펼쳐져 있습니다.\n맨 아래 신석기 불탄 층, 그 위에 청동기 고인돌 기초,\n삼국시대 성벽이 비껴간 자리, 조선 관아 기록,\n1970년대에 파다 만 자국까지 순서대로 적혀 있습니다." + fateLine
     });
 
     registerInteractable({

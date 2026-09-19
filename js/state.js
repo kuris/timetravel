@@ -32,6 +32,9 @@ export const G = {
     ageCompleteTriggered: false,
     transitioning: false,
     demoFinished: false,
+    prologue: false, // 현대 프롤로그 진행 중 (전용 플로우)
+    prologueDone: false,
+    fateChoice: null, // 청동기 제단 인과 선택 ("bury" | "raise")
     glitchAmount: 0, // 시대 전환 셰이더 글리치 강도 (0..1)
 
     // --- 월드 내용물 ---
