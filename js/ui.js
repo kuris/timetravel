@@ -39,7 +39,9 @@ export function addInventoryItem(name) {
 }
 
 export function updateUI() {
+    // 프롤로그는 자기 문구를 직접 쓴다 (G.currentAge 가 -1 이라 시대 정보가 없다)
     const age = AGE_DATA[G.currentAge];
+    if (!age) return;
 
     dom.eraText.textContent = age.name;
 

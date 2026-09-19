@@ -158,10 +158,26 @@ function availableTypes() {
 }
 
 /**
+ * 지금이 마을을 지을 수 있는 상황인가.
+ *
+ * 자리가 좋은지(canBuildHere)와는 다른 문제다.
+ * 프롤로그는 2000년 맵을 밤 골목으로 빌려 쓰면서 G.currentAge 를 -1 로 둔다.
+ * 그 상태에서도 자리 검사만 통과하면 "[E] 이 자리에 짓기"가 떠서,
+ * 게임을 켜자마자 2000년대에서 건설이 시작되는 것처럼 보였다.
+ */
+export function canBuildNow() {
+    if (G.prologue || G.transitioning || G.demoFinished) return false;
+    if (G.currentAge < 0) return false;
+    return availableTypes().length > 0;
+}
+
+/**
  * 건설 메뉴를 연다.
  * NPC 대화 오버레이를 그대로 쓴다 — 선택지 UI가 이미 있으니 새로 만들 이유가 없다.
  */
 export function openBuildMenu() {
+    if (!canBuildNow()) return;
+
     const x = G.player.position.x, z = G.player.position.z;
     const spot = canBuildHere(x, z);
 
@@ -172,10 +188,6 @@ export function openBuildMenu() {
     }
 
     const types = availableTypes();
-    if (!types.length) {
-        showMessage("이 시대에는 더 지을 것이 없습니다.");
-        return;
-    }
 
     const choices = types.map((t) => {
         const b = BUILDING_TYPES[t];
@@ -311,7 +323,7 @@ export function updateBuildGhost() {
 
     const x = G.player.position.x, z = G.player.position.z;
     const spot = canBuildHere(x, z);
-    const near = availableTypes().length > 0;
+    const near = canBuildNow();
 
     ghost.position.set(x, terrainHeight(x, z) + 0.06, z);
     ghost.material.color.setHex(spot.ok ? 0xffd071 : 0x8a4a3a);

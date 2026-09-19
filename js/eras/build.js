@@ -224,16 +224,21 @@ export function buildAge(index, opts = {}) {
 
     // ---- 지금까지 지은 마을을 이 시대의 모습으로 다시 세운다 ----
     // 같은 자리에 다음 시대의 건물이 선다. 이것이 "내 마을이 시간을 통과한다"의 실체다.
+    // 프롤로그는 2000년 맵을 밤 골목으로 빌려 쓸 뿐이라 마을도 재료도 놓지 않는다.
+    const isPrologue = !!opts.prologue2000;
+
     resetBuildGhost();
-    renderVillage(index);
+    if (!isPrologue) {
+        renderVillage(index);
 
-    // 이정표는 시대마다 세 번. 망루 시야는 지은 만큼 이어진다.
-    G.hintCharges = 3;
-    applyVillageEffects();
-    import("../hint.js").then((m) => m.updateHintBadge());
+        // 이정표는 시대마다 세 번. 망루 시야는 지은 만큼 이어진다.
+        G.hintCharges = 3;
+        applyVillageEffects();
+        import("../hint.js").then((m) => m.updateHintBadge());
 
-    // ---- 재료 노드 ----
-    scatterMaterials(index);
+        // ---- 재료 노드 ----
+        scatterMaterials(index);
+    }
 
     // ---- 플레이어 배치 ----
     G.player = createPlayer();
