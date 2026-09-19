@@ -8,10 +8,11 @@ import { addMapMarker } from "../minimap.js";
 import { pick, rand, randRange } from "../rng.js";
 import { addBanner, addBridge, addCart, addCropField, addHayStack, addJarPlatform, addLaundryLine, addMarketStall, addStoneWallRun } from "../props.js";
 import { addCow, addDog, addVillager, addWorker } from "../npc.js";
-import { GATE_SPOT, S } from "../landmarks.js";
+import { GATE_SPOT, S, addRiver, carveRiver, riverPoint } from "../landmarks.js";
+import { paintBaseMap } from "../basemap.js";
 import { G } from "../state.js";
 import { terrainHeight } from "../terrain.js";
-import { addGround, addPond, addStonePath, addTreeLine, scatterGrass, scatterStones } from "../world.js";
+import { addGround, addPond, addStonePath, addTreeLine } from "../world.js";
 
 /**
  * 3시대 — 조선 한양 외곽 마을 (늦은 저녁)
@@ -38,16 +39,31 @@ import { addGround, addPond, addStonePath, addTreeLine, scatterGrass, scatterSto
  *   아래-왼쪽   장승 셋 · 볏가리 · 수레
  *   아래-오른쪽 연못과 나무다리
  */
+/** 강 아래로 배치를 눌러 넣는 계수 */
+const JOSEON_VSCALE = 0.78;
+const JOSEON_VSHIFT = -6.5;
+
 export function buildJoseon() {
+    // 화면 좌표로 배치하기 위한 짧은 이름.
+    // 이 시대도 강이 없어 "같은 장소"가 끊겼다. P 를 눌러 강 아래로 보낸다.
+    const P = (u, v) => S(u, v * JOSEON_VSCALE + JOSEON_VSHIFT);
+
+    G.terrainCarve = carveRiver;
+
     // 늦은 저녁. 등불 외에는 빛이 거의 없다.
     addGround(0x7b6a58, [0x917c66, 0x605244, 0x87745a, 0x564f45, 0x9d8a70]);
 
-    scatterStones(110, -30, 30, -30, 30, [0x5f5d5b, 0x716c66, 0x4f4d4c, 0x57535a]);
-    scatterGrass(240, [0x4a4636, 0x3b3a2c, 0x565033, 0x333127], 3, 31);
+    // 같은 바위, 같은 자리. 저녁빛에 잠겨 잿빛으로 보인다.
+    paintBaseMap({
+        stone: [0x5f5d5b, 0x716c66, 0x4f4d4c, 0x57535a],
+        grass: [0x4a4636, 0x3b3a2c, 0x565033, 0x333127],
+        tree: [0x3b3a49, 0x31303d, 0x454256],
+        treeSurvival: 0.55,
+        grassDensity: 0.8
+    });
     addTreeLine([0x3b3a49, 0x31303d, 0x454256], 34, 24, 36);
 
-    // 화면 좌표로 배치하기 위한 짧은 이름
-    const P = S;
+    addRiver();
 
     // ---- 길: 마을을 가로지르는 큰길과 관아로 오르는 샛길 ----
     let p1 = P(-26, -6), p2 = P(24, 6);

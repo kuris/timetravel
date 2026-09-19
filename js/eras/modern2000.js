@@ -12,6 +12,7 @@
  * 이야기의 끝:
  *   발굴 보고서가 신석기부터 지금까지를 한 줄로 잇는다.
  */
+import { paintBaseMap } from "../basemap.js";
 import { addBlob, addBox, addCone, addCylinder, addFlatCircle, makeBasicMat, makeMat } from "../build.js";
 import { registerInteractable } from "../interaction.js";
 import { GATE_SPOT, S, addRiver, carveRiver, riverPoint } from "../landmarks.js";
@@ -26,7 +27,7 @@ import {
 import { pick, rand, randRange } from "../rng.js";
 import { G } from "../state.js";
 import { terrainHeight } from "../terrain.js";
-import { addGround, addTreeLine, scatterGrass, scatterStones } from "../world.js";
+import { addGround, addTreeLine } from "../world.js";
 import { createTimeGate } from "./neolithic.js";
 
 /* ================================================================
@@ -450,8 +451,15 @@ export function build2000(opts = {}) {
     // 아스팔트와 콘크리트의 회색 땅
     addGround(0x6f6a60, [0x817b70, 0x5c574f, 0x76705f, 0x8a8478, 0x615c54]);
 
-    scatterStones(60, -30, 30, -30, 30, [0x7c766c, 0x8f887c]);
-    scatterGrass(200, [0x5a6b3c, 0x4a5a30, 0x667742], 3, 31);
+    // 같은 바위. 여섯 시대가 지나도 아무도 치우지 못했다.
+    // 아스팔트가 덮은 자리의 풀과 나무는 거의 남지 않았다.
+    paintBaseMap({
+        stone: [0x7c766c, 0x8f887c],
+        grass: [0x5a6b3c, 0x4a5a30, 0x667742],
+        tree: [0x3f4a2c, 0x364226, 0x4a5636],
+        treeSurvival: 0.3,
+        grassDensity: 0.5
+    });
     addTreeLine([0x3f4a2c, 0x364226, 0x4a5636], 30, 26, 36);
 
     addRiver();

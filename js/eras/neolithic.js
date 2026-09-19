@@ -12,7 +12,7 @@ import { addBirdFlock, addCow, addDog, addPig, addVillager, addWorker, registerN
 import { GATE_SPOT, RIVER, S, addRiver, carveRiver, riverPerp, riverPoint } from "../landmarks.js";
 import { G } from "../state.js";
 import { terrainHeight } from "../terrain.js";
-import { addGround, addInstanced, addTreeLine, scatterGrass, scatterStones } from "../world.js";
+import { addGround, addInstanced, addTreeLine } from "../world.js";
 
 export function buildNeolithic() {
     const P = S;

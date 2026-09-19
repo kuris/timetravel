@@ -45,12 +45,11 @@ export function updateUI() {
 
     // 목표는 "유물 몇 개"가 아니라 마을이 얼마나 자랐는가다.
     // 무엇을 지을지는 플레이어가 고르므로 목표 문구도 그에 맞춘다.
-    let goal = "빈 땅에서 E — 마을을 세우세요. (재료는 돌무더기·쓰러진 나무에서)";
+    let goal = "빈 땅에서 [E] — 마을을 세우세요";
     if (G.activeGate && G.activeGate.active) {
         goal = "깨어난 시간의 문 근처에서 E를 누르세요.";
     } else if (G.progress > 0) {
-        goal = "마을을 더 키우면 시간의 문이 깨어납니다. (" +
-            (progressGoal() - G.progress) + " 남음)";
+        goal = "마을을 더 키우세요 (발전도 " + (progressGoal() - G.progress) + " 남음)";
     }
     if (G.demoFinished) {
         goal = "데모 완료";

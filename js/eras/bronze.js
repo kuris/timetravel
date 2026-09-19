@@ -5,13 +5,14 @@ import { addBlob, addBox, addCone, addCylinder, addCylinderBetween, addFlatCircl
 import { registerInteractable } from "../interaction.js";
 import { addMapMarker } from "../minimap.js";
 import { pick, rand, randRange } from "../rng.js";
-import { GATE_SPOT, S } from "../landmarks.js";
+import { GATE_SPOT, S, addRiver, carveRiver, riverPoint } from "../landmarks.js";
 import { addAnimalPen, addHayStack, addJarPlatform, addLaundryLine, addStoragePit } from "../props.js";
 import { addBirdFlock, addDog, addPig, addVillager, addWorker } from "../npc.js";
-import { addFirewood, addHearth, addStonePile, createTimeGate } from "./neolithic.js";
+import { addFirewood, addHearth, addReedCluster, addStonePile, createTimeGate } from "./neolithic.js";
+import { paintBaseMap } from "../basemap.js";
 import { G } from "../state.js";
 import { terrainHeight } from "../terrain.js";
-import { addGround, addInstanced, addStonePath, addTreeLine, scatterGrass, scatterStones } from "../world.js";
+import { addGround, addInstanced, addStonePath, addTreeLine } from "../world.js";
 
 /**
  * 2시대 — 청동기 고인돌 제단
@@ -23,15 +24,38 @@ import { addGround, addInstanced, addStonePath, addTreeLine, scatterGrass, scatt
  *
  * 배치는 화면 좌표 S(u, v) 로 잡는다. u = 오른쪽, v = 위쪽.
  */
+/** 강 아래로 배치를 눌러 넣는 계수 (1970·2000 에서 쓴 것과 같은 방법) */
+const BRONZE_VSCALE = 0.80;
+const BRONZE_VSHIFT = -6.0;
+
 export function buildBronze() {
-    const P = S;
+    // 신석기와 같은 강이 화면 위쪽을 흐른다.
+    // 원래 이 시대만 강이 없어 "같은 장소"가 끊겼다.
+    // 배치를 하나씩 옮기면 배열 리터럴을 놓치므로 P 자체를 눌러 강 아래로 보낸다.
+    const P = (u, v) => S(u, v * BRONZE_VSCALE + BRONZE_VSHIFT);
+
+    G.terrainCarve = carveRiver;
 
     // 황토 언덕. 신석기보다 메마르고 붉다.
     addGround(0x8e6b43, [0xb08653, 0x7d6039, 0xa47c48, 0x63513a, 0xc9a26c]);
 
-    scatterStones(150, -30, 30, -30, 30, [0x786d62, 0x635b55, 0x8b8072, 0x6e6455]);
-    scatterGrass(260, [0x7c6c3a, 0x635a30, 0x8d7a45, 0x544d2b], 3, 31);
+    // 신석기에서 본 그 바위들. 색만 이 시대의 것이다.
+    paintBaseMap({
+        stone: [0x786d62, 0x635b55, 0x8b8072, 0x6e6455],
+        grass: [0x7c6c3a, 0x635a30, 0x8d7a45, 0x544d2b],
+        tree: [0x6a603c, 0x5a5131, 0x776b45],
+        treeSurvival: 0.85,
+        grassDensity: 0.95
+    });
     addTreeLine([0x6a603c, 0x5a5131, 0x776b45], 34, 26, 36);
+
+    addRiver();
+
+    // 강변 갈대
+    for (let i = 0; i < 22; i++) {
+        const [rx, rz] = riverPoint(randRange(-32, 32), randRange(-0.8, 4.5));
+        addReedCluster(rx, rz, Math.floor(randRange(4, 8)));
+    }
 
     // ---- 길: 마을에서 제단으로 오르는 돌길 ----
     let p1 = P(-8, -12), p2 = P(4, 10);

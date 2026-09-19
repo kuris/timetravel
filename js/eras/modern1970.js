@@ -11,6 +11,7 @@
  *   마을 안길을 넓히면서 그 돌을 치우려 했다.
  *   공사가 중간에 멈췄고, 서류에는 이유가 적혀 있지 않다.
  */
+import { paintBaseMap } from "../basemap.js";
 import { addBlob, addBox, addCone, addCylinder, addFlatCircle, makeBasicMat, makeMat } from "../build.js";
 import { registerInteractable } from "../interaction.js";
 import { GATE_SPOT, S, addRiver, carveRiver, riverPoint } from "../landmarks.js";
@@ -24,7 +25,7 @@ import {
 import { pick, rand, randRange } from "../rng.js";
 import { G } from "../state.js";
 import { terrainHeight } from "../terrain.js";
-import { addGround, addStonePath, addTreeLine, scatterGrass, scatterStones } from "../world.js";
+import { addGround, addStonePath, addTreeLine } from "../world.js";
 import { addFirewood, addReedCluster, addStonePile, createTimeGate } from "./neolithic.js";
 import { addRicePaddy } from "./bronze.js";
 import { addChoga } from "./joseon.js";
@@ -401,8 +402,15 @@ export function build1970() {
 
     addGround(0x87724f, [0xa08a5e, 0x6f5f42, 0x967f55, 0x5c5340, 0xb59a6a]);
 
-    scatterStones(90, -30, 30, -30, 30, [0x7c766c, 0x655f58, 0x8f887c]);
-    scatterGrass(280, [0x6f7a3c, 0x5a6431, 0x7f8a48, 0x4c5329], 3, 31);
+    // 신석기의 그 바위가 아직 그 자리에 있다. 이제 시멘트 담장 옆이다.
+    // 마을이 커지면서 나무가 절반 넘게 베였다.
+    paintBaseMap({
+        stone: [0x7c766c, 0x655f58, 0x8f887c],
+        grass: [0x6f7a3c, 0x5a6431, 0x7f8a48, 0x4c5329],
+        tree: [0x53602f, 0x455127, 0x61703a],
+        treeSurvival: 0.45,
+        grassDensity: 0.7
+    });
     addTreeLine([0x53602f, 0x455127, 0x61703a], 34, 24, 36);
 
     addRiver();

@@ -25,7 +25,7 @@ import {
 import { pick, rand, randRange } from "../rng.js";
 import { G } from "../state.js";
 import { terrainHeight } from "../terrain.js";
-import { addGround, addInstanced, addStonePath, addTreeLine, scatterGrass, scatterStones } from "../world.js";
+import { addGround, addInstanced, addStonePath, addTreeLine } from "../world.js";
 import { addFirewood, addHearth, addReedCluster, addStonePile, createTimeGate } from "./neolithic.js";
 import { addHanokBody, addHanokRoof, addThatchRoof } from "./joseon.js";
 import { addPalisade, addRaisedGranary, addRicePaddy } from "./bronze.js";
