@@ -1,0 +1,4828 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>시간유적 - Three.js Prototype</title>
+
+    <style>
+        /* ================================================================
+           시간유적 — 1997년식 한국사 CD-ROM 게임 UI
+           금속판 / 황동 테두리 / CRT / 낡은 인쇄물 느낌
+           ================================================================ */
+        :root {
+            --brass: #c09354;
+            --brass-hi: #e8c489;
+            --brass-lo: #6d4e24;
+            --ink: #efd6a2;
+            --ink-dim: #bb9a68;
+            --plate-hi: rgba(62, 41, 23, 0.72);
+            --plate-lo: rgba(21, 14, 9, 0.78);
+            /* 낡은 금속판 모서리를 살짝 깎아낸 형태 (둥근 모서리 대신) */
+            --notch: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+        }
+
+        html,
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #070504;
+            font-family: "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "AppleGothic", sans-serif;
+            /* 안티앨리어싱을 끄면 글자도 옛날 PC 게임처럼 거칠어진다 */
+            -webkit-font-smoothing: none;
+            -moz-osx-font-smoothing: unset;
+            font-smooth: never;
+        }
+
+        #game {
+            position: fixed;
+            inset: 0;
+            background: #070504;
+        }
+
+        /* 저해상도 캔버스를 화면 크기로 확대 → 굵은 픽셀 */
+        /* (#game 안의 WebGL 캔버스에만 적용. 미니맵 캔버스는 제외) */
+        #game canvas {
+            display: block;
+            width: 100vw !important;
+            height: 100vh !important;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            cursor: crosshair;
+        }
+
+        /* ---------- CRT 스캔라인 (풀 해상도의 얇은 줄) ---------- */
+        #scan {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 4;
+            opacity: 0.30;
+            background: repeating-linear-gradient(to bottom,
+                    rgba(0, 0, 0, 0.42) 0px,
+                    rgba(0, 0, 0, 0.42) 1px,
+                    rgba(255, 245, 225, 0.05) 1px,
+                    rgba(255, 245, 225, 0.05) 3px);
+        }
+
+        /* ---------- 섀도우 마스크 / 미세한 색 분리 ---------- */
+        #mask {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0.12;
+            background: repeating-linear-gradient(to right,
+                    rgba(255, 90, 60, 0.5) 0px,
+                    rgba(90, 255, 120, 0.5) 1px,
+                    rgba(80, 120, 255, 0.5) 2px,
+                    rgba(0, 0, 0, 0) 3px);
+            mix-blend-mode: overlay;
+        }
+
+        /* ---------- 비네팅 + CRT 유리 반사 ---------- */
+        #vignette {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 6;
+            background:
+                radial-gradient(ellipse 120% 105% at 50% 46%,
+                    rgba(0, 0, 0, 0) 40%,
+                    rgba(18, 10, 4, 0.30) 74%,
+                    rgba(8, 4, 2, 0.72) 100%),
+                radial-gradient(ellipse 60% 42% at 34% 12%,
+                    rgba(255, 238, 205, 0.055), rgba(255, 238, 205, 0) 70%);
+        }
+
+        /* ---------- 모니터 베젤 안쪽 그림자 ---------- */
+        #bezel {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 7;
+            box-shadow:
+                inset 0 0 70px rgba(0, 0, 0, 0.75),
+                inset 0 0 180px rgba(10, 5, 2, 0.45);
+        }
+
+        #ui {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            pointer-events: none;
+            color: var(--ink);
+            text-shadow: 1px 1px 0 #170d05, 2px 2px 0 rgba(0, 0, 0, 0.45);
+            user-select: none;
+        }
+
+        /* ================= 낡은 금속판 패널 ================= */
+        .panel {
+            position: relative;
+            clip-path: var(--notch);
+            background:
+                /* 긁힌 자국 */
+                repeating-linear-gradient(112deg,
+                    rgba(255, 226, 180, 0.030) 0 1px,
+                    rgba(0, 0, 0, 0.055) 1px 4px),
+                /* 얼룩 */
+                radial-gradient(ellipse at 22% 18%, rgba(129, 90, 45, 0.42), rgba(0, 0, 0, 0) 62%),
+                radial-gradient(ellipse at 84% 88%, rgba(84, 52, 24, 0.38), rgba(0, 0, 0, 0) 58%),
+                linear-gradient(168deg, var(--plate-hi), var(--plate-lo));
+            box-shadow:
+                inset 0 0 0 1px rgba(15, 9, 4, 0.9),
+                inset 0 0 26px rgba(0, 0, 0, 0.70),
+                inset 0 1px 0 rgba(224, 186, 129, 0.10);
+        }
+
+        /* 황동 테두리 (안쪽으로 한 겹 더) */
+        .panel::before {
+            content: "";
+            position: absolute;
+            inset: 3px;
+            clip-path: var(--notch);
+            border: 1px solid var(--brass);
+            box-shadow:
+                inset 0 0 0 1px rgba(0, 0, 0, 0.55),
+                0 0 0 1px rgba(0, 0, 0, 0.5);
+            opacity: 0.82;
+            pointer-events: none;
+        }
+
+        /* 깎인 모서리를 채우는 황동 사선 */
+        .panel::after {
+            content: "";
+            position: absolute;
+            left: -2px;
+            top: -2px;
+            width: 17px;
+            height: 17px;
+            background: linear-gradient(45deg, var(--brass) 0 1.5px, rgba(0, 0, 0, 0) 1.5px);
+            transform: rotate(0deg);
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        /* ================= 좌측 상단 ================= */
+        #topLeft {
+            position: absolute;
+            left: 16px;
+            top: 16px;
+            width: 372px;
+            padding: 13px 17px 14px;
+        }
+
+        #title {
+            font-size: 31px;
+            line-height: 1.05;
+            font-weight: 900;
+            letter-spacing: 5px;
+            color: #ffdf9e;
+            margin-bottom: 9px;
+            text-shadow:
+                1px 1px 0 #180d04,
+                2px 2px 0 #2c180a,
+                0 0 14px rgba(196, 136, 54, 0.45);
+        }
+
+        /* 제목 아래 황동 구분선 */
+        #titleRule {
+            height: 2px;
+            margin: 0 0 9px;
+            background: linear-gradient(to right,
+                    rgba(214, 166, 96, 0.85),
+                    rgba(214, 166, 96, 0.22) 72%,
+                    rgba(214, 166, 96, 0));
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+        }
+
+        .stat {
+            font-size: 13.5px;
+            line-height: 1.62;
+            color: var(--ink-dim);
+        }
+
+        .stat b {
+            color: #f5cd7e;
+            font-weight: 700;
+        }
+
+        /* ================= 우측 상단 조작 안내 ================= */
+        #controls {
+            position: absolute;
+            right: 16px;
+            top: 16px;
+            padding: 11px 15px;
+            font-size: 12.5px;
+            line-height: 1.62;
+            color: var(--ink-dim);
+            text-align: right;
+        }
+
+        /* ================= 미니맵 ================= */
+        #minimapPanel {
+            position: absolute;
+            right: 16px;
+            top: 120px;
+            padding: 9px;
+        }
+
+        #minimap {
+            display: block;
+            width: 146px;
+            height: 146px;
+            image-rendering: pixelated;
+            background: rgba(12, 8, 5, 0.55);
+            box-shadow: inset 0 0 0 1px rgba(10, 6, 3, 0.9);
+        }
+
+        #minimapLabel {
+            margin-top: 6px;
+            font-size: 10px;
+            letter-spacing: 3px;
+            text-align: center;
+            color: #b08c4e;
+        }
+
+        /* ================= 힌트 / 이정표 ================= */
+        #hintBtn {
+            position: absolute;
+            right: 16px;
+            top: 308px;
+            width: 164px;
+            box-sizing: border-box;
+            padding: 8px 10px;
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-align: center;
+            color: #e6c88d;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: color 120ms steps(2, end);
+        }
+
+        #hintBtn:hover {
+            color: #ffe2a3;
+        }
+
+        #hintBtn.on {
+            color: #ffd071;
+        }
+
+        /* 화면 하단의 작은 나무 이정표 표시 */
+        #signpost {
+            position: absolute;
+            left: 50%;
+            bottom: 148px;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 18px 9px 14px;
+            font-size: 12.5px;
+            color: #f0d49a;
+            opacity: 0;
+            transition: opacity 260ms steps(3, end);
+        }
+
+        #signpost.show {
+            opacity: 1;
+        }
+
+        /* 목표 방향을 가리키는 화살표 (CSS 삼각형) */
+        #signArrow {
+            width: 0;
+            height: 0;
+            border-left: 9px solid transparent;
+            border-right: 9px solid transparent;
+            border-bottom: 17px solid #e9b653;
+            filter: drop-shadow(1px 1px 0 #2a1608);
+            transform-origin: 50% 65%;
+        }
+
+        #signText b {
+            color: #ffd071;
+        }
+
+        #signDist {
+            color: #b8934f;
+            font-size: 11px;
+        }
+
+        /* ================= [E] 조사 프롬프트 ================= */
+        #prompt {
+            position: absolute;
+            left: 50%;
+            top: 56%;
+            transform: translate(-50%, -50%);
+            padding: 5px 13px;
+            font-size: 13px;
+            letter-spacing: 1px;
+            font-weight: 700;
+            color: #ffeaae;
+            background: linear-gradient(180deg, rgba(48, 31, 16, 0.92), rgba(20, 13, 7, 0.94));
+            border: 1px solid var(--brass);
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.7), 0 0 12px rgba(0, 0, 0, 0.6);
+            clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+            transition: opacity 110ms steps(3, end);
+            animation: promptPulse 1.6s steps(2, end) infinite;
+        }
+
+        @keyframes promptPulse {
+
+            0%,
+            100% {
+                color: #ffeaae;
+            }
+
+            50% {
+                color: #ffc457;
+            }
+        }
+
+        #prompt.hidden {
+            opacity: 0;
+        }
+
+        /* ================= 하단 메시지 창 ================= */
+        #message {
+            /* 가장 넓은 패널이라 더 투명하게 — 뒤 풍경이 비친다 */
+            --plate-hi: rgba(58, 38, 21, 0.60);
+            --plate-lo: rgba(18, 12, 8, 0.68);
+            backdrop-filter: blur(1px);
+            position: absolute;
+            left: 50%;
+            bottom: 88px;
+            transform: translateX(-50%);
+            width: min(820px, calc(100vw - 56px));
+            min-height: 40px;
+            padding: 11px 20px;
+            font-size: 13.5px;
+            line-height: 1.58;
+            color: #f3d9a4;
+            white-space: pre-line;
+        }
+
+        /* ================= 인벤토리 ================= */
+        #inventory {
+            position: absolute;
+            left: 50%;
+            bottom: 18px;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 9px;
+            align-items: center;
+        }
+
+        .slot {
+            position: relative;
+            width: 118px;
+            height: 44px;
+            padding: 5px 7px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 12px;
+            line-height: 1.2;
+            color: #9e8355;
+            clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+            background:
+                repeating-linear-gradient(112deg, rgba(255, 226, 180, 0.025) 0 1px, rgba(0, 0, 0, 0.06) 1px 4px),
+                linear-gradient(168deg, rgba(44, 29, 17, 0.62), rgba(15, 10, 7, 0.72));
+            box-shadow:
+                inset 0 0 0 1px rgba(10, 6, 3, 0.9),
+                inset 0 0 18px rgba(0, 0, 0, 0.8);
+        }
+
+        .slot::before {
+            content: "";
+            position: absolute;
+            inset: 3px;
+            clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+            border: 1px solid rgba(150, 110, 56, 0.55);
+            pointer-events: none;
+        }
+
+        .slot.filled {
+            color: #ffdf9f;
+            background:
+                repeating-linear-gradient(112deg, rgba(255, 226, 180, 0.04) 0 1px, rgba(0, 0, 0, 0.05) 1px 4px),
+                linear-gradient(168deg, rgba(92, 60, 28, 0.70), rgba(35, 23, 14, 0.78));
+            box-shadow:
+                inset 0 0 0 1px rgba(10, 6, 3, 0.9),
+                inset 0 0 16px rgba(0, 0, 0, 0.55),
+                0 0 12px rgba(160, 110, 45, 0.3);
+        }
+
+        .slot.filled::before {
+            border-color: var(--brass-hi);
+        }
+
+        /* ================= 시대 전환 연출 ================= */
+        #flash {
+            position: fixed;
+            inset: 0;
+            z-index: 25;
+            pointer-events: none;
+            background: #fff6e2;
+            opacity: 0;
+            mix-blend-mode: screen;
+        }
+
+        #flash.play {
+            animation: whiteFlash 1000ms steps(6, end) forwards;
+        }
+
+        @keyframes whiteFlash {
+            0% {
+                opacity: 0;
+            }
+
+            8% {
+                opacity: 0.95;
+            }
+
+            16% {
+                opacity: 0.12;
+            }
+
+            27% {
+                opacity: 0.80;
+            }
+
+            43% {
+                opacity: 0.20;
+            }
+
+            62% {
+                opacity: 0.35;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        #glitch {
+            position: fixed;
+            inset: 0;
+            z-index: 26;
+            pointer-events: none;
+            opacity: 0;
+            background:
+                repeating-linear-gradient(to bottom,
+                    rgba(180, 210, 255, 0.16) 0 3px,
+                    rgba(255, 150, 120, 0.13) 3px 7px,
+                    rgba(0, 0, 0, 0) 7px 14px);
+            mix-blend-mode: screen;
+        }
+
+        #glitch.play {
+            animation: glitchMove 1000ms steps(11, end) forwards;
+        }
+
+        @keyframes glitchMove {
+            0% {
+                opacity: 0;
+                transform: translate(0, 0) scaleY(1);
+            }
+
+            10% {
+                opacity: .85;
+                transform: translate(-9px, 3px) scaleY(1.03);
+            }
+
+            20% {
+                opacity: .25;
+                transform: translate(8px, -5px) scaleY(0.97);
+            }
+
+            35% {
+                opacity: .75;
+                transform: translate(-5px, -2px) scaleY(1.05);
+            }
+
+            55% {
+                opacity: .35;
+                transform: translate(6px, 4px) scaleY(0.98);
+            }
+
+            78% {
+                opacity: .5;
+                transform: translate(-3px, 1px) scaleY(1.01);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(0, 0) scaleY(1);
+            }
+        }
+
+        /* ================= 데모 완료 ================= */
+        #completeOverlay {
+            position: fixed;
+            inset: 0;
+            z-index: 40;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 900ms ease;
+            background: radial-gradient(circle at center, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.82));
+        }
+
+        #completeOverlay.show {
+            opacity: 1;
+        }
+
+        #completeBox {
+            width: min(600px, calc(100vw - 48px));
+            padding: 34px 36px;
+            text-align: center;
+            color: #f3d9a4;
+        }
+
+        #completeBox h1 {
+            margin: 0 0 6px;
+            font-size: 36px;
+            font-weight: 900;
+            color: #ffdf9e;
+            letter-spacing: 8px;
+        }
+
+        #completeBox .sub {
+            font-size: 12px;
+            letter-spacing: 6px;
+            color: #b8934f;
+            margin-bottom: 18px;
+        }
+
+        #completeBox p {
+            margin: 0;
+            font-size: 15px;
+            line-height: 1.85;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="game"></div>
+
+    <!-- CRT / 오래된 모니터 오버레이 (전부 CSS, 외부 이미지 없음) -->
+    <div id="scan"></div>
+    <div id="mask"></div>
+    <div id="vignette"></div>
+    <div id="bezel"></div>
+
+    <div id="ui">
+        <!-- 좌측 상단: 시대 / 목표 / 진행 -->
+        <div id="topLeft" class="panel">
+            <div id="title">시간유적</div>
+            <div id="titleRule"></div>
+            <div class="stat">현재 시대: <b id="eraText">-</b></div>
+            <div class="stat">현재 목표: <b id="objectiveText">-</b></div>
+            <div class="stat">조사 진행: <b id="countText">0 / 0</b></div>
+        </div>
+
+        <!-- 우측 상단: 조작 안내 -->
+        <div id="controls" class="panel">
+            WASD / 방향키: 이동<br>
+            Shift: 달리기<br>
+            E: 조사 / 획득 / 사용<br>
+            H: 이정표 (방향 안내)<br>
+            마우스 클릭: 이동
+        </div>
+
+        <!-- 미니맵: 등각 화면과 같은 방향으로 회전해서 그린다 -->
+        <div id="minimapPanel" class="panel">
+            <canvas id="minimap" width="146" height="146"></canvas>
+            <div id="minimapLabel">주 변 지 도</div>
+        </div>
+
+        <!-- 힌트 버튼: 누르면 목표 방향 이정표가 나타난다 -->
+        <div id="hintBtn" class="panel">[H] 이정표</div>
+
+        <!-- 목표 방향 표시 -->
+        <div id="signpost" class="panel">
+            <div id="signArrow"></div>
+            <div>
+                <div id="signText">-</div>
+                <div id="signDist">-</div>
+            </div>
+        </div>
+
+        <div id="prompt" class="hidden">[E] 조사</div>
+        <div id="message" class="panel">불러오는 중...</div>
+
+        <!-- 유물 5칸 -->
+        <div id="inventory">
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+        </div>
+    </div>
+
+    <div id="flash"></div>
+    <div id="glitch"></div>
+
+    <div id="completeOverlay">
+        <div id="completeBox" class="panel">
+            <h1>시간유적</h1>
+            <div class="sub">DEMO COMPLETE</div>
+            <p>모든 흔적을 조사했습니다.
+
+잊혀진 시대의 기록이
+다시 이어졌습니다.</p>
+        </div>
+    </div>
+
+    <!-- Three.js CDN만 사용 -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+
+    <script>
+        (() => {
+            "use strict";
+
+            /******************************************************************
+             * 기본 상태값
+             ******************************************************************/
+            const dom = {
+                game: document.getElementById("game"),
+                eraText: document.getElementById("eraText"),
+                objectiveText: document.getElementById("objectiveText"),
+                countText: document.getElementById("countText"),
+                prompt: document.getElementById("prompt"),
+                message: document.getElementById("message"),
+                slots: [...document.querySelectorAll(".slot")],
+                flash: document.getElementById("flash"),
+                glitch: document.getElementById("glitch"),
+                completeOverlay: document.getElementById("completeOverlay"),
+                minimap: document.getElementById("minimap"),
+                hintBtn: document.getElementById("hintBtn"),
+                signpost: document.getElementById("signpost"),
+                signArrow: document.getElementById("signArrow"),
+                signText: document.getElementById("signText"),
+                signDist: document.getElementById("signDist")
+            };
+
+            const VIEW_SIZE = 27.5;  // 등각 시야 크기. 클수록 더 넓은 풍경이 보인다.
+            const RENDER_SCALE = 0.48; // 내부 렌더 해상도 배율. 낮출수록 픽셀이 굵어진다.
+            const PLAYER_SPEED = 4.1;
+            const SPRINT_MULTIPLIER = 1.9;  // Shift 를 누르고 있을 때
+            const WORLD_LIMIT = 31;
+
+            /******************************************************************
+             * GAME STATE / 시대 정의
+             *
+             * 시대별 색·조명·안개·배경 능선·컬러 그레이딩을 여기서 전부 조정한다.
+             * 오브젝트 배치는 각 build<시대>() 함수에 있다.
+             ******************************************************************/
+            const AGE_DATA = [
+                // ---------------------------------------------------------- 신석기
+                {
+                    name: "신석기 시대 · 한반도 강가 마을",
+                    goal: "마을 주변의 유물 3개를 조사하고 회수하세요.",
+                    total: 3,
+                    start: { x: -7.0, z: 9.0 },
+
+                    fog: 0x7b6343,
+                    fogDensity: 0.0135,
+
+                    // 지평선 하늘 그라데이션 (위 -> 아래)
+                    sky: { top: 0x4a3a28, mid: 0x8e7148, bottom: 0xd2ad78 },
+
+                    // 멀어질수록 옅어지는 산 능선
+                    ridges: [
+                        { dist: 74, height: 34, color: 0xa48a63, opacity: 0.55, base: -6 },
+                        { dist: 56, height: 25, color: 0x8d7450, opacity: 0.60, base: -5 },
+                        { dist: 42, height: 17, color: 0x74603f, opacity: 0.68, base: -4 },
+                        { dist: 30, height: 10, color: 0x5e4d33, opacity: 0.75, base: -3 }
+                    ],
+
+                    intro: "강가의 얕게 깎인 신석기 마을입니다.\n움집과 갈대밭 사이로 오랜 생활의 흔적이 남아 있습니다.\n주변을 조사해 보세요.",
+
+                    light: {
+                        hemiSky: 0xffdcab,
+                        hemiGround: 0x4a3724,
+                        hemiIntensity: 0.42,
+                        ambient: 0xc79a6e,
+                        ambientIntensity: 0.16,
+                        sun: 0xffd9a4,
+                        sunIntensity: 1.95,
+                        sunPos: [-13, 14, -16],
+                        fillIntensity: 0.13
+                    },
+
+                    // 후처리 그레이딩: 바랜 세피아 사진
+                    grade: {
+                        tint: [1.10, 0.96, 0.75],
+                        lift: [0.028, 0.017, 0.008],
+                        sat: 0.58,
+                        sepia: 0.36,
+                        contrast: 1.24,
+                        vignette: 1.0
+                    }
+                },
+
+                // ---------------------------------------------------------- 청동기
+                {
+                    name: "청동기 시대 · 고인돌 제단",
+                    goal: "제단 주변의 청동기 흔적 3개를 조사하세요.",
+                    total: 3,
+                    start: { x: -8.2, z: 7.5 },
+
+                    fog: 0x6d5334,
+                    fogDensity: 0.0150,
+
+                    sky: { top: 0x4e3320, mid: 0x9a6236, bottom: 0xd9a05c },
+
+                    ridges: [
+                        { dist: 74, height: 36, color: 0xb08050, opacity: 0.52, base: -6 },
+                        { dist: 56, height: 27, color: 0x8f6540, opacity: 0.60, base: -5 },
+                        { dist: 42, height: 18, color: 0x734f33, opacity: 0.70, base: -4 },
+                        { dist: 30, height: 11, color: 0x5a3f2a, opacity: 0.78, base: -3 }
+                    ],
+
+                    intro: "황토빛 언덕 위, 고인돌 제단이 낮게 울립니다.\n돌기둥 사이로 청동의 흔적이 흩어져 있습니다.\n\n비파형 동검 조각, 청동 방울, 제단 문양을 조사하세요.",
+
+                    light: {
+                        hemiSky: 0xffc78c,
+                        hemiGround: 0x482d1b,
+                        hemiIntensity: 0.38,
+                        ambient: 0xb87a49,
+                        ambientIntensity: 0.15,
+                        sun: 0xffb168,
+                        sunIntensity: 1.85,
+                        sunPos: [-15, 13.5, -15],
+                        fillIntensity: 0.12
+                    },
+
+                    grade: {
+                        tint: [1.09, 0.95, 0.75],
+                        lift: [0.028, 0.017, 0.007],
+                        sat: 0.56,
+                        sepia: 0.33,
+                        contrast: 1.26,
+                        vignette: 1.05
+                    }
+                },
+
+                // ---------------------------------------------------------- 조선
+                {
+                    name: "조선 시대 · 한양 외곽 마을",
+                    goal: "저녁 마을의 기록 3개를 조사하세요.",
+                    total: 3,
+                    start: { x: -7.5, z: -7.2 },
+
+                    fog: 0x353140,
+                    fogDensity: 0.0190,
+
+                    sky: { top: 0x161a26, mid: 0x3b3546, bottom: 0x7d6154 },
+
+                    ridges: [
+                        { dist: 74, height: 32, color: 0x4b4557, opacity: 0.58, base: -6 },
+                        { dist: 56, height: 24, color: 0x3d3846, opacity: 0.66, base: -5 },
+                        { dist: 42, height: 16, color: 0x2f2b36, opacity: 0.76, base: -4 },
+                        { dist: 30, height: 10, color: 0x241f28, opacity: 0.84, base: -3 }
+                    ],
+
+                    intro: "저녁빛이 내려앉은 한양 외곽 마을입니다.\n등불 아래 돌담과 장승이 길게 그림자를 늘어뜨립니다.\n\n어사패, 낡은 문서, 장승의 문양을 조사하세요.",
+
+                    light: {
+                        // 달빛. 밤이지만 길과 건물이 읽혀야 한다.
+                        hemiSky: 0x7078a8,
+                        hemiGround: 0x2b241d,
+                        hemiIntensity: 1.05,
+                        ambient: 0x5d5878,
+                        ambientIntensity: 0.66,
+                        sun: 0xc6d2f2,
+                        sunIntensity: 1.55,
+                        sunPos: [-11, 15, -15],
+                        fillIntensity: 0.22
+                    },
+
+                    // 밤이지만 전체 게임의 낡은 필터는 유지한다
+                    grade: {
+                        tint: [1.00, 1.00, 1.06],
+                        lift: [0.072, 0.070, 0.088],
+                        sat: 0.58,
+                        sepia: 0.18,
+                        contrast: 1.10,
+                        vignette: 0.85
+                    }
+                }
+            ];
+
+            let renderer, camera, scene, world, player;
+            let glitchAmount = 0;  // 시대 전환 셰이더 글리치 강도 (0..1)
+            let backdrop = null;   // 지평선 배경판 (카메라를 따라다닌다)
+            let sunLight = null;   // 그림자 카메라를 플레이어에 맞추기 위해 보관
+            let currentAge = 0;
+            let ageProgress = 0;
+            let ageCompleteTriggered = false;
+            let transitioning = false;
+            let demoFinished = false;
+
+            let activeGate = null;
+            let clickTarget = null;
+            let interactables = [];
+            let animated = [];
+            let inventory = [];
+
+            const clock = new THREE.Clock();
+            // 고정 등각 오프셋. AoE1 보다 살짝 높은 각도.
+            const cameraOffset = new THREE.Vector3(20, 18, 20);
+            const cameraTarget = new THREE.Vector3();
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+            const keys = new Set();
+            const MOVE_CODES = new Set([
+                "KeyW", "KeyA", "KeyS", "KeyD",
+                "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"
+            ]);
+
+            const SPRINT_CODES = new Set(["ShiftLeft", "ShiftRight"]);
+
+            /******************************************************************
+             * 간단한 Web Audio API 사운드 시스템
+             * 외부 파일 없이 바람, 북소리, 효과음을 모두 생성한다.
+             ******************************************************************/
+            const AudioSystem = {
+                ctx: null,
+                master: null,
+                started: false,
+                era: 0,
+                drumTimer: null,
+                melodyTimer: null,
+                ambientTimer: null,
+                windFilter: null,
+                windGain: null,
+                waterGain: null,
+
+                start() {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioContextClass) return;
+
+                    if (!this.ctx) {
+                        this.ctx = new AudioContextClass();
+                        this.master = this.ctx.createGain();
+                        this.master.gain.value = 0.56;
+                        this.master.connect(this.ctx.destination);
+
+                        this.createWind();
+                        this.createWater();
+                        this.started = true;
+                        this.scheduleDrum();
+                        this.scheduleMelody();
+                        this.scheduleAmbient();
+                        this.setEra(currentAge);
+                    }
+
+                    if (this.ctx.state === "suspended") {
+                        this.ctx.resume();
+                    }
+                },
+
+                createNoiseBuffer(seconds) {
+                    const length = Math.max(1, Math.floor(this.ctx.sampleRate * seconds));
+                    const buffer = this.ctx.createBuffer(1, length, this.ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < length; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    return buffer;
+                },
+
+                createWind() {
+                    const seconds = 3.0;
+                    const length = Math.floor(this.ctx.sampleRate * seconds);
+                    const buffer = this.ctx.createBuffer(1, length, this.ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+
+                    // 낮은 바람 느낌을 위해 갈색 잡음에 가까운 느린 노이즈를 만든다.
+                    let v = 0;
+                    for (let i = 0; i < length; i++) {
+                        v = (v + (Math.random() * 2 - 1) * 0.018) * 0.995;
+                        data[i] = v * 3.0;
+                    }
+
+                    const source = this.ctx.createBufferSource();
+                    source.buffer = buffer;
+                    source.loop = true;
+
+                    const lowpass = this.ctx.createBiquadFilter();
+                    lowpass.type = "lowpass";
+                    lowpass.frequency.value = 420;
+                    lowpass.Q.value = 0.55;
+
+                    const gain = this.ctx.createGain();
+                    gain.gain.value = 0.052;
+
+                    // 바람의 세기가 아주 천천히 흔들리도록 LFO 연결
+                    const lfo = this.ctx.createOscillator();
+                    lfo.type = "sine";
+                    lfo.frequency.value = 0.055;
+
+                    const lfoGain = this.ctx.createGain();
+                    lfoGain.gain.value = 0.022;
+
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(gain.gain);
+
+                    source.connect(lowpass);
+                    lowpass.connect(gain);
+                    gain.connect(this.master);
+
+                    source.start();
+                    lfo.start();
+
+                    // 시대별로 바람의 음색과 세기를 바꾸기 위해 보관
+                    this.windFilter = lowpass;
+                    this.windGain = gain;
+                },
+
+                /**
+                 * 강물 소리 레이어 (신석기 전용).
+                 * 대역 통과 노이즈에 아주 느린 LFO 를 걸어 물결이 밀려오는 느낌을 만든다.
+                 */
+                createWater() {
+                    const src = this.ctx.createBufferSource();
+                    src.buffer = this.createNoiseBuffer(4.0);
+                    src.loop = true;
+
+                    const band = this.ctx.createBiquadFilter();
+                    band.type = "bandpass";
+                    band.frequency.value = 900;
+                    band.Q.value = 0.6;
+
+                    const gain = this.ctx.createGain();
+                    gain.gain.value = 0;
+
+                    const lfo = this.ctx.createOscillator();
+                    lfo.type = "sine";
+                    lfo.frequency.value = 0.13;
+
+                    const lfoGain = this.ctx.createGain();
+                    lfoGain.gain.value = 0.010;
+
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(gain.gain);
+
+                    src.connect(band);
+                    band.connect(gain);
+                    gain.connect(this.master);
+
+                    src.start();
+                    lfo.start();
+
+                    this.waterGain = gain;
+                },
+
+                /**
+                 * AUDIO — 시대별 배경 설정
+                 * 바람 음색, 북의 간격, 선율 악기와 음계를 통째로 바꾼다.
+                 * 모든 소리는 아주 작게. 탐험을 방해하면 안 된다.
+                 */
+                setEra(index) {
+                    this.era = index;
+                    if (!this.ctx) return;
+
+                    const t = this.ctx.currentTime;
+                    const cfg = this.ERA_SOUND[index];
+
+                    if (this.windFilter) {
+                        this.windFilter.frequency.setTargetAtTime(cfg.windCutoff, t, 1.2);
+                    }
+                    if (this.windGain) {
+                        this.windGain.gain.setTargetAtTime(cfg.windLevel, t, 1.2);
+                    }
+                    if (this.waterGain) {
+                        this.waterGain.gain.setTargetAtTime(cfg.waterLevel, t, 1.5);
+                    }
+                },
+
+                /** 시대별 사운드 설정표. 여기 숫자만 바꾸면 분위기가 바뀐다. */
+                ERA_SOUND: [
+                    {
+                        // 신석기: 강가의 바람과 물, 낮고 느린 가죽 북
+                        windCutoff: 420,
+                        windLevel: 0.052,
+                        waterLevel: 0.020,
+                        drumMin: 3400, drumMax: 6200,
+                        drumFreq: 86, drumDecay: 0.55, drumLevel: 0.17,
+                        melodyMin: 7000, melodyMax: 13000,
+                        melodyWave: "sine", melodyLevel: 0.030, melodyLen: 1.9,
+                        // 국악 5음 음계 (계면조 느낌)
+                        scale: [147, 175, 196, 220, 262, 294],
+                        ambient: "bird"
+                    },
+                    {
+                        // 청동기: 메마른 바람, 제의의 겹북, 청동 방울의 잔향
+                        windCutoff: 620,
+                        windLevel: 0.044,
+                        waterLevel: 0.0,
+                        drumMin: 2400, drumMax: 4200,
+                        drumFreq: 74, drumDecay: 0.70, drumLevel: 0.20,
+                        melodyMin: 5200, melodyMax: 9500,
+                        melodyWave: "triangle", melodyLevel: 0.024, melodyLen: 2.6,
+                        scale: [131, 156, 175, 196, 233, 262],
+                        ambient: "bell"
+                    },
+                    {
+                        // 조선: 밤의 정적, 대금 같은 숨소리, 풀벌레
+                        windCutoff: 300,
+                        windLevel: 0.034,
+                        waterLevel: 0.006,
+                        drumMin: 5200, drumMax: 9000,
+                        drumFreq: 96, drumDecay: 0.42, drumLevel: 0.11,
+                        melodyMin: 6000, melodyMax: 11000,
+                        melodyWave: "sine", melodyLevel: 0.032, melodyLen: 2.8,
+                        scale: [196, 220, 262, 294, 349, 392],
+                        ambient: "cricket"
+                    }
+                ],
+
+                scheduleDrum() {
+                    const loop = () => {
+                        if (!this.started) return;
+                        const cfg = this.ERA_SOUND[this.era || 0];
+                        this.playDrum();
+                        // 청동기는 제의처럼 두 번 친다
+                        if (this.era === 1) setTimeout(() => this.playDrum(0.62), 330);
+                        this.drumTimer = setTimeout(loop, cfg.drumMin + Math.random() * (cfg.drumMax - cfg.drumMin));
+                    };
+                    this.drumTimer = setTimeout(loop, 1600);
+                },
+
+                /** 아주 드물게 한 음씩 떨어지는 선율 */
+                scheduleMelody() {
+                    const loop = () => {
+                        if (!this.started) return;
+                        const cfg = this.ERA_SOUND[this.era || 0];
+                        this.playMelodyNote();
+                        this.melodyTimer = setTimeout(loop, cfg.melodyMin + Math.random() * (cfg.melodyMax - cfg.melodyMin));
+                    };
+                    this.melodyTimer = setTimeout(loop, 4200);
+                },
+
+                playMelodyNote() {
+                    const cfg = this.ERA_SOUND[this.era || 0];
+                    const f = cfg.scale[Math.floor(Math.random() * cfg.scale.length)];
+
+                    if (this.era === 2) {
+                        // 대금처럼: 숨소리 섞인 긴 음
+                        this.breathTone(f, cfg.melodyLen, cfg.melodyLevel);
+                    } else {
+                        this.tone(f, cfg.melodyLen, cfg.melodyWave, cfg.melodyLevel);
+                        // 5도 위를 아주 작게 겹쳐 공간감을 준다
+                        this.tone(f * 1.5, cfg.melodyLen * 0.8, "sine", cfg.melodyLevel * 0.35, 0.18);
+                    }
+                },
+
+                /** 숨소리가 섞인 관악기 느낌 (대금/퉁소) */
+                breathTone(freq, duration, volume) {
+                    if (!this.ctx) return;
+                    const t = this.ctx.currentTime;
+
+                    const osc = this.ctx.createOscillator();
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(freq, t);
+
+                    // 느린 농현(비브라토)
+                    const vib = this.ctx.createOscillator();
+                    vib.type = "sine";
+                    vib.frequency.value = 4.6;
+                    const vibGain = this.ctx.createGain();
+                    vibGain.gain.value = freq * 0.012;
+                    vib.connect(vibGain);
+                    vibGain.connect(osc.frequency);
+
+                    const gain = this.ctx.createGain();
+                    gain.gain.setValueAtTime(0.0001, t);
+                    gain.gain.exponentialRampToValueAtTime(volume, t + 0.42);
+                    gain.gain.setValueAtTime(volume, t + duration * 0.6);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+
+                    osc.connect(gain);
+                    gain.connect(this.master);
+                    osc.start(t);
+                    osc.stop(t + duration + 0.1);
+                    vib.start(t);
+                    vib.stop(t + duration + 0.1);
+
+                    // 숨 소리
+                    this.noiseBurst(duration * 0.5, volume * 0.35, "bandpass", freq * 2.2);
+                },
+
+                /** 시대별 환경음: 새 / 방울 / 풀벌레 */
+                scheduleAmbient() {
+                    const loop = () => {
+                        if (!this.started) return;
+                        const cfg = this.ERA_SOUND[this.era || 0];
+
+                        if (cfg.ambient === "bird") {
+                            // 멀리서 우는 물새
+                            const f = 900 + Math.random() * 600;
+                            this.tone(f, 0.10, "sine", 0.018, 0, f * 0.72);
+                            this.tone(f * 0.9, 0.09, "sine", 0.014, 0.16, f * 0.66);
+                        } else if (cfg.ambient === "bell") {
+                            // 청동 방울의 희미한 잔향
+                            const f = 1100 + Math.random() * 900;
+                            this.tone(f, 1.6, "sine", 0.016);
+                            this.tone(f * 1.51, 1.3, "sine", 0.010, 0.04);
+                        } else {
+                            // 밤의 풀벌레
+                            for (let i = 0; i < 5; i++) {
+                                this.noiseBurst(0.035, 0.012, "bandpass", 4200 + Math.random() * 1200);
+                            }
+                        }
+
+                        this.ambientTimer = setTimeout(loop, 4000 + Math.random() * 8000);
+                    };
+                    this.ambientTimer = setTimeout(loop, 3000);
+                },
+
+                tone(freq, duration, type = "sine", volume = 0.08, delay = 0, glideTo = null) {
+                    if (!this.ctx || !this.master) return;
+
+                    const t = this.ctx.currentTime + delay;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(Math.max(1, freq), t);
+                    if (glideTo) {
+                        osc.frequency.exponentialRampToValueAtTime(Math.max(1, glideTo), t + duration * 0.92);
+                    }
+
+                    gain.gain.setValueAtTime(0.0001, t);
+                    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), t + 0.014);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+
+                    osc.connect(gain);
+                    gain.connect(this.master);
+                    osc.start(t);
+                    osc.stop(t + duration + 0.04);
+                },
+
+                noiseBurst(duration, volume, filterType = "bandpass", freq = 700) {
+                    if (!this.ctx || !this.master) return;
+
+                    const t = this.ctx.currentTime;
+                    const src = this.ctx.createBufferSource();
+                    src.buffer = this.createNoiseBuffer(duration);
+
+                    const filter = this.ctx.createBiquadFilter();
+                    filter.type = filterType;
+                    filter.frequency.value = freq;
+                    filter.Q.value = 0.8;
+
+                    const gain = this.ctx.createGain();
+                    gain.gain.setValueAtTime(0.0001, t);
+                    gain.gain.exponentialRampToValueAtTime(volume, t + 0.015);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+
+                    src.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.master);
+                    src.start(t);
+                    src.stop(t + duration + 0.03);
+                },
+
+                playDrum(strength = 1) {
+                    if (!this.ctx) return;
+
+                    const cfg = this.ERA_SOUND[this.era || 0];
+                    const t = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(cfg.drumFreq, t);
+                    osc.frequency.exponentialRampToValueAtTime(cfg.drumFreq * 0.49, t + 0.24);
+
+                    gain.gain.setValueAtTime(0.0001, t);
+                    gain.gain.exponentialRampToValueAtTime(cfg.drumLevel * strength, t + 0.018);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, t + cfg.drumDecay);
+
+                    osc.connect(gain);
+                    gain.connect(this.master);
+                    osc.start(t);
+                    osc.stop(t + cfg.drumDecay + 0.1);
+
+                    // 북 가죽이 울리는 질감
+                    this.noiseBurst(0.11, 0.033 * strength, "lowpass", 230);
+                },
+
+                playInvestigate() {
+                    this.tone(520, 0.12, "triangle", 0.05, 0, 690);
+                    this.tone(870, 0.16, "sine", 0.035, 0.08);
+                },
+
+                playPickup() {
+                    this.tone(392, 0.12, "triangle", 0.055, 0);
+                    this.tone(588, 0.14, "triangle", 0.052, 0.08);
+                    this.tone(784, 0.18, "sine", 0.045, 0.16);
+                },
+
+                playGate() {
+                    this.tone(130, 1.1, "sine", 0.055, 0, 98);
+                    this.tone(196, 1.0, "sine", 0.045, 0.03);
+                    this.tone(247, 1.0, "triangle", 0.04, 0.08);
+                    this.tone(330, 1.2, "sine", 0.035, 0.12);
+                    this.noiseBurst(0.7, 0.04, "lowpass", 520);
+                },
+
+                playGlitch() {
+                    this.noiseBurst(0.45, 0.16, "highpass", 950);
+                    for (let i = 0; i < 12; i++) {
+                        const f = 90 + Math.random() * 1250;
+                        this.tone(f, 0.035 + Math.random() * 0.035, "sawtooth", 0.035, i * 0.035);
+                    }
+                }
+            };
+
+            /******************************************************************
+             * 난수 유틸리티: 장면 장식을 매번 비슷하게 생성하기 위한 간단한 PRNG
+             ******************************************************************/
+            let rngSeed = 1;
+
+            function seedRandom(seed) {
+                rngSeed = seed;
+            }
+
+            function rand() {
+                const x = Math.sin(rngSeed++) * 10000;
+                return x - Math.floor(x);
+            }
+
+            function randRange(min, max) {
+                return min + rand() * (max - min);
+            }
+
+            function pick(arr) {
+                return arr[Math.floor(rand() * arr.length)];
+            }
+
+            /******************************************************************
+             * VALUE NOISE / FBM
+             * 지형 굴곡과 수채화풍 얼룩을 만드는 데 사용한다.
+             ******************************************************************/
+            function hash2(x, y) {
+                const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453123;
+                return n - Math.floor(n);
+            }
+
+            function smooth(t) {
+                return t * t * (3 - 2 * t);
+            }
+
+            function valueNoise(x, y) {
+                const xi = Math.floor(x), yi = Math.floor(y);
+                const xf = x - xi, yf = y - yi;
+                const u = smooth(xf), v = smooth(yf);
+
+                const a = hash2(xi, yi);
+                const b = hash2(xi + 1, yi);
+                const c = hash2(xi, yi + 1);
+                const d = hash2(xi + 1, yi + 1);
+
+                return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v;
+            }
+
+            function fbm(x, y, octaves = 4) {
+                let sum = 0, amp = 0.5, freq = 1, norm = 0;
+                for (let i = 0; i < octaves; i++) {
+                    sum += valueNoise(x * freq, y * freq) * amp;
+                    norm += amp;
+                    amp *= 0.5;
+                    freq *= 2.05;
+                }
+                return sum / norm;
+            }
+
+            /******************************************************************
+             * TERRAIN
+             * 중앙(마을)은 거의 평평하고, 바깥으로 갈수록 완만하게 굴곡진다.
+             * 멀리 있는 지형이 안개에 녹아들면서 프리렌더 배경처럼 보이게 한다.
+             ******************************************************************/
+            const TERRAIN = {
+                flatRadius: 15,  // 이 반경 안쪽은 평지 (오브젝트 배치가 안정적)
+                falloff: 26,     // 이 반경부터 굴곡이 최대
+                amplitude: 3.4
+            };
+
+            // 시대별 지형 변형 (예: 강바닥 파내기). buildAge 에서 설정한다.
+            let terrainCarve = null;
+
+            /** 물속이면 true — 풀/돌/나무를 놓지 않는다 */
+            function isUnderwater(x, z) {
+                return terrainHeight(x, z) < -0.22;
+            }
+
+            /** 물가 근처인지 (나무는 물가에서 조금 떨어져 자란다) */
+            function isNearWater(x, z) {
+                return isUnderwater(x, z) ||
+                    isUnderwater(x + 2.6, z + 2.6) ||
+                    isUnderwater(x - 2.6, z - 2.6);
+            }
+
+            function terrainHeight(x, z) {
+                const d = Math.hypot(x, z);
+                let h = 0;
+
+                if (d > TERRAIN.flatRadius) {
+                    // 평지 -> 언덕으로 부드럽게 전이
+                    let t = (d - TERRAIN.flatRadius) / (TERRAIN.falloff - TERRAIN.flatRadius);
+                    t = smooth(THREE.MathUtils.clamp(t, 0, 1));
+
+                    const n = fbm(x * 0.045 + 11.3, z * 0.045 + 7.9, 4) - 0.5;
+                    h = n * TERRAIN.amplitude * t;
+                }
+
+                return terrainCarve ? terrainCarve(x, z, h) : h;
+            }
+
+            /******************************************************************
+             * PROCEDURAL TEXTURES
+             * 외부 이미지를 쓰지 않고 canvas 로 직접 그린다.
+             * 수채화처럼 번진 얼룩 + 거친 종이 결을 섞는다.
+             ******************************************************************/
+            function makeCanvas(size) {
+                const c = document.createElement("canvas");
+                c.width = c.height = size;
+                return c;
+            }
+
+            function finishTexture(canvas, repeat) {
+                const t = new THREE.CanvasTexture(canvas);
+                t.wrapS = t.wrapT = THREE.RepeatWrapping;
+                t.magFilter = THREE.NearestFilter;   // 픽셀 느낌 유지
+                t.minFilter = THREE.LinearMipmapLinearFilter;
+                t.generateMipmaps = true;
+                t.anisotropy = 1;
+                if (repeat) t.repeat.set(repeat, repeat);
+                if ("colorSpace" in t) t.colorSpace = THREE.SRGBColorSpace;
+                return t;
+            }
+
+            /**
+             * 수채화풍 흙/땅 텍스처.
+             * @param {string[]} colors 얼룩에 쓸 색 (CSS 문자열)
+             * @param {string} base 바탕색
+             */
+            function makeTerrainTexture(colors, base, opts = {}) {
+                const S = 256;
+                const c = makeCanvas(S);
+                const g = c.getContext("2d");
+
+                g.fillStyle = base;
+                g.fillRect(0, 0, S, S);
+
+                // 1) 크게 번진 수채화 얼룩 (여러 겹 반투명으로 겹쳐 물감처럼)
+                const washes = opts.washes ?? 110;
+                for (let i = 0; i < washes; i++) {
+                    const x = rand() * S, y = rand() * S;
+                    const r = randRange(10, 52);
+                    const col = pick(colors);
+                    const grd = g.createRadialGradient(x, y, 0, x, y, r);
+                    grd.addColorStop(0, col.replace("ALPHA", (randRange(0.05, 0.16)).toFixed(3)));
+                    grd.addColorStop(0.65, col.replace("ALPHA", (randRange(0.02, 0.07)).toFixed(3)));
+                    grd.addColorStop(1, col.replace("ALPHA", "0"));
+                    g.fillStyle = grd;
+                    g.beginPath();
+                    g.arc(x, y, r, 0, Math.PI * 2);
+                    g.fill();
+                }
+
+                // 2) 마른 붓자국 (수채화 가장자리 느낌)
+                g.globalAlpha = 0.10;
+                for (let i = 0; i < 26; i++) {
+                    g.strokeStyle = pick(colors).replace("ALPHA", "0.5");
+                    g.lineWidth = randRange(1, 4);
+                    g.beginPath();
+                    const x = rand() * S, y = rand() * S;
+                    g.moveTo(x, y);
+                    g.bezierCurveTo(
+                        x + randRange(-40, 40), y + randRange(-40, 40),
+                        x + randRange(-60, 60), y + randRange(-60, 60),
+                        x + randRange(-70, 70), y + randRange(-70, 70)
+                    );
+                    g.stroke();
+                }
+                g.globalAlpha = 1;
+
+                // 3) 자갈/흙알갱이 (픽셀 단위 점묘)
+                const img = g.getImageData(0, 0, S, S);
+                const d = img.data;
+                for (let i = 0; i < d.length; i += 4) {
+                    const px = (i / 4) % S, py = Math.floor((i / 4) / S);
+                    // 종이 결처럼 저주파 노이즈도 섞는다
+                    const paper = (fbm(px * 0.06, py * 0.06, 3) - 0.5) * 26;
+                    const speck = (Math.random() - 0.5) * (opts.grit ?? 26);
+                    d[i] = THREE.MathUtils.clamp(d[i] + speck + paper, 0, 255);
+                    d[i + 1] = THREE.MathUtils.clamp(d[i + 1] + speck * 0.95 + paper, 0, 255);
+                    d[i + 2] = THREE.MathUtils.clamp(d[i + 2] + speck * 0.85 + paper * 0.9, 0, 255);
+                }
+                g.putImageData(img, 0, 0);
+
+                return finishTexture(c, opts.repeat ?? 9);
+            }
+
+            /** 물 표면: 잔물결 + 반짝임 */
+            function makeWaterTexture(base, hi) {
+                const S = 128;
+                const c = makeCanvas(S);
+                const g = c.getContext("2d");
+                g.fillStyle = base;
+                g.fillRect(0, 0, S, S);
+
+                for (let i = 0; i < 260; i++) {
+                    g.strokeStyle = hi.replace("ALPHA", randRange(0.04, 0.16).toFixed(3));
+                    g.lineWidth = randRange(0.6, 1.8);
+                    const y = rand() * S, x = rand() * S;
+                    const w = randRange(4, 26);
+                    g.beginPath();
+                    g.moveTo(x, y);
+                    g.quadraticCurveTo(x + w * 0.5, y + randRange(-1.6, 1.6), x + w, y);
+                    g.stroke();
+                }
+                return finishTexture(c, 7);
+            }
+
+            /** 초가지붕 / 갈대 지붕: 세로 결 */
+            function makeThatchTexture(base, dark, light) {
+                const S = 128;
+                const c = makeCanvas(S);
+                const g = c.getContext("2d");
+                g.fillStyle = base;
+                g.fillRect(0, 0, S, S);
+
+                for (let i = 0; i < 700; i++) {
+                    g.strokeStyle = (rand() > 0.5 ? dark : light).replace("ALPHA", randRange(0.08, 0.34).toFixed(3));
+                    g.lineWidth = randRange(0.5, 1.6);
+                    const x = rand() * S, y = rand() * S;
+                    g.beginPath();
+                    g.moveTo(x, y);
+                    g.lineTo(x + randRange(-2.5, 2.5), y + randRange(6, 22));
+                    g.stroke();
+                }
+                return finishTexture(c, 3);
+            }
+
+            /** 돌 / 바위: 얼룩과 이끼 */
+            function makeStoneTexture(base, spots) {
+                const S = 128;
+                const c = makeCanvas(S);
+                const g = c.getContext("2d");
+                g.fillStyle = base;
+                g.fillRect(0, 0, S, S);
+
+                for (let i = 0; i < 160; i++) {
+                    const x = rand() * S, y = rand() * S, r = randRange(2, 16);
+                    const grd = g.createRadialGradient(x, y, 0, x, y, r);
+                    const col = pick(spots);
+                    grd.addColorStop(0, col.replace("ALPHA", randRange(0.05, 0.22).toFixed(3)));
+                    grd.addColorStop(1, col.replace("ALPHA", "0"));
+                    g.fillStyle = grd;
+                    g.beginPath();
+                    g.arc(x, y, r, 0, Math.PI * 2);
+                    g.fill();
+                }
+                return finishTexture(c, 2);
+            }
+
+            /** 나무 재질: 세로 나뭇결 */
+            function makeWoodTexture(base, dark) {
+                const S = 64;
+                const c = makeCanvas(S);
+                const g = c.getContext("2d");
+                g.fillStyle = base;
+                g.fillRect(0, 0, S, S);
+                for (let i = 0; i < 120; i++) {
+                    g.fillStyle = dark.replace("ALPHA", randRange(0.05, 0.25).toFixed(3));
+                    g.fillRect(rand() * S, 0, randRange(0.5, 2.2), S);
+                }
+                return finishTexture(c, 2);
+            }
+
+            /** 안개 판에 쓰는 부드러운 원형 알파 텍스처 */
+            function makeMistTexture() {
+                const S = 128;
+                const c = makeCanvas(S);
+                const g = c.getContext("2d");
+
+                g.clearRect(0, 0, S, S);
+                for (let i = 0; i < 40; i++) {
+                    const x = randRange(20, S - 20), y = randRange(20, S - 20);
+                    const r = randRange(14, 46);
+                    const grd = g.createRadialGradient(x, y, 0, x, y, r);
+                    grd.addColorStop(0, "rgba(255,255,255," + randRange(0.05, 0.16).toFixed(3) + ")");
+                    grd.addColorStop(1, "rgba(255,255,255,0)");
+                    g.fillStyle = grd;
+                    g.beginPath();
+                    g.arc(x, y, r, 0, Math.PI * 2);
+                    g.fill();
+                }
+
+                const t = new THREE.CanvasTexture(c);
+                t.wrapS = t.wrapT = THREE.RepeatWrapping;
+                t.magFilter = THREE.LinearFilter;
+                t.minFilter = THREE.LinearFilter;
+                return t;
+            }
+
+            // 시대별로 다시 만들어지는 텍스처 캐시
+            let TEX = {};
+
+            /******************************************************************
+             * POST PROCESSING
+             * 저해상도 렌더 타겟 -> 풀스크린 셰이더 -> 저해상도 캔버스 -> CSS 확대
+             *
+             * 셰이더가 담당하는 것:
+             *   - 바랜 사진 같은 채도 저하 + 따뜻한 황갈색 컬러 그레이딩
+             *   - 4x4 Bayer 디더링 + 색 단계 축소 (90년대 256색 팔레트 느낌)
+             *   - 필름 그레인 / 비네팅 / 미세한 색수차
+             *   - 시대 전환용 CRT 글리치
+             ******************************************************************/
+            let renderTarget, postScene, postCamera, postMaterial;
+
+            // 시대별 그레이딩 값. buildAge()에서 갱신된다.
+            const grade = {
+                tint: new THREE.Color(1.06, 0.97, 0.80), // 전체 색조
+                lift: new THREE.Color(0.045, 0.026, 0.012), // 검정을 갈색으로 들어올림
+                sat: 0.58,   // 0=흑백, 1=원본
+                sepia: 0.34, // 세피아 혼합량
+                contrast: 1.14,
+                vignette: 1.0
+            };
+
+            const POST_VERT = [
+                "varying vec2 vUv;",
+                "void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }"
+            ].join("\n");
+
+            const POST_FRAG = [
+                "precision highp float;",
+                "varying vec2 vUv;",
+                "uniform sampler2D tDiffuse;",
+                "uniform vec2 uRes;",      // 저해상도 픽셀 크기
+                "uniform float uTime;",
+                "uniform float uGlitch;",  // 0..1 시대 전환
+                "uniform vec3 uTint;",
+                "uniform vec3 uLift;",
+                "uniform float uSat;",
+                "uniform float uSepia;",
+                "uniform float uContrast;",
+                "uniform float uVignette;",
+
+                // 선형 -> sRGB (렌더 타겟은 선형으로 저장된다)
+                "vec3 toSRGB(vec3 c){ return pow(clamp(c, 0.0, 1.0), vec3(0.4545)); }",
+
+                "float hash(vec2 p){",
+                "  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);",
+                "}",
+
+                // 부드러운 값 노이즈 — 수채화 종이의 얼룩진 결에 쓴다
+                "float vnoise(vec2 p){",
+                "  vec2 i = floor(p), f = fract(p);",
+                "  f = f * f * (3.0 - 2.0 * f);",
+                "  float a = hash(i);",
+                "  float b = hash(i + vec2(1.0, 0.0));",
+                "  float c = hash(i + vec2(0.0, 1.0));",
+                "  float d = hash(i + vec2(1.0, 1.0));",
+                "  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);",
+                "}",
+
+                // 2x2 Bayer 를 재귀적으로 4x4 로 확장
+                "float bayer2(float x, float y){ return 2.0*x + 3.0*y - 4.0*x*y; }",
+                "float bayer4(vec2 p){",
+                "  float x = mod(p.x, 4.0), y = mod(p.y, 4.0);",
+                "  float fine   = bayer2(mod(x, 2.0), mod(y, 2.0));",
+                "  float coarse = bayer2(floor(x * 0.5), floor(y * 0.5));",
+                "  return (fine * 4.0 + coarse) / 16.0;",
+                "}",
+
+                "void main(){",
+                "  vec2 uv = vUv;",
+                "  vec2 px = uv * uRes;",
+
+                // --- 시대 전환 글리치: 가로 줄 단위로 화면을 찢는다 ---
+                "  if(uGlitch > 0.001){",
+                "    float band = floor(uv.y * 34.0);",
+                "    float jitter = (hash(vec2(band, floor(uTime * 22.0))) - 0.5);",
+                "    float strong = step(0.62, hash(vec2(band * 1.7, floor(uTime * 14.0))));",
+                "    uv.x += jitter * 0.10 * uGlitch * (0.35 + strong);",
+                "    uv.y += (hash(vec2(floor(uTime*30.0), 3.0)) - 0.5) * 0.015 * uGlitch;",
+                "  }",
+
+                // --- 색수차: 화면 바깥쪽으로 갈수록 RGB 가 미세하게 어긋난다 ---
+                "  vec2 dir = uv - 0.5;",
+                "  float ab = (0.0012 + uGlitch * 0.020);",
+                "  vec3 col;",
+                "  col.r = texture2D(tDiffuse, uv + dir * ab).r;",
+                "  col.g = texture2D(tDiffuse, uv).g;",
+                "  col.b = texture2D(tDiffuse, uv - dir * ab).b;",
+
+                "  col = toSRGB(col);",
+
+                // --- 바랜 필름 같은 채도 저하 ---
+                "  float lum = dot(col, vec3(0.299, 0.587, 0.114));",
+                "  col = mix(vec3(lum), col, uSat);",
+
+                // --- 세피아 / 황갈색 필터 ---
+                "  vec3 sepia = lum * vec3(1.18, 0.93, 0.64);",
+                "  col = mix(col, sepia, uSepia);",
+
+                // --- 시대별 색조 + 검정 들어올리기 ---
+                "  col = col * uTint + uLift;",
+
+                // --- 대비 ---
+                "  col = (col - 0.5) * uContrast + 0.5;",
+
+                // --- 수채화 종이 질감: 물감이 번진 듯 밝기가 고르지 않다 ---
+                "  float paper = vnoise(uv * vec2(9.0, 6.0)) * 0.6 + vnoise(uv * vec2(29.0, 21.0)) * 0.4;",
+                "  col *= 0.93 + paper * 0.14;",
+
+                // --- 비네팅 (오래된 CRT 의 어두운 모서리) ---
+                "  float vig = 1.0 - dot(dir, dir) * 1.55 * uVignette;",
+                "  col *= mix(0.26, 1.0, clamp(pow(clamp(vig, 0.0, 1.0), 1.30), 0.0, 1.0));",
+
+                // --- 필름 그레인 (저해상도 픽셀 단위라 알갱이가 굵다) ---
+                "  float grain = hash(floor(px) + vec2(floor(uTime * 24.0) * 13.7, 0.0));",
+                "  col += (grain - 0.5) * 0.055;",
+
+                // --- 아주 약한 수평 주사선 (저해상도 단계) ---
+                "  col *= 1.0 - 0.045 * mod(floor(px.y), 2.0);",
+
+                // --- Bayer 디더링 + 색 단계 축소 (256색 시절 그라데이션) ---
+                "  float levels = 28.0;",
+                "  float d = bayer4(px) - 0.5;",
+                "  col = floor(clamp(col, 0.0, 1.0) * levels + 0.5 + d) / levels;",
+
+                // --- 전환 중 화이트 아웃 ---
+                "  col = mix(col, vec3(0.99, 0.95, 0.86), uGlitch * 0.18);",
+
+                "  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);",
+                "}"
+            ].join("\n");
+
+            function initPost() {
+                renderTarget = new THREE.WebGLRenderTarget(320, 180, {
+                    minFilter: THREE.NearestFilter,
+                    magFilter: THREE.NearestFilter,
+                    format: THREE.RGBAFormat,
+                    type: THREE.UnsignedByteType,
+                    depthBuffer: true,
+                    stencilBuffer: false
+                });
+
+                // 렌더 타겟은 선형으로 두고 셰이더에서 직접 sRGB 변환한다.
+                if ("colorSpace" in renderTarget.texture) {
+                    renderTarget.texture.colorSpace = THREE.LinearSRGBColorSpace;
+                }
+
+                postMaterial = new THREE.ShaderMaterial({
+                    vertexShader: POST_VERT,
+                    fragmentShader: POST_FRAG,
+                    depthTest: false,
+                    depthWrite: false,
+                    uniforms: {
+                        tDiffuse: { value: renderTarget.texture },
+                        uRes: { value: new THREE.Vector2(320, 180) },
+                        uTime: { value: 0 },
+                        uGlitch: { value: 0 },
+                        uTint: { value: grade.tint.clone() },
+                        uLift: { value: grade.lift.clone() },
+                        uSat: { value: grade.sat },
+                        uSepia: { value: grade.sepia },
+                        uContrast: { value: grade.contrast },
+                        uVignette: { value: grade.vignette }
+                    }
+                });
+
+                postScene = new THREE.Scene();
+                postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+                const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMaterial);
+                quad.frustumCulled = false; // 클립 공간에 직접 그리므로 컬링하면 안 된다
+                postScene.add(quad);
+            }
+
+            // 시대가 바뀔 때 그레이딩 유니폼을 갱신
+            function applyGrade(g) {
+                if (!postMaterial) return;
+                const u = postMaterial.uniforms;
+                u.uTint.value.setRGB(g.tint[0], g.tint[1], g.tint[2]);
+                u.uLift.value.setRGB(g.lift[0], g.lift[1], g.lift[2]);
+                u.uSat.value = g.sat;
+                u.uSepia.value = g.sepia;
+                u.uContrast.value = g.contrast;
+                u.uVignette.value = g.vignette;
+            }
+
+            /******************************************************************
+             * THREE INITIALIZATION
+             ******************************************************************/
+            function initThree() {
+                renderer = new THREE.WebGLRenderer({
+                    antialias: false,
+                    powerPreference: "high-performance"
+                });
+
+                renderer.setPixelRatio(1);
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFShadowMap;
+
+                if ("outputColorSpace" in renderer) {
+                    // 최종 출력은 셰이더가 직접 만든 sRGB 값을 그대로 내보낸다.
+                    renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+                }
+
+                dom.game.appendChild(renderer.domElement);
+
+                // CAMERA: 고정 등각(Isometric). 절대 캐릭터 뒤를 따라가지 않는다.
+                camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 260);
+                camera.position.copy(cameraOffset);
+                camera.lookAt(0, 0, 0);
+
+                initPost();
+
+                window.addEventListener("resize", resizeRenderer);
+                resizeRenderer();
+            }
+
+            function resizeRenderer() {
+                // 내부 렌더링 해상도를 낮춰서 굵은 픽셀을 만든다.
+                const w = Math.max(320, Math.floor(window.innerWidth * RENDER_SCALE));
+                const h = Math.max(200, Math.floor(window.innerHeight * RENDER_SCALE));
+
+                renderer.setSize(w, h, false);
+                renderTarget.setSize(w, h);
+                postMaterial.uniforms.uRes.value.set(w, h);
+
+                const aspect = window.innerWidth / window.innerHeight;
+                camera.left = -VIEW_SIZE * aspect * 0.5;
+                camera.right = VIEW_SIZE * aspect * 0.5;
+                camera.top = VIEW_SIZE * 0.5;
+                camera.bottom = -VIEW_SIZE * 0.5;
+                camera.updateProjectionMatrix();
+            }
+
+            function setupInput() {
+                window.addEventListener("keydown", (e) => {
+                    AudioSystem.start();
+
+                    if (MOVE_CODES.has(e.code)) {
+                        keys.add(e.code);
+                        e.preventDefault();
+                    }
+
+                    if (SPRINT_CODES.has(e.code)) {
+                        keys.add(e.code);
+                    }
+
+                    if (e.code === "KeyE") {
+                        if (!e.repeat) tryInteract();
+                        e.preventDefault();
+                    }
+
+                    // H: 목표 방향 이정표
+                    if (e.code === "KeyH") {
+                        if (!e.repeat) toggleHint();
+                        e.preventDefault();
+                    }
+                });
+
+                dom.hintBtn.addEventListener("click", () => {
+                    AudioSystem.start();
+                    toggleHint();
+                });
+
+                window.addEventListener("keyup", (e) => {
+                    keys.delete(e.code);
+                });
+
+                renderer.domElement.addEventListener("pointerdown", (e) => {
+                    AudioSystem.start();
+
+                    if (transitioning || demoFinished || e.button !== 0) return;
+
+                    const rect = renderer.domElement.getBoundingClientRect();
+                    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+                    raycaster.setFromCamera(mouse, camera);
+
+                    const point = new THREE.Vector3();
+                    if (raycaster.ray.intersectPlane(groundPlane, point)) {
+                        clickTarget = new THREE.Vector3(
+                            THREE.MathUtils.clamp(point.x, -WORLD_LIMIT, WORLD_LIMIT),
+                            0,
+                            THREE.MathUtils.clamp(point.z, -WORLD_LIMIT, WORLD_LIMIT)
+                        );
+                    }
+                });
+            }
+
+            /******************************************************************
+             * 재질 / 기본 도형 생성 헬퍼
+             ******************************************************************/
+            function makeMat(color, opts = {}) {
+                return new THREE.MeshStandardMaterial({
+                    color,
+                    // 텍스처를 주면 색과 곱해져서 거친 표면 느낌이 난다
+                    map: opts.map ?? null,
+                    roughness: opts.roughness ?? 0.92,
+                    metalness: opts.metalness ?? 0.0,
+                    flatShading: opts.flatShading ?? true,
+                    transparent: opts.transparent ?? false,
+                    opacity: opts.opacity ?? 1,
+                    emissive: opts.emissive ?? 0x000000,
+                    emissiveIntensity: opts.emissiveIntensity ?? 0,
+                    side: opts.side ?? THREE.FrontSide,
+                    depthWrite: opts.depthWrite ?? true
+                });
+            }
+
+            function makeBasicMat(color, opts = {}) {
+                return new THREE.MeshBasicMaterial({
+                    color,
+                    transparent: opts.transparent ?? false,
+                    opacity: opts.opacity ?? 1,
+                    side: opts.side ?? THREE.FrontSide,
+                    depthWrite: opts.depthWrite ?? true
+                });
+            }
+
+            function setMeshFlags(mesh, opts = {}) {
+                mesh.castShadow = opts.castShadow ?? true;
+                mesh.receiveShadow = opts.receiveShadow ?? true;
+                return mesh;
+            }
+
+            function addBox(parent, w, h, d, color, x, y, z, rotY = 0, opts = {}) {
+                const mesh = new THREE.Mesh(
+                    new THREE.BoxGeometry(w, h, d),
+                    opts.material || makeMat(color, opts)
+                );
+                mesh.position.set(x, y, z);
+                mesh.rotation.y = rotY;
+                setMeshFlags(mesh, opts);
+                parent.add(mesh);
+                return mesh;
+            }
+
+            function addCylinder(parent, rTop, rBottom, h, segments, color, x, y, z, opts = {}) {
+                const mesh = new THREE.Mesh(
+                    new THREE.CylinderGeometry(rTop, rBottom, h, segments),
+                    opts.material || makeMat(color, opts)
+                );
+                mesh.position.set(x, y, z);
+                setMeshFlags(mesh, opts);
+                parent.add(mesh);
+                return mesh;
+            }
+
+            function addCone(parent, radius, h, segments, color, x, y, z, opts = {}) {
+                const mesh = new THREE.Mesh(
+                    new THREE.ConeGeometry(radius, h, segments),
+                    opts.material || makeMat(color, opts)
+                );
+                mesh.position.set(x, y, z);
+                setMeshFlags(mesh, opts);
+                parent.add(mesh);
+                return mesh;
+            }
+
+            function addBlob(parent, radius, color, x, y, z, opts = {}) {
+                const mesh = new THREE.Mesh(
+                    new THREE.DodecahedronGeometry(radius, 0),
+                    opts.material || makeMat(color, opts)
+                );
+                mesh.position.set(x, y, z);
+                mesh.scale.set(opts.sx ?? 1, opts.sy ?? 1, opts.sz ?? 1);
+                mesh.rotation.set(opts.rx ?? 0, opts.ry ?? 0, opts.rz ?? 0);
+                setMeshFlags(mesh, opts);
+                parent.add(mesh);
+                return mesh;
+            }
+
+            function addFlatCircle(parent, radius, color, x, y, z, segments = 12, opts = {}) {
+                const mesh = new THREE.Mesh(
+                    new THREE.CircleGeometry(radius, segments),
+                    opts.material || makeMat(color, {
+                        ...opts,
+                        side: opts.side ?? THREE.DoubleSide
+                    })
+                );
+                mesh.rotation.x = -Math.PI / 2;
+                mesh.position.set(x, y, z);
+                mesh.castShadow = opts.castShadow ?? false;
+                mesh.receiveShadow = opts.receiveShadow ?? false;
+                parent.add(mesh);
+                return mesh;
+            }
+
+            function addCylinderBetween(parent, a, b, radius, color, opts = {}) {
+                const dir = new THREE.Vector3(b.x - a.x, b.y - a.y, b.z - a.z);
+                const len = dir.length();
+                const mesh = new THREE.Mesh(
+                    new THREE.CylinderGeometry(radius, radius, len, opts.segments ?? 6),
+                    opts.material || makeMat(color, opts)
+                );
+
+                mesh.position.set(
+                    (a.x + b.x) * 0.5,
+                    (a.y + b.y) * 0.5,
+                    (a.z + b.z) * 0.5
+                );
+
+                dir.normalize();
+                mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+                setMeshFlags(mesh, opts);
+                parent.add(mesh);
+                return mesh;
+            }
+
+            function fadeGroup(group) {
+                group.traverse((child) => {
+                    if (!child.isMesh || !child.material) return;
+
+                    const fadeOne = (mat) => {
+                        const m = mat.clone();
+                        m.transparent = true;
+                        m.opacity = Math.min(m.opacity ?? 1, 0.36);
+                        m.depthWrite = false;
+                        if ("emissiveIntensity" in m) m.emissiveIntensity *= 0.18;
+                        return m;
+                    };
+
+                    child.material = Array.isArray(child.material)
+                        ? child.material.map(fadeOne)
+                        : fadeOne(child.material);
+                });
+            }
+
+            /******************************************************************
+             * UI / 상호작용
+             ******************************************************************/
+            function showMessage(text) {
+                dom.message.textContent = text;
+            }
+
+            function addInventoryItem(name) {
+                inventory.push(name);
+                updateUI();
+            }
+
+            function updateUI() {
+                const age = AGE_DATA[currentAge];
+
+                dom.eraText.textContent = age.name;
+
+                let goal = age.goal;
+                if (activeGate && activeGate.active) {
+                    goal = "깨어난 시간의 문 근처에서 E를 누르세요.";
+                }
+                if (demoFinished) {
+                    goal = "데모 완료";
+                }
+
+                dom.objectiveText.textContent = goal;
+                dom.countText.textContent = `${ageProgress} / ${age.total}`;
+
+                const visibleItems = inventory.slice(-5);
+                for (let i = 0; i < dom.slots.length; i++) {
+                    const item = visibleItems[i];
+                    dom.slots[i].textContent = item || "";
+                    dom.slots[i].classList.toggle("filled", Boolean(item));
+                }
+            }
+
+            function registerInteractable({
+                name,
+                description,
+                group,
+                pickup = true,
+                range = 1.75,
+                glowColor = 0xffd071
+            }) {
+                const p = new THREE.Vector3();
+                group.getWorldPosition(p);
+
+                const glow = createInteractionGlow(p.x, p.z, glowColor);
+                const item = {
+                    name,
+                    description,
+                    group,
+                    pickup,
+                    range,
+                    done: false,
+                    glow,
+                    position: new THREE.Vector3(p.x, 0, p.z)
+                };
+
+                item.marker = addMapMarker(p.x, p.z, "#ffd071", 3, "artifact");
+
+                interactables.push(item);
+                return item;
+            }
+
+            function createInteractionGlow(x, z, color) {
+                const g = new THREE.Group();
+                g.position.set(x, terrainHeight(x, z) + 0.08, z);
+
+                const ringMat = makeBasicMat(color, {
+                    transparent: true,
+                    opacity: 0.75,
+                    side: THREE.DoubleSide,
+                    depthWrite: false
+                });
+
+                const ring = new THREE.Mesh(
+                    new THREE.TorusGeometry(0.62, 0.025, 5, 24),
+                    ringMat
+                );
+                ring.rotation.x = Math.PI / 2;
+                ring.castShadow = false;
+                ring.receiveShadow = false;
+                g.add(ring);
+
+                const mote = addBlob(g, 0.08, color, 0, 0.55, 0, {
+                    material: makeBasicMat(color, { transparent: true, opacity: 0.9 }),
+                    castShadow: false,
+                    receiveShadow: false
+                });
+
+                const light = new THREE.PointLight(color, 0.45, 4);
+                light.position.set(0, 0.55, 0);
+                g.add(light);
+
+                world.add(g);
+
+                animated.push({
+                    type: "glow",
+                    group: g,
+                    ring,
+                    mote,
+                    light,
+                    baseY: g.position.y,
+                    speed: randRange(0.8, 1.25),
+                    phase: randRange(0, Math.PI * 2)
+                });
+
+                return g;
+            }
+
+            function getNearestAction() {
+                if (!player) return null;
+
+                let best = null;
+                let bestDist = Infinity;
+
+                for (const item of interactables) {
+                    if (item.done) continue;
+
+                    const dx = item.position.x - player.position.x;
+                    const dz = item.position.z - player.position.z;
+                    const d = Math.sqrt(dx * dx + dz * dz);
+
+                    if (d <= item.range && d < bestDist) {
+                        bestDist = d;
+                        best = { kind: "object", item, distance: d };
+                    }
+                }
+
+                if (activeGate) {
+                    const dx = activeGate.position.x - player.position.x;
+                    const dz = activeGate.position.z - player.position.z;
+                    const d = Math.sqrt(dx * dx + dz * dz);
+
+                    if (d <= activeGate.range && d < bestDist + 0.25) {
+                        best = {
+                            kind: activeGate.active ? "gate" : "inactiveGate",
+                            gate: activeGate,
+                            distance: d
+                        };
+                    }
+                }
+
+                return best;
+            }
+
+            function updatePrompt() {
+                if (transitioning || demoFinished) {
+                    dom.prompt.classList.add("hidden");
+                    return;
+                }
+
+                const action = getNearestAction();
+                if (!action) {
+                    dom.prompt.classList.add("hidden");
+                    return;
+                }
+
+                if (action.kind === "object") {
+                    dom.prompt.textContent = "[E] 조사 · " + action.item.name;
+                } else if (action.kind === "gate") {
+                    dom.prompt.textContent = "[E] 시대 이동";
+                } else {
+                    dom.prompt.textContent = "[E] 고인돌 확인";
+                }
+
+                dom.prompt.classList.remove("hidden");
+            }
+
+            function tryInteract() {
+                if (transitioning || demoFinished) return;
+
+                const action = getNearestAction();
+
+                if (!action) {
+                    showMessage("조사할 대상에 조금 더 가까이 다가가세요.");
+                    return;
+                }
+
+                if (action.kind === "object") {
+                    investigateObject(action.item);
+                } else if (action.kind === "gate") {
+                    showMessage("고인돌 사이의 푸른빛이 화면을 삼킵니다.\n잊힌 시간의 결을 따라 다음 시대로 이동합니다.");
+                    transitionToAge(currentAge + 1);
+                } else if (action.kind === "inactiveGate") {
+                    AudioSystem.playInvestigate();
+                    showMessage("돌 구조물은 아직 차갑게 잠들어 있습니다.\n이 시대에 흩어진 세 흔적을 모두 조사해야 시간의 문이 열릴 것 같습니다.");
+                }
+            }
+
+            function investigateObject(item) {
+                if (item.done) return;
+
+                item.done = true;
+                ageProgress++;
+
+                if (item.marker) item.marker.done = true;
+                if (item.glow) item.glow.visible = false;
+                fadeGroup(item.group);
+
+                AudioSystem.playInvestigate();
+
+                if (item.pickup) {
+                    setTimeout(() => AudioSystem.playPickup(), 90);
+                }
+
+                addInventoryItem(item.name);
+
+                const extra = handleAgeCompletion();
+                showMessage(item.description + (extra ? "\n\n" + extra : ""));
+                updateUI();
+            }
+
+            function handleAgeCompletion() {
+                const age = AGE_DATA[currentAge];
+
+                if (ageProgress < age.total || ageCompleteTriggered) return "";
+                ageCompleteTriggered = true;
+
+                if (currentAge === 0) {
+                    activateGate();
+                    return "세 유물의 기억이 서로 맞물립니다.\n시간의 문이 깨어났습니다.";
+                }
+
+                if (currentAge === 1) {
+                    activateGate();
+                    return "고인돌 제단의 문양과 청동 방울 소리가 하나의 리듬이 됩니다.\n시간의 문이 깨어났습니다.";
+                }
+
+                if (currentAge === 2) {
+                    AudioSystem.playGate();
+                    demoFinished = true;
+                    setTimeout(() => {
+                        dom.completeOverlay.classList.add("show");
+                    }, 800);
+                    return "저녁 마을의 기록이 모두 이어졌습니다.\n시간유적의 첫 복원이 완료되었습니다.";
+                }
+
+                return "";
+            }
+
+            function activateGate() {
+                if (!activeGate || activeGate.active) return;
+
+                activeGate.active = true;
+                if (activeGate.marker) activeGate.marker.done = true;
+                activeGate.portal.visible = true;
+                activeGate.ring.visible = true;
+                activeGate.portal.material.opacity = 0.34;
+                activeGate.ring.material.opacity = 0.95;
+                activeGate.light.intensity = 1.35;
+
+                AudioSystem.playGate();
+                updateUI();
+            }
+
+            /******************************************************************
+             * ERA TRANSITION
+             * 화면 밝아짐 -> 화이트 플래시 -> 글리치 -> CRT 노이즈
+             * -> 어두워짐 -> 새 시대 -> 천천히 밝아짐
+             ******************************************************************/
+            function transitionToAge(nextAge) {
+                if (transitioning) return;
+
+                transitioning = true;
+                clickTarget = null;
+
+                AudioSystem.playGlitch();
+                playFlash();
+
+                // 셰이더 글리치를 직접 시간축으로 굴린다 (CSS 연출과 겹쳐진다)
+                rampGlitch(0, 1, 260, () => {
+                    buildAge(nextAge);
+                    // 새 시대는 깨진 화면에서 서서히 안정된다
+                    rampGlitch(1, 0, 900);
+                });
+            }
+
+            /** glitchAmount 를 from -> to 로 보간한다 */
+            function rampGlitch(from, to, duration, onDone) {
+                const startTime = performance.now();
+
+                const step = () => {
+                    const k = Math.min(1, (performance.now() - startTime) / duration);
+                    // 계단식으로 끊어야 90년대 CRT 처럼 보인다
+                    const stepped = Math.floor(k * 9) / 9;
+                    glitchAmount = from + (to - from) * stepped;
+
+                    if (k < 1) {
+                        requestAnimationFrame(step);
+                    } else {
+                        glitchAmount = to;
+                        if (onDone) onDone();
+                    }
+                };
+
+                step();
+            }
+
+            function playFlash() {
+                dom.flash.classList.remove("play");
+                dom.glitch.classList.remove("play");
+                void dom.flash.offsetWidth;
+                dom.flash.classList.add("play");
+                dom.glitch.classList.add("play");
+            }
+
+            /******************************************************************
+             * HINT / 이정표
+             * H 키 또는 버튼을 누르면 가장 가까운 조사 대상(혹은 깨어난 시간의 문)
+             * 쪽을 가리키는 작은 나무 이정표가 세워지고,
+             * 화면 아래에 방향과 거리가 표시된다.
+             *
+             * 지도를 대신 읽어 주는 장치이지 자동 이동이 아니다.
+             ******************************************************************/
+            let hintActive = false;
+            let hintSign = null;     // 플레이어 옆에 세워지는 3D 이정표
+            let hintTimer = null;
+
+            const HINT_DURATION = 9000; // ms
+
+            /** 지금 안내할 목표를 고른다 */
+            function getHintTarget() {
+                // 1) 아직 조사하지 않은 대상 중 가장 가까운 것
+                let best = null, bestDist = Infinity;
+
+                for (const item of interactables) {
+                    if (item.done) continue;
+                    const d = Math.hypot(
+                        item.position.x - player.position.x,
+                        item.position.z - player.position.z
+                    );
+                    if (d < bestDist) {
+                        bestDist = d;
+                        best = { name: item.name, x: item.position.x, z: item.position.z, distance: d };
+                    }
+                }
+
+                // 2) 전부 조사했다면 시간의 문
+                if (!best && activeGate && activeGate.active) {
+                    const d = Math.hypot(
+                        activeGate.position.x - player.position.x,
+                        activeGate.position.z - player.position.z
+                    );
+                    best = { name: "시간의 문", x: activeGate.position.x, z: activeGate.position.z, distance: d };
+                }
+
+                return best;
+            }
+
+            /** 나무 이정표 만들기 (기본 도형 조합) */
+            function createSignpost() {
+                const g = new THREE.Group();
+
+                // 기둥
+                addCylinder(g, 0.045, 0.06, 1.05, 5, 0x6b4826, 0, 0.52, 0, { map: TEX.wood });
+
+                // 방향을 가리키는 판자 (로컬 +Z 를 향한다)
+                const board = new THREE.Group();
+                board.position.y = 0.92;
+                g.add(board);
+
+                addBox(board, 0.62, 0.20, 0.05, 0x8a6534, 0.18, 0, 0, 0, { map: TEX.wood });
+                // 화살촉
+                const tip = addBox(board, 0.17, 0.17, 0.05, 0x8a6534, 0.55, 0, 0, Math.PI / 4, { map: TEX.wood });
+                tip.rotation.z = Math.PI / 4;
+                tip.rotation.y = 0;
+
+                // 판자에 새긴 홈
+                addBox(board, 0.42, 0.03, 0.02, 0x4a3319, 0.16, 0.04, 0.03);
+                addBox(board, 0.34, 0.03, 0.02, 0x4a3319, 0.14, -0.03, 0.03);
+
+                // 발밑의 작은 돌무더기
+                for (let i = 0; i < 4; i++) {
+                    const a = (i / 4) * Math.PI * 2;
+                    addBlob(g, 0.11, 0x7b746c, Math.cos(a) * 0.17, 0.05, Math.sin(a) * 0.17, {
+                        sy: 0.5, ry: a, map: TEX.stone, castShadow: false
+                    });
+                }
+
+                // 은은한 빛 (밤 시대에도 보이도록)
+                const light = new THREE.PointLight(0xffc978, 0.5, 3.2);
+                light.position.set(0, 1.0, 0);
+                g.add(light);
+
+                g.userData.board = board;
+                return g;
+            }
+
+            function toggleHint() {
+                hintActive ? hideHint() : showHint();
+            }
+
+            function showHint() {
+                if (transitioning || demoFinished || !player) return;
+
+                const target = getHintTarget();
+                if (!target) {
+                    showMessage("지금은 안내할 곳이 없습니다.");
+                    return;
+                }
+
+                hintActive = true;
+                dom.hintBtn.classList.add("on");
+                dom.signpost.classList.add("show");
+
+                // 3D 이정표를 플레이어 바로 옆에 세운다
+                if (!hintSign) {
+                    hintSign = createSignpost();
+                    scene.add(hintSign);
+                }
+                hintSign.visible = true;
+
+                AudioSystem.playInvestigate();
+
+                // 일정 시간 후 자동으로 사라진다
+                clearTimeout(hintTimer);
+                hintTimer = setTimeout(hideHint, HINT_DURATION);
+            }
+
+            function hideHint() {
+                hintActive = false;
+                clearTimeout(hintTimer);
+                dom.hintBtn.classList.remove("on");
+                dom.signpost.classList.remove("show");
+                if (hintSign) hintSign.visible = false;
+            }
+
+            /** 매 프레임 이정표의 방향과 거리 갱신 */
+            function updateHint() {
+                if (!hintActive || !player) return;
+
+                const target = getHintTarget();
+                if (!target) {
+                    hideHint();
+                    return;
+                }
+
+                const dx = target.x - player.position.x;
+                const dz = target.z - player.position.z;
+                const dist = Math.hypot(dx, dz);
+
+                // ---- 3D 이정표: 플레이어 옆에 서서 목표를 가리킨다 ----
+                if (hintSign) {
+                    hintSign.position.set(
+                        player.position.x - 1.15,
+                        terrainHeight(player.position.x - 1.15, player.position.z + 0.5),
+                        player.position.z + 0.5
+                    );
+                    // 판자가 목표를 향하도록 (로컬 +X 가 화살표 방향)
+                    hintSign.userData.board.rotation.y = -Math.atan2(dz, dx);
+                }
+
+                // ---- 화면 아래 표시 ----
+                // 등각 화면 기준으로 방향을 계산한다.
+                // 화면 오른쪽 = 월드 (1,0,-1)/√2, 화면 위쪽 = 월드 -(1,0,1)/√2
+                const sx = (dx - dz) * Math.SQRT1_2;
+                const syUp = -(dx + dz) * Math.SQRT1_2 * 0.54; // 등각 수직 압축
+
+                const angle = Math.atan2(sx, syUp) * (180 / Math.PI);
+                dom.signArrow.style.transform = "rotate(" + angle.toFixed(1) + "deg)";
+
+                dom.signText.innerHTML = "이정표 — <b>" + target.name + "</b>";
+                dom.signDist.textContent = "약 " + Math.round(dist * 1.4) + "걸음 · " + compassName(dx, dz);
+            }
+
+            /** 월드 방향을 한국식 방위로 (지도의 北 과 같은 기준) */
+            function compassName(dx, dz) {
+                const names = ["북", "북동", "동", "남동", "남", "남서", "서", "북서"];
+                // -Z 를 북으로 둔다
+                let a = Math.atan2(dx, -dz) * (180 / Math.PI);
+                if (a < 0) a += 360;
+                return names[Math.round(a / 45) % 8] + "쪽";
+            }
+
+            /******************************************************************
+             * MINIMAP
+             * 등각 화면과 같은 방향으로 회전한 작은 지도.
+             * 화면에서 오른쪽 = 월드 (1,0,-1), 화면에서 위쪽 = 월드 -(1,0,1)
+             *
+             * mapShapes  : 강 / 연못 같은 면
+             * mapMarkers : 건물, 유물, 시간의 문, 지형지물
+             ******************************************************************/
+            let mapShapes = [];
+            let mapMarkers = [];
+
+            const MAP_RANGE = 34; // 지도에 담을 월드 반경
+
+            /** 월드 좌표 -> 미니맵 캔버스 좌표 */
+            function worldToMap(x, z, size) {
+                const mx = (x - z) * Math.SQRT1_2;
+                const my = (x + z) * Math.SQRT1_2;
+                const scale = (size * 0.5) / MAP_RANGE;
+                return [size * 0.5 + mx * scale, size * 0.5 + my * scale];
+            }
+
+            function addMapMarker(x, z, color, size, kind) {
+                const marker = { x, z, color, size: size || 2, kind: kind || "prop", done: false };
+                mapMarkers.push(marker);
+                return marker;
+            }
+
+            function addMapShape(points, color) {
+                mapShapes.push({ points, color });
+            }
+
+            function drawMinimap() {
+                const cv = dom.minimap;
+                if (!cv) return;
+
+                const ctx = cv.getContext("2d");
+                const S = cv.width;
+
+                ctx.clearRect(0, 0, S, S);
+
+                // ---- 바탕 (낡은 종이/가죽 지도) ----
+                ctx.fillStyle = "#2a1d12";
+                ctx.fillRect(0, 0, S, S);
+
+                // 지도에 낀 얼룩
+                ctx.fillStyle = "rgba(122, 90, 48, 0.18)";
+                ctx.beginPath();
+                ctx.arc(S * 0.32, S * 0.28, S * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(S * 0.72, S * 0.74, S * 0.26, 0, Math.PI * 2);
+                ctx.fill();
+
+                // ---- 면 (강, 연못) ----
+                for (const shape of mapShapes) {
+                    ctx.fillStyle = shape.color;
+                    ctx.beginPath();
+                    shape.points.forEach((pt, i) => {
+                        const [px, py] = worldToMap(pt[0], pt[1], S);
+                        if (i === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    });
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                // ---- 표식 ----
+                for (const m of mapMarkers) {
+                    const [px, py] = worldToMap(m.x, m.z, S);
+                    if (px < -6 || px > S + 6 || py < -6 || py > S + 6) continue;
+
+                    if (m.kind === "artifact") {
+                        // 조사 대상은 깜빡이는 마름모
+                        const blink = m.done ? 0.22 : 0.65 + Math.sin(clock.elapsedTime * 3.4) * 0.35;
+                        ctx.fillStyle = m.done ? "#6a5936" : "#ffd071";
+                        ctx.globalAlpha = blink;
+                        ctx.save();
+                        ctx.translate(px, py);
+                        ctx.rotate(Math.PI / 4);
+                        ctx.fillRect(-2.5, -2.5, 5, 5);
+                        ctx.restore();
+                        ctx.globalAlpha = 1;
+                    } else if (m.kind === "gate") {
+                        // 시간의 문
+                        ctx.strokeStyle = m.done ? "#7bdcff" : "#8b8072";
+                        ctx.lineWidth = 1.5;
+                        ctx.globalAlpha = m.done
+                            ? 0.6 + Math.sin(clock.elapsedTime * 4) * 0.4
+                            : 0.8;
+                        ctx.beginPath();
+                        ctx.arc(px, py, 4, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.globalAlpha = 1;
+                    } else if (m.kind === "building") {
+                        ctx.fillStyle = m.color;
+                        ctx.fillRect(px - m.size, py - m.size, m.size * 2, m.size * 2);
+                        ctx.strokeStyle = "rgba(20,12,6,0.8)";
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(px - m.size, py - m.size, m.size * 2, m.size * 2);
+                    } else {
+                        ctx.fillStyle = m.color;
+                        ctx.fillRect(px - m.size * 0.5, py - m.size * 0.5, m.size, m.size);
+                    }
+                }
+
+                // ---- 플레이어 ----
+                if (player) {
+                    const [px, py] = worldToMap(player.position.x, player.position.z, S);
+
+                    // 시야 방향 삼각형
+                    ctx.save();
+                    ctx.translate(px, py);
+                    // 월드 회전 -> 지도 회전 보정 (지도는 45도 돌아가 있다)
+                    ctx.rotate(-player.rotation.y + Math.PI * 0.75);
+                    ctx.fillStyle = "#fff0bd";
+                    ctx.beginPath();
+                    ctx.moveTo(0, -5);
+                    ctx.lineTo(3.2, 3.5);
+                    ctx.lineTo(-3.2, 3.5);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+
+                    // 주변 시야 원
+                    ctx.strokeStyle = "rgba(255, 224, 150, 0.22)";
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 13, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                // ---- 테두리 + 방위 ----
+                ctx.strokeStyle = "rgba(190, 145, 72, 0.55)";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(0.5, 0.5, S - 1, S - 1);
+
+                ctx.fillStyle = "rgba(200, 160, 90, 0.75)";
+                ctx.font = "9px monospace";
+                ctx.textAlign = "center";
+                ctx.fillText("北", S * 0.5, 11);
+            }
+
+            /******************************************************************
+             * PLAYER
+             * 기본 도형만 조합한 작은 로우폴리 인물.
+             * 넓은 세계 안에서 아주 작게 보이도록 크기를 억제한다.
+             ******************************************************************/
+            function createPlayer() {
+                const g = new THREE.Group();
+
+                // 바닥에 깔리는 가짜 그림자 (실제 그림자와 함께 무게감을 준다)
+                addFlatCircle(g, 0.46, 0x000000, 0, 0.02, 0, 12, {
+                    material: makeBasicMat(0x000000, {
+                        transparent: true,
+                        opacity: 0.45,
+                        side: THREE.DoubleSide,
+                        depthWrite: false
+                    }),
+                    castShadow: false,
+                    receiveShadow: false
+                });
+
+                // ---- 상체 (걸을 때 위아래로 살짝 흔들린다) ----
+                const body = new THREE.Group();
+                body.position.y = 0.34;
+                g.add(body);
+
+                // 가죽옷 몸통
+                addCylinder(body, 0.21, 0.27, 0.48, 7, 0x6f9184, 0, 0.24, 0, { map: TEX.cloth });
+                // 어깨에 두른 가죽
+                addCylinder(body, 0.25, 0.23, 0.13, 7, 0xa5763f, 0, 0.45, 0, { map: TEX.cloth });
+                // 목
+                addCylinder(body, 0.06, 0.07, 0.07, 5, 0xd8a877, 0, 0.53, 0);
+                // 머리
+                const head = addBlob(body, 0.16, 0xe3b384, 0, 0.64, 0, { sy: 1.12, sx: 0.94, sz: 0.94 });
+                // 머리카락 / 두건
+                addCone(body, 0.20, 0.18, 7, 0x4a3122, 0, 0.75, 0);
+                // 등짐
+                addBox(body, 0.21, 0.25, 0.14, 0x9c6c3f, 0, 0.27, -0.22, 0, { map: TEX.cloth });
+
+                // ---- 팔 (어깨에서 회전하도록 피벗 그룹 사용) ----
+                const mkArm = (side) => {
+                    const pivot = new THREE.Group();
+                    pivot.position.set(side * 0.24, 0.42, 0);
+                    body.add(pivot);
+                    addCylinder(pivot, 0.055, 0.048, 0.36, 5, 0xd2a271, 0, -0.18, 0);
+                    return pivot;
+                };
+
+                // ---- 다리 ----
+                const mkLeg = (side) => {
+                    const pivot = new THREE.Group();
+                    pivot.position.set(side * 0.095, 0.0, 0);
+                    body.add(pivot);
+                    addCylinder(pivot, 0.068, 0.058, 0.34, 5, 0x8a6e52, 0, -0.17, 0);
+                    // 발
+                    addBox(pivot, 0.11, 0.06, 0.17, 0x3c2c1e, 0, -0.33, 0.03);
+                    return pivot;
+                };
+
+                g.userData = {
+                    body,
+                    head,
+                    armL: mkArm(-1),
+                    armR: mkArm(1),
+                    legL: mkLeg(-1),
+                    legR: mkLeg(1),
+                    walk: 0,     // 걷기 위상
+                    moving: 0    // 0..1 이동 여부 보간값
+                };
+
+                return g;
+            }
+
+            /** 걷기 애니메이션: 팔다리 스윙 + 상체 흔들림 */
+            function updatePlayerAnimation(delta, isMoving, t) {
+                if (!player) return;
+                const u = player.userData;
+
+                // 걷기/멈춤 전환을 부드럽게
+                u.moving += ((isMoving ? 1 : 0) - u.moving) * Math.min(1, delta * 11);
+
+                // 달릴 때는 보폭과 속도가 커진다
+                const cadence = sprinting ? 14.5 : 9.2;
+                const stride = sprinting ? 1.05 : 0.75;
+
+                if (isMoving) u.walk += delta * cadence;
+
+                const swing = Math.sin(u.walk) * stride * u.moving;
+                const swing2 = Math.sin(u.walk + Math.PI) * stride * u.moving;
+
+                u.legL.rotation.x = swing;
+                u.legR.rotation.x = swing2;
+                u.armL.rotation.x = swing2 * 0.7;
+                u.armR.rotation.x = swing * 0.7;
+
+                // 걸음마다 몸이 살짝 올라갔다 내려온다
+                const bob = Math.abs(Math.sin(u.walk)) * 0.045 * u.moving;
+                u.body.position.y = 0.34 + bob;
+                u.body.rotation.z = Math.sin(u.walk) * 0.035 * u.moving;
+                u.body.rotation.x = (sprinting ? 0.16 : 0.02) * u.moving;
+
+                // 서 있을 때는 아주 느리게 숨쉬는 느낌
+                u.head.position.y = 0.64 + Math.sin(t * 1.6) * 0.006 * (1 - u.moving);
+            }
+
+            /******************************************************************
+             * MOVEMENT
+             * WASD / 방향키가 항상 우선. 마우스 클릭 이동도 지원.
+             ******************************************************************/
+            const prevPos = new THREE.Vector3();
+            let sprinting = false;
+
+            function updateMovement(delta) {
+                if (!player) return false;
+
+                prevPos.copy(player.position);
+                const move = new THREE.Vector3();
+
+                // 등각 시점 기준의 전후좌우
+                const forward = new THREE.Vector3();
+                camera.getWorldDirection(forward);
+                forward.y = 0;
+                forward.normalize();
+
+                const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+                if (keys.has("KeyW") || keys.has("ArrowUp")) move.add(forward);
+                if (keys.has("KeyS") || keys.has("ArrowDown")) move.sub(forward);
+                if (keys.has("KeyD") || keys.has("ArrowRight")) move.add(right);
+                if (keys.has("KeyA") || keys.has("ArrowLeft")) move.sub(right);
+
+                let usedDir = null;
+
+                if (move.lengthSq() > 0) {
+                    clickTarget = null; // 키 입력이 클릭 이동보다 우선
+                    move.normalize();
+                    usedDir = move;
+                } else if (clickTarget) {
+                    const to = new THREE.Vector3(
+                        clickTarget.x - player.position.x,
+                        0,
+                        clickTarget.z - player.position.z
+                    );
+
+                    if (to.length() < 0.15) {
+                        clickTarget = null;
+                    } else {
+                        to.normalize();
+                        usedDir = to;
+                    }
+                }
+
+                if (usedDir) {
+                    // Shift: 달리기. 등각 탐험 게임이라 과하지 않게 두 배 이하로.
+                    sprinting = keys.has("ShiftLeft") || keys.has("ShiftRight");
+                    const speed = PLAYER_SPEED * (sprinting ? SPRINT_MULTIPLIER : 1);
+
+                    player.position.addScaledVector(usedDir, speed * delta);
+                    player.position.x = THREE.MathUtils.clamp(player.position.x, -WORLD_LIMIT, WORLD_LIMIT);
+                    player.position.z = THREE.MathUtils.clamp(player.position.z, -WORLD_LIMIT, WORLD_LIMIT);
+
+                    // 진행 방향으로 몸을 돌린다 (부드럽게)
+                    const target = Math.atan2(usedDir.x, usedDir.z);
+                    let diff = target - player.rotation.y;
+                    while (diff > Math.PI) diff -= Math.PI * 2;
+                    while (diff < -Math.PI) diff += Math.PI * 2;
+                    player.rotation.y += diff * Math.min(1, delta * 12);
+                }
+
+                if (!usedDir) sprinting = false;
+
+                // 물속으로는 들어가지 못한다 (전투도 수영도 없는 게임)
+                const h = terrainHeight(player.position.x, player.position.z);
+                if (h < -0.42) {
+                    player.position.copy(prevPos);
+                } else {
+                    player.position.y = h;
+                }
+
+                return Boolean(usedDir);
+            }
+
+            /******************************************************************
+             * CAMERA
+             * 고정 등각 시점. 회전하지 않고 플레이어를 따라 평행 이동만 한다.
+             ******************************************************************/
+            function updateCamera(delta, immediate = false) {
+                if (!player) return;
+
+                const desired = new THREE.Vector3(player.position.x, 0.6, player.position.z);
+
+                if (immediate) {
+                    cameraTarget.copy(desired);
+                } else {
+                    // 살짝 지연되며 따라가서 "지도를 훑는" 느낌을 준다
+                    const t = 1 - Math.pow(0.0025, delta);
+                    cameraTarget.lerp(desired, t);
+                }
+
+                camera.position.copy(cameraTarget).add(cameraOffset);
+                camera.lookAt(cameraTarget);
+
+                // 배경판은 항상 지평선에 붙어 있어야 하므로 카메라를 따라다닌다
+                if (backdrop) {
+                    backdrop.position.x = cameraTarget.x;
+                    backdrop.position.z = cameraTarget.z;
+                }
+
+                // 그림자 카메라를 플레이어 주변에 집중시켜 해상도를 아낀다
+                if (sunLight) {
+                    sunLight.position.set(
+                        cameraTarget.x + sunLight.userData.ox,
+                        sunLight.userData.oy,
+                        cameraTarget.z + sunLight.userData.oz
+                    );
+                    sunLight.target.position.set(cameraTarget.x, 0, cameraTarget.z);
+                    sunLight.target.updateMatrixWorld();
+                }
+            }
+
+            /******************************************************************
+             * ANIMATED OBJECTS
+             ******************************************************************/
+            function updateAnimated(t, delta) {
+                for (const a of animated) {
+                    if (a.type === "glow") {
+                        a.group.position.y = a.baseY + Math.sin(t * 2.1 * a.speed + a.phase) * 0.07;
+                        a.ring.rotation.z += delta * 1.1;
+                        a.mote.position.y = 0.50 + Math.sin(t * 3.0 + a.phase) * 0.06;
+                        a.light.intensity = 0.32 + Math.sin(t * 2.7 + a.phase) * 0.12;
+                    }
+
+                    if (a.type === "wave") {
+                        a.mesh.position.x += delta * a.speed;
+                        if (a.mesh.position.x > a.maxX) a.mesh.position.x = a.minX;
+                    }
+
+                    if (a.type === "torch" || a.type === "lantern") {
+                        const f = 0.8 + Math.sin(t * a.speed + a.phase) * 0.22 + randRange(-0.03, 0.03);
+                        a.light.intensity = a.baseIntensity * f;
+                        a.flame.scale.y = 0.85 + Math.sin(t * a.speed * 1.4 + a.phase) * 0.16;
+                    }
+
+                    if (a.type === "ember") {
+                        a.mesh.material.opacity = 0.18 + Math.sin(t * 2.8 + a.phase) * 0.05;
+                    }
+
+                    // 지면을 스치는 안개: 아주 천천히 흐른다
+                    if (a.type === "mist") {
+                        a.mesh.position.x += delta * a.speed;
+                        a.mesh.position.z += delta * a.speed * 0.45;
+                        a.mesh.rotation.z += delta * a.spin;
+
+                        // 너무 멀어지면 반대편으로 되돌린다
+                        if (Math.abs(a.mesh.position.x) > 34) a.mesh.position.x *= -1;
+                        if (Math.abs(a.mesh.position.z) > 34) a.mesh.position.z *= -1;
+                    }
+
+                    // 떠도는 먼지
+                    if (a.type === "dust") {
+                        const arr = a.geo.attributes.position.array;
+                        for (let i = 0; i < arr.length; i += 3) {
+                            arr[i] += delta * 0.32;
+                            arr[i + 1] += delta * 0.055 * Math.sin(t * 0.7 + i);
+                            if (arr[i] > 30) arr[i] = -30;
+                            if (arr[i + 1] > 9) arr[i + 1] = 0.3;
+                        }
+                        a.geo.attributes.position.needsUpdate = true;
+                    }
+
+                    // 피어오르는 연기
+                    if (a.type === "smoke") {
+                        for (let i = 0; i < a.puffs.length; i++) {
+                            a.life[i] += delta * 0.20;
+                            if (a.life[i] > 1) a.life[i] -= 1;
+
+                            const k = a.life[i];
+                            const puff = a.puffs[i];
+
+                            puff.position.set(
+                                a.origin.x + Math.sin(k * 5.0 + i) * 0.55 * k,
+                                a.origin.y + k * 4.2,
+                                a.origin.z + Math.cos(k * 4.1 + i) * 0.45 * k
+                            );
+
+                            const sc = 0.5 + k * 2.6;
+                            puff.scale.set(sc, sc, sc);
+                            // 올라가면서 나타났다가 흩어진다
+                            puff.material.opacity = Math.sin(k * Math.PI) * 0.30;
+                        }
+                    }
+
+                    // 바람에 흔들리는 풀 / 갈대
+                    if (a.type === "sway") {
+                        a.group.rotation.z = Math.sin(t * a.speed + a.phase) * a.amp;
+                        a.group.rotation.x = Math.cos(t * a.speed * 0.7 + a.phase) * a.amp * 0.55;
+                    }
+
+                    if (a.type === "gate" && a.gate.active) {
+                        a.gate.ring.rotation.z += delta * 1.1;
+                        a.gate.portal.material.opacity = 0.27 + Math.sin(t * 3.0) * 0.08;
+                        a.gate.light.intensity = 1.15 + Math.sin(t * 4.2) * 0.32;
+                    }
+                }
+            }
+
+            /******************************************************************
+             * GAME LOOP
+             * 1) 장면을 저해상도 렌더 타겟에 그리고
+             * 2) 후처리 셰이더로 그레이딩/디더링/그레인을 입혀 화면에 출력한다.
+             ******************************************************************/
+            function animate() {
+                requestAnimationFrame(animate);
+
+                const delta = Math.min(clock.getDelta(), 0.05);
+                const t = clock.elapsedTime;
+
+                let moving = false;
+                if (!transitioning && !demoFinished) {
+                    moving = updateMovement(delta);
+                }
+
+                updatePlayerAnimation(delta, moving, t);
+                updateCamera(delta);
+                updateAnimated(t, delta);
+                updatePrompt();
+                updateHint();
+                drawMinimap();
+
+                // 후처리 유니폼 갱신
+                postMaterial.uniforms.uTime.value = t;
+                postMaterial.uniforms.uGlitch.value = glitchAmount;
+
+                // 1단계: 장면 -> 저해상도 렌더 타겟
+                renderer.setRenderTarget(renderTarget);
+                renderer.clear();
+                renderer.render(scene, camera);
+
+                // 2단계: 후처리 -> 화면 (CSS 가 픽셀 단위로 확대)
+                renderer.setRenderTarget(null);
+                renderer.render(postScene, postCamera);
+            }
+
+            /******************************************************************
+             * WORLD / 공통 월드 장식
+             ******************************************************************/
+
+            /** 0xRRGGBB -> "rgba(r,g,b,ALPHA)" (캔버스 텍스처용 자리표시자) */
+            function cssRGBA(hex) {
+                const c = new THREE.Color(hex);
+                return "rgba(" +
+                    Math.round(c.r * 255) + "," +
+                    Math.round(c.g * 255) + "," +
+                    Math.round(c.b * 255) + ",ALPHA)";
+            }
+
+            function cssHex(hex) {
+                return "#" + new THREE.Color(hex).getHexString();
+            }
+
+            function addLights(age) {
+                const l = age.light;
+
+                const hemi = new THREE.HemisphereLight(l.hemiSky, l.hemiGround, l.hemiIntensity);
+                scene.add(hemi);
+
+                const ambient = new THREE.AmbientLight(l.ambient, l.ambientIntensity);
+                scene.add(ambient);
+
+                const sun = new THREE.DirectionalLight(l.sun, l.sunIntensity);
+                sun.position.set(l.sunPos[0], l.sunPos[1], l.sunPos[2]);
+                sun.castShadow = true;
+                sun.shadow.mapSize.set(1024, 1024);
+                sun.shadow.camera.left = -26;
+                sun.shadow.camera.right = 26;
+                sun.shadow.camera.top = 26;
+                sun.shadow.camera.bottom = -26;
+                sun.shadow.camera.near = 1;
+                sun.shadow.camera.far = 70;
+                sun.shadow.bias = -0.0009;
+                sun.shadow.normalBias = 0.02;
+                scene.add(sun);
+
+                // 그림자 카메라가 플레이어를 따라다니도록 보관
+                sun.userData.ox = l.sunPos[0];
+                sun.userData.oy = l.sunPos[1];
+                sun.userData.oz = l.sunPos[2];
+                scene.add(sun.target);
+                sunLight = sun;
+
+                // 반대편에서 아주 약하게 채워주는 빛 (완전히 검은 면이 없도록)
+                const fill = new THREE.DirectionalLight(l.hemiSky, l.fillIntensity ?? 0.22);
+                fill.position.set(-l.sunPos[0], l.sunPos[1] * 0.55, -l.sunPos[2]);
+                scene.add(fill);
+            }
+
+            /**
+             * TERRAIN
+             * 커다란 평면을 노이즈로 변형하고, 수채화풍 텍스처 + 정점 색 얼룩을 입힌다.
+             */
+            function addGround(baseColor, patchColors) {
+                const SIZE = 210;
+                const SEG = 150;
+
+                const geo = new THREE.PlaneGeometry(SIZE, SIZE, SEG, SEG);
+                const pos = geo.attributes.position;
+                const colors = new Float32Array(pos.count * 3);
+
+                // 정점 색은 색상이 아니라 "밝기/색조 변조" 로 쓴다.
+                // 각 패치 색을 최대 채널 기준으로 정규화해서 색조만 남긴다.
+                const normalize = (hex) => {
+                    const c = new THREE.Color(hex);
+                    const m = Math.max(c.r, c.g, c.b) || 1;
+                    return c.multiplyScalar(1 / m);
+                };
+
+                const base = normalize(baseColor);
+                const patch = patchColors.map(normalize);
+                const tmp = new THREE.Color();
+
+                for (let i = 0; i < pos.count; i++) {
+                    const x = pos.getX(i);
+                    const y = pos.getY(i); // 회전 전이므로 y가 월드 z가 된다
+
+                    // 높이 변형
+                    pos.setZ(i, terrainHeight(x, -y));
+
+                    // 큰 얼룩(저주파) + 작은 얼룩(고주파)를 섞어 프리렌더 배경처럼
+                    // 저주파가 너무 강하면 위장무늬처럼 보이므로 약하게 쓴다.
+                    const macro = fbm(x * 0.055 + 3.1, -y * 0.055 + 5.7, 3);
+                    const micro = fbm(x * 0.22 + 19.2, -y * 0.22 + 2.4, 2);
+
+                    // 흰색에서 살짝만 색조 쪽으로 기울인다 (텍스처 색을 죽이지 않도록)
+                    tmp.setRGB(1, 1, 1)
+                        .lerp(base, 0.22)
+                        .lerp(patch[Math.floor(macro * patch.length) % patch.length], 0.20);
+
+                    const shade = 0.70 + macro * 0.52 + micro * 0.22;
+                    tmp.multiplyScalar(shade);
+
+                    colors[i * 3] = tmp.r;
+                    colors[i * 3 + 1] = tmp.g;
+                    colors[i * 3 + 2] = tmp.b;
+                }
+
+                geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+                geo.computeVertexNormals();
+
+                const mat = new THREE.MeshStandardMaterial({
+                    map: TEX.dirt,
+                    vertexColors: true,
+                    roughness: 1,
+                    metalness: 0,
+                    flatShading: false
+                });
+
+                const ground = new THREE.Mesh(geo, mat);
+                ground.rotation.x = -Math.PI / 2;
+                ground.receiveShadow = true;
+                world.add(ground);
+
+                return ground;
+            }
+
+            /**
+             * BACKDROP
+             * 카메라 시선 방향 정면에 세워 두는 프리렌더식 배경판.
+             * 카메라가 회전하지 않는 등각 시점이므로 항상 지평선에 붙어 있다.
+             */
+            function addBackdrop(cfg) {
+                backdrop = new THREE.Group();
+                scene.add(backdrop);
+
+                // 카메라 시선 방향(수평 성분) — 배경판은 여기에 수직으로 선다.
+                const DIR = Math.PI / 4;
+                const place = (dist) => ({
+                    x: -Math.sin(DIR) * dist,
+                    z: -Math.cos(DIR) * dist
+                });
+
+                // ---- 하늘 그라데이션 (안개 영향 없음, 가장 뒤) ----
+                const skyCanvas = makeCanvas(64);
+                const sg = skyCanvas.getContext("2d");
+                const grd = sg.createLinearGradient(0, 0, 0, 64);
+                grd.addColorStop(0.00, cssHex(cfg.skyTop));
+                grd.addColorStop(0.55, cssHex(cfg.skyMid));
+                grd.addColorStop(1.00, cssHex(cfg.skyBottom));
+                sg.fillStyle = grd;
+                sg.fillRect(0, 0, 64, 64);
+
+                // 수평선 부근의 햇무리
+                const sun = sg.createRadialGradient(38, 46, 0, 38, 46, 30);
+                sun.addColorStop(0, "rgba(255,238,200,0.55)");
+                sun.addColorStop(1, "rgba(255,238,200,0)");
+                sg.fillStyle = sun;
+                sg.fillRect(0, 0, 64, 64);
+
+                const skyTex = new THREE.CanvasTexture(skyCanvas);
+                skyTex.magFilter = THREE.LinearFilter;
+                if ("colorSpace" in skyTex) skyTex.colorSpace = THREE.SRGBColorSpace;
+
+                const skyPos = place(150);
+                const sky = new THREE.Mesh(
+                    new THREE.PlaneGeometry(420, 200),
+                    new THREE.MeshBasicMaterial({ map: skyTex, fog: false, depthWrite: false })
+                );
+                sky.position.set(skyPos.x, 44, skyPos.z);
+                sky.rotation.y = DIR;
+                sky.renderOrder = -10;
+                backdrop.add(sky);
+
+                // ---- 산 능선 실루엣 여러 겹 ----
+                // 가까운 겹은 진하고, 먼 겹은 안개에 묻힌다.
+                cfg.ridges.forEach((r, layer) => {
+                    const shape = new THREE.Shape();
+                    const width = 360;
+                    const steps = 110;
+
+                    shape.moveTo(-width / 2, -40);
+                    for (let i = 0; i <= steps; i++) {
+                        const t = i / steps;
+                        const x = -width / 2 + width * t;
+                        // 능선: 여러 주파수를 겹쳐 자연스러운 굴곡을 만든다
+                        const h =
+                            fbm(x * 0.013 + layer * 31.7, layer * 9.3, 4) * r.height +
+                            fbm(x * 0.055 + layer * 12.1, 40 + layer, 3) * r.height * 0.30;
+                        shape.lineTo(x, h);
+                    }
+                    shape.lineTo(width / 2, -40);
+                    shape.closePath();
+
+                    const mesh = new THREE.Mesh(
+                        new THREE.ShapeGeometry(shape),
+                        new THREE.MeshBasicMaterial({
+                            color: r.color,
+                            transparent: true,
+                            opacity: r.opacity,
+                            depthWrite: false,
+                            fog: true
+                        })
+                    );
+
+                    const p = place(r.dist);
+                    mesh.position.set(p.x, r.base ?? 0, p.z);
+                    mesh.rotation.y = DIR;
+                    mesh.renderOrder = -9 + layer;
+                    backdrop.add(mesh);
+                });
+            }
+
+            /**
+             * 지면을 스치는 안개 띠.
+             * 수평 평면 여러 장을 아주 천천히 흘려보낸다.
+             */
+            function addMistLayers(color, count = 4) {
+                for (let i = 0; i < count; i++) {
+                    const mesh = new THREE.Mesh(
+                        new THREE.PlaneGeometry(80, 80),
+                        new THREE.MeshBasicMaterial({
+                            map: TEX.mist,
+                            color,
+                            transparent: true,
+                            // 아주 옅게. 화면을 덮으면 안 되고 "결"만 남아야 한다.
+                            opacity: randRange(0.035, 0.075),
+                            depthWrite: false,
+                            blending: THREE.AdditiveBlending,
+                            fog: false
+                        })
+                    );
+
+                    mesh.rotation.x = -Math.PI / 2;
+                    mesh.rotation.z = randRange(0, Math.PI * 2);
+                    // 지면을 스치듯 낮게 깔린다
+                    mesh.position.set(randRange(-16, 16), 0.28 + i * 0.30, randRange(-16, 16));
+                    mesh.renderOrder = 6;
+                    world.add(mesh);
+
+                    animated.push({
+                        type: "mist",
+                        mesh,
+                        speed: randRange(0.09, 0.26) * (rand() > 0.5 ? 1 : -1),
+                        spin: randRange(-0.006, 0.006)
+                    });
+                }
+            }
+
+            /** 공중에 떠도는 먼지 입자 */
+            function addDustMotes(color, count = 190) {
+                const geo = new THREE.BufferGeometry();
+                const pos = new Float32Array(count * 3);
+
+                for (let i = 0; i < count; i++) {
+                    pos[i * 3] = randRange(-30, 30);
+                    pos[i * 3 + 1] = randRange(0.3, 9);
+                    pos[i * 3 + 2] = randRange(-30, 30);
+                }
+
+                geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+
+                const points = new THREE.Points(geo, new THREE.PointsMaterial({
+                    color,
+                    size: 0.075,
+                    sizeAttenuation: true,
+                    transparent: true,
+                    opacity: 0.30,
+                    depthWrite: false,
+                    fog: true
+                }));
+
+                world.add(points);
+                animated.push({ type: "dust", points, geo });
+            }
+
+            /** 먼 나무 실루엣: 지평선 근처를 채워 준다 */
+            function addTreeLine(colors, count, minR, maxR) {
+                for (let i = 0; i < count; i++) {
+                    const a = randRange(0, Math.PI * 2);
+                    const r = randRange(minR, maxR);
+                    const x = Math.cos(a) * r;
+                    const z = Math.sin(a) * r;
+                    if (isNearWater(x, z)) continue; // 강 위에는 나무가 서지 않는다
+                    const y = terrainHeight(x, z);
+
+                    const h = randRange(1.9, 3.6);
+                    const trunkH = h * 0.34;
+                    const col = pick(colors);
+
+                    addCylinder(world, 0.09, 0.15, trunkH, 5, 0x3d2c1c,
+                        x, y + trunkH * 0.5, z, { roughness: 1, castShadow: false, receiveShadow: false });
+
+                    // 잎 덩어리를 2~3개 겹쳐 둥글고 낡은 실루엣을 만든다
+                    const blobs = Math.floor(randRange(2, 4));
+                    for (let b = 0; b < blobs; b++) {
+                        addBlob(world, randRange(0.42, 0.72), col,
+                            x + randRange(-0.3, 0.3),
+                            y + trunkH + h * 0.3 + b * randRange(0.25, 0.42),
+                            z + randRange(-0.3, 0.3), {
+                            sx: randRange(1.0, 1.5),
+                            sy: randRange(0.7, 1.05),
+                            sz: randRange(1.0, 1.5),
+                            ry: randRange(0, Math.PI),
+                            roughness: 1,
+                            castShadow: false,
+                            receiveShadow: false
+                        });
+                    }
+                }
+            }
+
+            /**
+             * 흙길 / 돌길: 밟혀서 색이 빠진 자국과 박힌 돌을 깐다.
+             * (x1,z1) -> (x2,z2) 를 따라 자연스럽게 구부러진다.
+             */
+            function addStonePath(x1, z1, x2, z2, width) {
+                const steps = Math.floor(Math.hypot(x2 - x1, z2 - z1) * 2.2);
+
+                for (let i = 0; i <= steps; i++) {
+                    const t = i / steps;
+                    // 약간의 사행(蛇行)을 넣어 직선으로 보이지 않게 한다
+                    const wobble = Math.sin(t * Math.PI * 2.4) * width * 0.55;
+                    const nx = -(z2 - z1), nz = (x2 - x1);
+                    const nl = Math.hypot(nx, nz) || 1;
+
+                    const x = x1 + (x2 - x1) * t + (nx / nl) * wobble;
+                    const z = z1 + (z2 - z1) * t + (nz / nl) * wobble;
+                    const y = terrainHeight(x, z);
+
+                    // 밟힌 흙 자국
+                    addFlatCircle(world, randRange(width * 0.55, width * 0.85), 0x8a6d4b,
+                        x, y + 0.02, z, 8, {
+                        material: makeMat(0x8a6d4b, {
+                            transparent: true,
+                            opacity: randRange(0.18, 0.34),
+                            side: THREE.DoubleSide,
+                            depthWrite: false,
+                            roughness: 1,
+                            map: TEX.dirtObj
+                        })
+                    });
+
+                    // 박힌 돌
+                    if (rand() > 0.55) {
+                        const sx = x + randRange(-width * 0.5, width * 0.5);
+                        const sz = z + randRange(-width * 0.5, width * 0.5);
+                        const r = randRange(0.1, 0.24);
+                        addBlob(world, r, pick([0x8a8279, 0x6d675f, 0x9a9184]),
+                            sx, terrainHeight(sx, sz) + r * 0.22, sz, {
+                            sx: randRange(1, 1.6),
+                            sy: 0.3,
+                            sz: randRange(0.9, 1.4),
+                            ry: randRange(0, Math.PI),
+                            roughness: 1,
+                            map: TEX.stone,
+                            castShadow: false
+                        });
+                    }
+                }
+            }
+
+            /** 작은 연못: 어두운 수면 + 가장자리 돌 + 풀 */
+            function addPond(x, z, radius) {
+                // 미니맵용 연못 (원을 다각형으로)
+                const pts = [];
+                for (let i = 0; i < 14; i++) {
+                    const a = (i / 14) * Math.PI * 2;
+                    pts.push([x + Math.cos(a) * radius, z + Math.sin(a) * radius]);
+                }
+                addMapShape(pts, "#3a4650");
+
+                const y = terrainHeight(x, z);
+
+                const water = new THREE.Mesh(
+                    new THREE.CircleGeometry(radius, 20),
+                    new THREE.MeshStandardMaterial({
+                        map: TEX.water,
+                        color: 0x41505e,
+                        transparent: true,
+                        opacity: 0.90,
+                        // 위와 같은 이유로 거칠게 (연못이 흰 구멍처럼 보이는 것 방지)
+                        roughness: 0.88,
+                        metalness: 0.0,
+                        depthWrite: false
+                    })
+                );
+                water.rotation.x = -Math.PI / 2;
+                water.position.set(x, y + 0.035, z);
+                water.renderOrder = 1;
+                world.add(water);
+
+                // 가장자리 돌
+                const count = Math.floor(radius * 7);
+                for (let i = 0; i < count; i++) {
+                    const a = (i / count) * Math.PI * 2 + randRange(-0.12, 0.12);
+                    const r = radius + randRange(-0.15, 0.4);
+                    const sx = x + Math.cos(a) * r;
+                    const sz = z + Math.sin(a) * r;
+                    const sr = randRange(0.12, 0.3);
+
+                    addBlob(world, sr, pick([0x6a655e, 0x7d766c, 0x565149]),
+                        sx, terrainHeight(sx, sz) + sr * 0.3, sz, {
+                        sx: randRange(1, 1.6),
+                        sy: randRange(0.4, 0.8),
+                        sz: randRange(0.9, 1.4),
+                        ry: a,
+                        roughness: 1,
+                        map: TEX.stone
+                    });
+                }
+            }
+
+            /**
+             * 인스턴싱 산포.
+             * 같은 도형 수천 개를 드로우콜 한 번으로 그린다.
+             * transforms: [{x,y,z, rx,ry,rz, sx,sy,sz, color}]
+             */
+            function addInstanced(geometry, material, transforms, opts = {}) {
+                if (!transforms.length) return null;
+
+                const mesh = new THREE.InstancedMesh(geometry, material, transforms.length);
+                const m = new THREE.Matrix4();
+                const q = new THREE.Quaternion();
+                const e = new THREE.Euler();
+                const pos = new THREE.Vector3();
+                const scl = new THREE.Vector3();
+
+                for (let i = 0; i < transforms.length; i++) {
+                    const t = transforms[i];
+                    e.set(t.rx || 0, t.ry || 0, t.rz || 0);
+                    q.setFromEuler(e);
+                    pos.set(t.x, t.y, t.z);
+                    scl.set(t.sx || 1, t.sy || 1, t.sz || 1);
+                    m.compose(pos, q, scl);
+                    mesh.setMatrixAt(i, m);
+                    if (t.color) mesh.setColorAt(i, t.color);
+                }
+
+                mesh.instanceMatrix.needsUpdate = true;
+                if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+
+                mesh.castShadow = opts.castShadow ?? true;
+                mesh.receiveShadow = opts.receiveShadow ?? true;
+                // 월드 전체에 퍼져 있으므로 컬링 기준 구를 넉넉히 잡는다
+                mesh.frustumCulled = false;
+
+                world.add(mesh);
+                return mesh;
+            }
+
+            /** 흩어진 돌 / 자갈 (인스턴싱). 지형 높이를 따라간다. */
+            function scatterStones(count, minX, maxX, minZ, maxZ, colors) {
+                const cols = colors.map((c) => new THREE.Color(c));
+                const list = [];
+
+                for (let i = 0; i < count; i++) {
+                    const s = randRange(0.07, 0.3);
+                    const x = randRange(minX, maxX);
+                    const z = randRange(minZ, maxZ);
+                    if (isUnderwater(x, z)) continue;
+
+                    list.push({
+                        x, y: terrainHeight(x, z) + s * 0.45, z,
+                        sx: s * randRange(1, 1.9),
+                        sy: s * randRange(0.32, 0.8),
+                        sz: s * randRange(0.8, 1.5),
+                        ry: randRange(0, Math.PI),
+                        rz: randRange(-0.14, 0.14),
+                        color: cols[Math.floor(rand() * cols.length)]
+                    });
+                }
+
+                addInstanced(
+                    new THREE.DodecahedronGeometry(1, 0),
+                    makeMat(0xffffff, { roughness: 1, map: TEX.stone }),
+                    list
+                );
+            }
+
+            /**
+             * 마른 풀 / 잡초 다발 (인스턴싱).
+             * 수천 장의 풀잎을 드로우콜 한 번으로 그린다.
+             */
+            function scatterGrass(count, colors, minR, maxR) {
+                const cols = colors.map((c) => new THREE.Color(c));
+                const list = [];
+
+                for (let i = 0; i < count; i++) {
+                    const a = randRange(0, Math.PI * 2);
+                    const r = randRange(minR, maxR);
+                    const cx = Math.cos(a) * r;
+                    const cz = Math.sin(a) * r;
+                    if (isUnderwater(cx, cz)) continue;
+                    const cy = terrainHeight(cx, cz);
+
+                    const blades = Math.floor(randRange(3, 7));
+                    for (let b = 0; b < blades; b++) {
+                        const h = randRange(0.22, 0.62);
+                        list.push({
+                            x: cx + randRange(-0.22, 0.22),
+                            y: cy + h * 0.5,
+                            z: cz + randRange(-0.22, 0.22),
+                            sx: randRange(0.03, 0.07),
+                            sy: h,
+                            sz: 0.02,
+                            ry: randRange(0, Math.PI),
+                            rz: randRange(-0.35, 0.35),
+                            rx: randRange(-0.2, 0.2),
+                            color: cols[Math.floor(rand() * cols.length)]
+                        });
+                    }
+                }
+
+                addInstanced(
+                    new THREE.BoxGeometry(1, 1, 1),
+                    makeMat(0xffffff, { roughness: 1 }),
+                    list,
+                    { castShadow: false, receiveShadow: false }
+                );
+            }
+
+
+            /******************************************************************
+             * ERA BUILD
+             ******************************************************************/
+
+            /**
+             * 시대별 텍스처 팔레트.
+             * 여기 색만 바꾸면 그 시대의 땅/돌/지붕 질감이 통째로 바뀐다.
+             */
+            const TEX_PALETTE = [
+                // 신석기: 강가의 마른 흙, 마른 갈대
+                {
+                    dirtBase: 0x9d7249,
+                    dirtSpots: [0xc59a62, 0x7d6b42, 0xb5854f, 0x6d5637, 0xd8b784],
+                    stoneBase: 0x77706a,
+                    stoneSpots: [0x9a9187, 0x5a554f, 0x6f7a55],
+                    thatch: [0xb08a4c, 0x6b4f26, 0xd8b877],
+                    wood: [0x6d4a26, 0x33210f],
+                    water: [0x52707a, 0xd8e6dc],
+                    cloth: [0x6a5a44, 0x2f2718]
+                },
+                // 청동기: 붉은 황토
+                {
+                    dirtBase: 0x8e6b43,
+                    dirtSpots: [0xb08653, 0x6f5637, 0xa47c48, 0x5d4a30, 0xc7a06a],
+                    stoneBase: 0x6f665d,
+                    stoneSpots: [0x8e8378, 0x4f4941, 0x6b6f4d],
+                    thatch: [0xa87f45, 0x63481f, 0xd0ac6a],
+                    wood: [0x66421f, 0x2d1c0c],
+                    water: [0x4e6a6d, 0xcfdcd2],
+                    cloth: [0x6b4f33, 0x2b1d10]
+                },
+                // 조선: 밤의 흙길
+                {
+                    dirtBase: 0x6b5a4a,
+                    dirtSpots: [0x816c57, 0x4d4238, 0x77654c, 0x565045, 0x8d7a62],
+                    stoneBase: 0x545059,
+                    stoneSpots: [0x6b6772, 0x3a373f, 0x4a5246],
+                    thatch: [0x8b7449, 0x4d3c22, 0xb09566],
+                    wood: [0x4d3620, 0x221609],
+                    water: [0x38414f, 0x9fb0bd],
+                    cloth: [0x4f4a52, 0x24202a]
+                }
+            ];
+
+            /** 현재 시대의 절차적 텍스처를 모두 새로 굽는다. */
+            function buildTextures(index) {
+                const p = TEX_PALETTE[index];
+
+                // 텍스처 생성에도 같은 시드를 써서 매번 같은 결과가 나오게 한다
+                seedRandom(7000 + index * 911);
+
+                // 오브젝트용 텍스처는 "거의 흰 바탕 + 어두운 결" 이어야 한다.
+                // 재질의 color 와 곱해지므로, 텍스처까지 색을 가지면 두 번 어두워진다.
+                const GRUNGE = "#e2ddd4";
+                const GRUNGE_DARK = "rgba(40,30,20,ALPHA)";
+                const GRUNGE_LIGHT = "rgba(255,250,240,ALPHA)";
+
+                TEX = {
+                    // 지면용: 실제 흙 색을 가진 유일한 텍스처 (재질 color 는 흰색)
+                    dirt: makeTerrainTexture(
+                        p.dirtSpots.map(cssRGBA),
+                        cssHex(p.dirtBase),
+                        { repeat: 26, grit: 38, washes: 150 }
+                    ),
+                    // 오브젝트용 흙: 색 없이 질감만
+                    dirtObj: makeTerrainTexture(
+                        [GRUNGE_DARK, GRUNGE_LIGHT, "rgba(90,70,50,ALPHA)"],
+                        GRUNGE,
+                        { repeat: 2, grit: 22, washes: 70 }
+                    ),
+                    stone: makeStoneTexture(GRUNGE, [GRUNGE_DARK, GRUNGE_LIGHT, "rgba(70,80,55,ALPHA)"]),
+                    thatch: makeThatchTexture("#ded3bd", GRUNGE_DARK, GRUNGE_LIGHT),
+                    wood: makeWoodTexture("#dcd2c2", GRUNGE_DARK),
+                    water: makeWaterTexture("#cfd6d4", GRUNGE_LIGHT),
+                    cloth: makeWoodTexture("#dcd6cc", GRUNGE_DARK),
+                    mist: makeMistTexture()
+                };
+            }
+
+            function buildAge(index) {
+                currentAge = index;
+                ageProgress = 0;
+                ageCompleteTriggered = false;
+                transitioning = false;
+                demoFinished = false;
+                activeGate = null;
+                clickTarget = null;
+                interactables = [];
+                animated = [];
+                mapShapes = [];
+                mapMarkers = [];
+                hintSign = null;
+                hideHint();
+                backdrop = null;
+                sunLight = null;
+                terrainCarve = null;
+                glitchAmount = 0;
+
+                dom.completeOverlay.classList.remove("show");
+
+                const age = AGE_DATA[currentAge];
+
+                // ---- 텍스처를 먼저 구워 둔다 (지형/오브젝트가 참조한다) ----
+                buildTextures(index);
+
+                // ---- 장면 / 안개 ----
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(age.fog);
+                scene.fog = new THREE.FogExp2(age.fog, age.fogDensity);
+
+                world = new THREE.Group();
+                scene.add(world);
+
+                addLights(age);
+
+                // ---- 프리렌더식 지평선 배경 ----
+                seedRandom(4000 + index * 177);
+                addBackdrop({
+                    skyTop: age.sky.top,
+                    skyMid: age.sky.mid,
+                    skyBottom: age.sky.bottom,
+                    ridges: age.ridges
+                });
+
+                // ---- 지형과 오브젝트 ----
+                seedRandom(1000 + index * 333);
+
+                if (index === 0) buildNeolithic();
+                if (index === 1) buildBronze();
+                if (index === 2) buildJoseon();
+
+                // ---- 대기 연출: 지면 안개 + 떠도는 먼지 ----
+                addMistLayers(age.fog, index === 2 ? 5 : 4);
+                addDustMotes(index === 2 ? 0xb9c4d8 : 0xffe3b4, 140);
+
+                // ---- 후처리 그레이딩 ----
+                applyGrade(age.grade);
+
+                // ---- 시대에 맞는 배경음으로 전환 ----
+                if (AudioSystem.started) AudioSystem.setEra(index);
+
+                // ---- 플레이어 배치 ----
+                player = createPlayer();
+                player.position.set(age.start.x, terrainHeight(age.start.x, age.start.z), age.start.z);
+                scene.add(player);
+
+                cameraTarget.set(player.position.x, 0.6, player.position.z);
+                updateCamera(0, true);
+                updateUI();
+                showMessage(age.intro + "\n첫 키 입력 또는 클릭 후 소리가 켜집니다.");
+            }
+
+            /******************************************************************
+             * ERA 1 — 신석기 시대 · 한반도 강가 마을
+             *
+             * 화면 위쪽(카메라 기준 먼 쪽)으로 넓은 강이 흐르고,
+             * 강변 둔덕에 움집 몇 채와 울타리, 화덕이 흩어져 있다.
+             * 격자로 정렬하지 않고 일부러 조금씩 어긋나게 배치한다.
+             ******************************************************************/
+
+            // 강의 중심선 (등각 화면에서 가로로 흐르도록 45° 회전)
+            const RIVER = {
+                center: { x: 0, z: -15 },
+                rot: Math.PI / 4,
+                // 강 쪽으로 파고드는 경계까지의 거리
+                bank: 4.0
+            };
+
+            /** 강 중심선 기준 수직 거리. 양수 = 뭍, 음수 = 물 */
+            function riverPerp(x, z) {
+                return (x - RIVER.center.x + z - RIVER.center.z) * Math.SQRT1_2;
+            }
+
+            function buildNeolithic() {
+                // ---- 강바닥을 파낸다 (지형 생성 전에 등록해야 한다) ----
+                terrainCarve = (x, z, h) => {
+                    const u = riverPerp(x, z);
+                    if (u > RIVER.bank) return h;
+
+                    // 둔덕 -> 얕은 물 -> 깊은 물로 완만하게 내려간다
+                    const t = smooth(THREE.MathUtils.clamp((RIVER.bank - u) / 7.5, 0, 1));
+                    return h * (1 - t) - t * 1.9;
+                };
+
+                // ---- 지면 ----
+                addGround(0x9d7249, [0xc59a62, 0x8a7644, 0xb5854f, 0x6f5637, 0xd6b47f]);
+
+                // ---- 강 ----
+                addRiver();
+
+                // ---- 강변 갈대밭 ----
+                seedRandom(2100);
+                for (let i = 0; i < 30; i++) {
+                    // 물가를 따라 자라도록 강 중심선 좌표계로 배치한다
+                    const along = randRange(-34, 34);
+                    const perp = randRange(-1.2, 5.2);
+                    const x = RIVER.center.x + along * Math.SQRT1_2 + perp * Math.SQRT1_2;
+                    const z = RIVER.center.z - along * Math.SQRT1_2 + perp * Math.SQRT1_2;
+                    addReedCluster(x, z, Math.floor(randRange(5, 9)));
+                }
+
+                // 마을 안쪽에도 마른 풀 무더기를 흩뿌린다
+                scatterGrass(330, [0x8d7b45, 0x6f6a38, 0xa08a4e, 0x5f5c33, 0x7a6b3c], 3, 31);
+
+                // ---- 돌과 자갈 ----
+                scatterStones(130, -30, 30, -30, 30, [0x77706a, 0x8b8172, 0x625c55, 0x8f8a74]);
+
+                // 큰 바위 몇 덩이 (구도에 무게를 준다)
+                addBoulder(-13.5, 4.0, 1.5);
+                addBoulder(-11.2, 6.4, 1.05);
+                addBoulder(14.0, -6.5, 1.3);
+                addBoulder(-16.5, -3.2, 1.15);
+
+                // ---- 먼 나무 실루엣 ----
+                addTreeLine([0x77714a, 0x655f3c, 0x837a52, 0x6d6742], 40, 26, 36);
+
+                // ---- 마을 ----
+                // 움집 4채. 각각 크기와 각도를 다르게 해서 정렬감을 없앤다.
+                addPitHouse(1.6, 1.2, 0.35, 1.0);
+                addPitHouse(5.2, 6.6, -0.65, 1.14);
+                addPitHouse(9.4, 3.2, 0.22, 0.88);
+                addPitHouse(-1.4, 7.8, 1.05, 0.96);
+
+                // 나무 울타리 (일부러 구부러진 선)
+                addFence([
+                    [-10.6, -4.2],
+                    [-8.1, 1.6],
+                    [-6.4, 7.4],
+                    [-4.9, 13.6]
+                ]);
+                addFence([
+                    [13.2, 6.0],
+                    [12.1, 11.4],
+                    [9.4, 15.8]
+                ]);
+
+                // 생활 흔적
+                addHearth(7.6, 0.4);
+                addSmallAltar(11.4, -3.6);
+                addStonePile(-11.0, 1.4);
+                addShellHeap(-5.6, -6.6);
+                addFirewood(3.4, -1.2);
+                addFirewood(-2.6, 3.4);
+                addDryingRack(-4.2, -2.6, 0.4);
+
+                // ---- 조사 대상 3개 ----
+                const pottery = createPotteryShard(-5.0, -5.3);
+                registerInteractable({
+                    name: "토기",
+                    group: pottery,
+                    pickup: true,
+                    range: 1.9,
+                    description: "빗살무늬 토기 조각\n\n오래된 토기의 일부입니다.\n표면에 빗살무늬가 남아 있습니다."
+                });
+
+                const stoneTool = createStoneTool(-10.2, 2.2);
+                registerInteractable({
+                    name: "간석기",
+                    group: stoneTool,
+                    pickup: true,
+                    range: 1.9,
+                    description: "간석기\n\n매끈하게 갈아 만든 돌도구입니다.\n신석기인의 생활 흔적을 보여줍니다."
+                });
+
+                const burntWood = createBurntWoodArtifact(8.5, 1.4);
+                registerInteractable({
+                    name: "탄목",
+                    group: burntWood,
+                    pickup: true,
+                    range: 1.9,
+                    description: "불탄 나무 조각\n\n오래된 화덕에서 발견된 탄화된 나무입니다.\n이곳에서 사람들이 불을 사용했음을 보여줍니다."
+                });
+
+                // ---- 시간의 문 (고인돌) ----
+                activeGate = createTimeGate(14.6, 11.0, -Math.PI / 5);
+            }
+
+            /** 큰 바위: 여러 덩이를 겹쳐 자연스러운 형태로 만든다 */
+            function addBoulder(x, z, scale) {
+                addMapMarker(x, z, "#6f6960", 2.5, "prop");
+                const y = terrainHeight(x, z);
+                const g = new THREE.Group();
+                g.position.set(x, y, z);
+                g.rotation.y = randRange(0, Math.PI);
+                world.add(g);
+
+                const chunks = Math.floor(randRange(3, 6));
+                for (let i = 0; i < chunks; i++) {
+                    const r = randRange(0.45, 0.85) * scale;
+                    addBlob(g, r, pick([0x7b746c, 0x8d8478, 0x655f58]),
+                        randRange(-0.5, 0.5) * scale,
+                        r * randRange(0.45, 0.8),
+                        randRange(-0.5, 0.5) * scale, {
+                        sx: randRange(1.0, 1.6),
+                        sy: randRange(0.55, 1.0),
+                        sz: randRange(0.9, 1.5),
+                        ry: randRange(0, Math.PI),
+                        rz: randRange(-0.2, 0.2),
+                        roughness: 1,
+                        map: TEX.stone
+                    });
+                }
+            }
+
+            /**
+             * 강: 반투명한 수면 + 흐르는 잔물결 + 물가 자갈.
+             * 색은 일부러 파랗지 않게, 탁한 청회색으로 둔다.
+             */
+            function addRiver() {
+                // 미니맵용 강 영역: 중심선 기준 perp <= 3 인 띠
+                const along = 60, nearPerp = 3, farPerp = -60;
+                const pt = (a, pp) => [
+                    RIVER.center.x + a * Math.SQRT1_2 + pp * Math.SQRT1_2,
+                    RIVER.center.z - a * Math.SQRT1_2 + pp * Math.SQRT1_2
+                ];
+                addMapShape([
+                    pt(-along, nearPerp), pt(along, nearPerp),
+                    pt(along, farPerp), pt(-along, farPerp)
+                ], "#3e5257");
+
+                const g = new THREE.Group();
+                g.position.set(RIVER.center.x, 0, RIVER.center.z);
+                g.rotation.y = RIVER.rot;
+                world.add(g);
+
+                // 수면
+                const water = new THREE.Mesh(
+                    new THREE.PlaneGeometry(160, 70),
+                    new THREE.MeshStandardMaterial({
+                        map: TEX.water,
+                        color: 0x3c4c54,
+                        transparent: true,
+                        opacity: 0.96,
+                        // 직교 카메라에서는 매끈한 수면이 화면 전체에 균일한
+                        // 스펙큘러를 만들어 하얗게 타버린다. 일부러 거칠게 둔다.
+                        roughness: 0.82,
+                        metalness: 0.0,
+                        depthWrite: true
+                    })
+                );
+                water.rotation.x = -Math.PI / 2;
+                // 수면이 파낸 둔덕(perp <= 3)까지 덮도록 살짝 앞으로 뺀다
+                water.position.set(0, -0.14, -32);
+                water.receiveShadow = false;
+                g.add(water);
+
+                // 수면에 비치는 햇빛 (참조 이미지의 강 반짝임)
+                // 넓게 퍼진 반사
+                const glare = new THREE.Mesh(
+                    new THREE.PlaneGeometry(15, 30),
+                    new THREE.MeshBasicMaterial({
+                        map: TEX.mist,
+                        color: 0xffe6bd,
+                        transparent: true,
+                        opacity: 0.38,
+                        blending: THREE.AdditiveBlending,
+                        depthWrite: false,
+                        fog: true
+                    })
+                );
+                glare.rotation.x = -Math.PI / 2;
+                glare.position.set(3, -0.11, -12);
+                g.add(glare);
+
+                // 중심의 강한 빛기둥 (참조 이미지의 강 반짝임)
+                const glareCore = new THREE.Mesh(
+                    new THREE.PlaneGeometry(5.5, 24),
+                    new THREE.MeshBasicMaterial({
+                        map: TEX.mist,
+                        color: 0xfff6e2,
+                        transparent: true,
+                        opacity: 0.62,
+                        blending: THREE.AdditiveBlending,
+                        depthWrite: false,
+                        fog: true
+                    })
+                );
+                glareCore.rotation.x = -Math.PI / 2;
+                glareCore.position.set(3, -0.10, -11);
+                g.add(glareCore);
+
+                // 잔물결: 가로로 아주 천천히 흐른다
+                seedRandom(3300);
+                for (let i = 0; i < 130; i++) {
+                    const wave = new THREE.Mesh(
+                        new THREE.BoxGeometry(randRange(1.0, 5.0), 0.02, 0.06),
+                        makeBasicMat(0xffeed2, {
+                            transparent: true,
+                            opacity: randRange(0.20, 0.46),
+                            depthWrite: false
+                        })
+                    );
+                    wave.position.set(randRange(-40, 40), -0.10, randRange(-30, 1));
+                    wave.rotation.y = randRange(-0.15, 0.15);
+                    wave.castShadow = false;
+                    wave.receiveShadow = false;
+                    g.add(wave);
+
+                    animated.push({
+                        type: "wave",
+                        mesh: wave,
+                        speed: randRange(0.2, 0.75),
+                        minX: -42,
+                        maxX: 42
+                    });
+                }
+
+                // ---- 젖은 모래 띠: 물과 뭍의 경계를 흐린다 ----
+                seedRandom(3350);
+                for (let i = 0; i < 120; i++) {
+                    const along = randRange(-38, 38);
+                    const perp = randRange(0.2, 4.6);
+                    const x = RIVER.center.x + along * Math.SQRT1_2 + perp * Math.SQRT1_2;
+                    const z = RIVER.center.z - along * Math.SQRT1_2 + perp * Math.SQRT1_2;
+
+                    // 물에 가까울수록 진하게 젖어 있다
+                    const wet = 1 - THREE.MathUtils.clamp((perp - 0.2) / 4.4, 0, 1);
+
+                    addFlatCircle(world, randRange(1.0, 2.8), 0x6d5a45,
+                        x, terrainHeight(x, z) + 0.03, z, 8, {
+                        material: makeMat(0x6d5a45, {
+                            transparent: true,
+                            opacity: 0.12 + wet * 0.34,
+                            side: THREE.DoubleSide,
+                            depthWrite: false,
+                            roughness: 0.55,
+                            map: TEX.dirtObj
+                        })
+                    });
+                }
+
+                // ---- 포말선: 물과 뭍이 만나는 밝은 띠 ----
+                const foam = new THREE.Mesh(
+                    new THREE.PlaneGeometry(150, 3.0),
+                    new THREE.MeshBasicMaterial({
+                        map: TEX.mist,
+                        color: 0xf6e6c8,
+                        transparent: true,
+                        opacity: 0.45,
+                        blending: THREE.AdditiveBlending,
+                        depthWrite: false,
+                        fog: true
+                    })
+                );
+                foam.rotation.x = -Math.PI / 2;
+                // 로컬 z 가 곧 강 중심선 기준 perp 거리다
+                foam.position.set(0, -0.05, 1.5);
+                foam.renderOrder = 3;
+                g.add(foam);
+
+                // 물가 자갈 (인스턴싱)
+                seedRandom(3400);
+                const pebbleCols = [0x8d8579, 0xa2988a, 0x6f685f].map((c) => new THREE.Color(c));
+                const pebbles = [];
+
+                for (let i = 0; i < 260; i++) {
+                    const along = randRange(-38, 38);
+                    const perp = randRange(-2.6, 5.2);
+                    const x = RIVER.center.x + along * Math.SQRT1_2 + perp * Math.SQRT1_2;
+                    const z = RIVER.center.z - along * Math.SQRT1_2 + perp * Math.SQRT1_2;
+                    const sc = randRange(0.07, 0.22);
+
+                    pebbles.push({
+                        x, y: terrainHeight(x, z) + sc * 0.4, z,
+                        sx: sc * randRange(1, 1.8),
+                        sy: sc * randRange(0.3, 0.7),
+                        sz: sc * randRange(0.9, 1.4),
+                        ry: randRange(0, Math.PI),
+                        color: pebbleCols[Math.floor(rand() * pebbleCols.length)]
+                    });
+                }
+
+                addInstanced(
+                    new THREE.DodecahedronGeometry(1, 0),
+                    makeMat(0xffffff, { roughness: 1, map: TEX.stone }),
+                    pebbles,
+                    { castShadow: false }
+                );
+            }
+
+            /** 갈대 다발: 가늘고 긴 판이 바람에 흔들린다 */
+            function addReedCluster(x, z, count = 6) {
+                const y = terrainHeight(x, z);
+
+                const g = new THREE.Group();
+                g.position.set(x, y, z);
+                world.add(g);
+
+                for (let i = 0; i < count; i++) {
+                    const h = randRange(0.9, 2.1);
+                    const reed = addBox(g,
+                        randRange(0.035, 0.075), h, 0.03,
+                        pick([0xa8924f, 0x8c7a3c, 0xc0a75f, 0x6f6431]),
+                        randRange(-0.45, 0.45), h * 0.5, randRange(-0.45, 0.45),
+                        randRange(0, Math.PI), {
+                        roughness: 1,
+                        castShadow: false,
+                        receiveShadow: false
+                    });
+                    reed.rotation.z = randRange(-0.22, 0.22);
+
+                    // 이삭
+                    if (rand() > 0.45) {
+                        addBox(g, 0.07, 0.2, 0.05, 0x6e5a2a,
+                            reed.position.x, h * 0.98, reed.position.z,
+                            reed.rotation.y, { castShadow: false, receiveShadow: false });
+                    }
+                }
+
+                animated.push({
+                    type: "sway",
+                    group: g,
+                    amp: randRange(0.04, 0.11),
+                    speed: randRange(0.6, 1.3),
+                    phase: randRange(0, Math.PI * 2)
+                });
+            }
+
+            /**
+             * 움집: 땅을 판 자리 + 흙벽 + 갈대 지붕 + 지붕 뼈대.
+             * scale 로 집마다 크기를 다르게 한다.
+             */
+            function addPitHouse(x, z, rot, scale = 1) {
+                const y = terrainHeight(x, z);
+                addMapMarker(x, z, "#9c7b45", 3, "building");
+                const g = new THREE.Group();
+                g.position.set(x, y, z);
+                g.rotation.y = rot;
+                g.scale.setScalar(scale);
+                world.add(g);
+
+                // 집을 두른 흙 둔덕
+                addCylinder(g, 1.75, 1.95, 0.14, 12, 0x8a6740, 0, 0.07, 0, {
+                    roughness: 1, map: TEX.dirtObj, castShadow: false
+                });
+
+                // 흙벽 (살짝 기울여 낡은 느낌)
+                const wall = addCylinder(g, 1.14, 1.32, 0.72, 9, 0x9a6d40, 0, 0.42, 0, {
+                    roughness: 1, map: TEX.dirtObj
+                });
+                wall.rotation.z = 0.012;
+
+                // 갈대 지붕: 2단으로 겹쳐 두께를 준다
+                addCone(g, 1.62, 0.95, 9, 0xc9a45f, 0, 1.24, 0, { roughness: 1, map: TEX.thatch });
+                addCone(g, 1.30, 0.72, 9, 0xb08c4b, 0, 1.62, 0, { roughness: 1, map: TEX.thatch });
+
+                // 꼭대기 묶음
+                addCylinder(g, 0.06, 0.12, 0.34, 5, 0x5a4522, 0, 2.02, 0, { map: TEX.wood });
+
+                // 지붕을 누르는 나무 뼈대
+                for (let i = 0; i < 5; i++) {
+                    const a = (i / 5) * Math.PI * 2 + 0.3;
+                    addCylinderBetween(g,
+                        new THREE.Vector3(Math.cos(a) * 1.52, 0.80, Math.sin(a) * 1.52),
+                        new THREE.Vector3(0, 1.98, 0),
+                        0.035, 0x5e4423, { map: TEX.wood, castShadow: false });
+                }
+
+                // 입구
+                addBox(g, 0.52, 0.56, 0.08, 0x241609, 0, 0.32, 1.22);
+                addCylinder(g, 0.05, 0.06, 0.9, 5, 0x60421f, -0.44, 0.47, 1.24, { map: TEX.wood });
+                addCylinder(g, 0.05, 0.06, 0.9, 5, 0x60421f, 0.44, 0.47, 1.24, { map: TEX.wood });
+                addBox(g, 1.0, 0.07, 0.07, 0x60421f, 0, 0.90, 1.24);
+
+                // 문 앞에 밟힌 흙자국
+                addFlatCircle(g, 0.85, 0x7a5734, 0, 0.026, 1.7, 10, {
+                    material: makeMat(0x7a5734, {
+                        transparent: true, opacity: 0.55, side: THREE.DoubleSide,
+                        depthWrite: false, roughness: 1
+                    })
+                });
+            }
+
+            /** 장작더미 */
+            function addFirewood(x, z) {
+                const y = terrainHeight(x, z);
+                const g = new THREE.Group();
+                g.position.set(x, y, z);
+                g.rotation.y = randRange(0, Math.PI);
+                world.add(g);
+
+                for (let i = 0; i < 7; i++) {
+                    const len = randRange(0.7, 1.15);
+                    const log = addCylinder(g, 0.055, 0.065, len, 5,
+                        pick([0x5c3f20, 0x6d4a26, 0x47301a]),
+                        randRange(-0.18, 0.18), 0.06 + i * 0.1, randRange(-0.12, 0.12),
+                        { map: TEX.wood });
+                    log.rotation.z = Math.PI / 2;
+                    log.rotation.y = randRange(-0.4, 0.4);
+                }
+            }
+
+            /** 물고기 말리는 나무 걸이 */
+            function addDryingRack(x, z, rot) {
+                const y = terrainHeight(x, z);
+                const g = new THREE.Group();
+                g.position.set(x, y, z);
+                g.rotation.y = rot;
+                world.add(g);
+
+                addCylinder(g, 0.05, 0.07, 1.25, 5, 0x5e4122, -0.85, 0.62, 0, { map: TEX.wood });
+                addCylinder(g, 0.05, 0.07, 1.25, 5, 0x5e4122, 0.85, 0.62, 0, { map: TEX.wood });
+                addBox(g, 1.9, 0.06, 0.06, 0x6a4a28, 0, 1.2, 0, 0, { map: TEX.wood });
+
+                // 걸린 가죽/물고기
+                for (let i = 0; i < 4; i++) {
+                    addBox(g, 0.22, randRange(0.3, 0.5), 0.03,
+                        pick([0x8a6b45, 0x6f5436, 0x9b7c52]),
+                        -0.6 + i * 0.4, 1.0, 0, randRange(-0.2, 0.2), { map: TEX.cloth });
+                }
+            }
+
+            function addFence(points) {
+                for (let i = 0; i < points.length - 1; i++) {
+                    addFenceSegment(points[i][0], points[i][1], points[i + 1][0], points[i + 1][1]);
+                }
+            }
+
+            /** 울타리 한 구간: 기둥이 조금씩 기울어 낡아 보이게 한다 */
+            function addFenceSegment(x1, z1, x2, z2) {
+                const dist = Math.hypot(x2 - x1, z2 - z1);
+                const posts = Math.max(2, Math.floor(dist / 1.45));
+
+                for (let i = 0; i <= posts; i++) {
+                    const t = i / posts;
+                    const x = x1 + (x2 - x1) * t + randRange(-0.09, 0.09);
+                    const z = z1 + (z2 - z1) * t + randRange(-0.09, 0.09);
+                    const y = terrainHeight(x, z);
+                    const h = randRange(0.95, 1.25);
+
+                    const post = addCylinder(world, 0.05, 0.08, h, 5,
+                        pick([0x5c3d1d, 0x6b4826, 0x4c3218]),
+                        x, y + h * 0.5, z, { map: TEX.wood });
+
+                    // 기둥마다 조금씩 다른 방향으로 기울인다
+                    post.rotation.z = randRange(-0.09, 0.09);
+                    post.rotation.x = randRange(-0.07, 0.07);
+                }
+
+                const y1 = terrainHeight(x1, z1);
+                const y2 = terrainHeight(x2, z2);
+
+                addCylinderBetween(world,
+                    new THREE.Vector3(x1, y1 + 0.52, z1),
+                    new THREE.Vector3(x2, y2 + 0.52, z2),
+                    0.042, 0x6d4724, { map: TEX.wood });
+
+                addCylinderBetween(world,
+                    new THREE.Vector3(x1, y1 + 0.84, z1),
+                    new THREE.Vector3(x2, y2 + 0.84, z2),
+                    0.036, 0x66421f, { map: TEX.wood });
+            }
+
+            /** 화덕: 돌 테두리 + 잉걸불 + 피어오르는 연기 */
+            function addHearth(x, z) {
+                addMapMarker(x, z, "#d4733a", 2.5, "prop");
+                const g = new THREE.Group();
+                g.position.set(x, terrainHeight(x, z), z);
+                world.add(g);
+
+                addFlatCircle(g, 0.72, 0x2e2520, 0, 0.023, 0, 12, {
+                    transparent: true,
+                    opacity: 0.72,
+                    roughness: 1
+                });
+
+                for (let i = 0; i < 9; i++) {
+                    const a = (i / 9) * Math.PI * 2;
+                    addBlob(g, 0.15, pick([0x6e665e, 0x81776c, 0x5f5a54]),
+                        Math.cos(a) * 0.72, 0.11, Math.sin(a) * 0.72,
+                        { sx: 1.1, sy: 0.55, sz: 0.9, ry: a }
+                    );
+                }
+
+                addCylinderBetween(g, new THREE.Vector3(-0.36, 0.13, -0.10), new THREE.Vector3(0.35, 0.13, 0.10), 0.07, 0x241815);
+                addCylinderBetween(g, new THREE.Vector3(-0.30, 0.15, 0.18), new THREE.Vector3(0.31, 0.15, -0.17), 0.055, 0x1b1210);
+
+                const ember = addFlatCircle(g, 0.35, 0xff6b24, 0, 0.036, 0, 8, {
+                    material: makeBasicMat(0xff6b24, {
+                        transparent: true,
+                        opacity: 0.22,
+                        side: THREE.DoubleSide,
+                        depthWrite: false
+                    })
+                });
+
+                animated.push({ type: "ember", mesh: ember, phase: randRange(0, Math.PI * 2) });
+
+                // 작은 불꽃
+                const flame = addCone(g, 0.16, 0.42, 6, 0xff9a3c, 0, 0.26, 0, {
+                    material: makeBasicMat(0xff9a3c, { transparent: true, opacity: 0.72, depthWrite: false }),
+                    castShadow: false,
+                    receiveShadow: false
+                });
+
+                const fireLight = new THREE.PointLight(0xff9440, 1.1, 6.5);
+                fireLight.position.set(0, 0.5, 0);
+                g.add(fireLight);
+
+                animated.push({
+                    type: "torch",
+                    light: fireLight,
+                    flame,
+                    baseIntensity: 1.1,
+                    speed: randRange(7, 10),
+                    phase: randRange(0, Math.PI * 2)
+                });
+
+                // 피어오르는 연기 (참조 이미지의 연기 기둥)
+                addSmokePlume(g, 0, 0.45, 0);
+            }
+
+            /**
+             * 연기 기둥: 반투명 판이 천천히 올라가며 커지고 사라진다.
+             * 부모 그룹 기준 좌표로 붙인다.
+             */
+            function addSmokePlume(parent, x, y, z) {
+                const puffs = [];
+
+                for (let i = 0; i < 9; i++) {
+                    const puff = new THREE.Mesh(
+                        new THREE.PlaneGeometry(1.1, 1.1),
+                        new THREE.MeshBasicMaterial({
+                            map: TEX.mist,
+                            color: 0xbfae93,
+                            transparent: true,
+                            opacity: 0,
+                            depthWrite: false,
+                            fog: true
+                        })
+                    );
+
+                    // 등각 카메라는 회전하지 않으므로 고정 각도로 세워 두면 항상 정면이다
+                    puff.rotation.y = Math.PI / 4;
+                    puff.position.set(x, y, z);
+                    puff.renderOrder = 5;
+                    parent.add(puff);
+                    puffs.push(puff);
+                }
+
+                animated.push({
+                    type: "smoke",
+                    puffs,
+                    origin: new THREE.Vector3(x, y, z),
+                    life: puffs.map((_, i) => i / puffs.length)
+                });
+            }
+
+            function addStonePile(x, z) {
+                const g = new THREE.Group();
+                g.position.set(x, terrainHeight(x, z), z);
+                world.add(g);
+
+                for (let i = 0; i < 19; i++) {
+                    addBlob(g, randRange(0.12, 0.32), pick([0x746e65, 0x8a8174, 0x67625c]),
+                        randRange(-0.7, 0.7), randRange(0.08, 0.35), randRange(-0.55, 0.55),
+                        { sx: randRange(1, 1.7), sy: randRange(0.45, 0.9), sz: randRange(0.8, 1.4), ry: randRange(0, Math.PI) }
+                    );
+                }
+            }
+
+            function addShellHeap(x, z) {
+                const g = new THREE.Group();
+                g.position.set(x, terrainHeight(x, z), z);
+                world.add(g);
+
+                addFlatCircle(g, 1.0, 0xe4c791, 0, 0.022, 0, 10, {
+                    transparent: true,
+                    opacity: 0.52,
+                    roughness: 1
+                });
+
+                for (let i = 0; i < 26; i++) {
+                    addBlob(g, randRange(0.05, 0.12), pick([0xf0dfbd, 0xd7c39e, 0xf8edcf]),
+                        randRange(-0.78, 0.78), 0.075, randRange(-0.62, 0.62),
+                        { sx: 1.5, sy: 0.25, sz: 0.8, ry: randRange(0, Math.PI) }
+                    );
+                }
+            }
+
+            function addSmallAltar(x, z) {
+                const g = new THREE.Group();
+                g.position.set(x, terrainHeight(x, z), z);
+                g.rotation.y = -0.2;
+                world.add(g);
+
+                addBox(g, 1.2, 0.32, 0.9, 0x6d665e, 0, 0.16, 0);
+                addBox(g, 0.9, 0.25, 0.62, 0x80776d, 0, 0.45, 0);
+                addBlob(g, 0.17, 0xcab079, -0.28, 0.68, 0.05, { sy: 0.55 });
+                addBlob(g, 0.15, 0xcab079, 0.24, 0.68, -0.06, { sy: 0.55 });
+            }
+
+            function createPotteryShard(x, z) {
+                const g = new THREE.Group();
+                g.position.set(x, terrainHeight(x, z) + 0.05, z);
+                g.rotation.y = 0.35;
+                world.add(g);
+
+                addBox(g, 0.78, 0.075, 0.48, 0xb9683e, 0, 0.05, 0, 0, { roughness: 1 });
+                for (let i = -1; i <= 1; i++) {
+                    addBox(g, 0.035, 0.032, 0.42, 0x673b25, i * 0.18, 0.115, 0, 0, { roughness: 1 });
+                }
+                addBox(g, 0.58, 0.028, 0.035, 0x673b25, 0, 0.12, -0.12);
+                addBox(g, 0.58, 0.028, 0.035, 0x673b25, 0, 0.12, 0.12);
+
+                return g;
+            }
+
+            function createStoneTool(x, z) {
+                const g = new THREE.Group();
+                g.position.set(x, terrainHeight(x, z) + 0.05, z);
+                g.rotation.y = -0.75;
+                world.add(g);
+
+                addBlob(g, 0.52, 0x7d8278, 0, 0.10, 0, {
+                    sx: 0.45,
+                    sy: 0.16,
+                    sz: 1.22,
+                    roughness: 1
+                });
+                addBox(g, 0.18, 0.045, 0.35, 0x575c55, 0, 0.16, -0.30, 0, { roughness: 1 });
+
+                return g;
+            }
+
+            function createBurntWoodArtifact(x, z) {
+                const g = new THREE.Group();
+                g.position.set(x, terrainHeight(x, z) + 0.02, z);
+                g.rotation.y = 0.42;
+                world.add(g);
+
+                addCylinderBetween(g, new THREE.Vector3(-0.46, 0.12, 0), new THREE.Vector3(0.42, 0.13, 0.09), 0.085, 0x211614);
+                addCylinderBetween(g, new THREE.Vector3(-0.22, 0.18, 0.18), new THREE.Vector3(0.25, 0.18, -0.18), 0.055, 0x160f0e);
+                addBlob(g, 0.075, 0xff5f25, 0.13, 0.19, 0.02, {
+                    material: makeBasicMat(0xff5f25, { transparent: true, opacity: 0.82 })
+                });
+
+                return g;
+            }
+
+            function createTimeGate(x, z, rot) {
+                const g = new THREE.Group();
+                g.position.set(x, terrainHeight(x, z), z);
+                g.rotation.y = rot;
+                world.add(g);
+
+                addBox(g, 0.62, 1.95, 0.72, 0x6e6a64, -0.92, 0.98, 0, 0.05, { roughness: 1 });
+                addBox(g, 0.62, 1.88, 0.72, 0x77716a, 0.92, 0.94, 0, -0.05, { roughness: 1 });
+                addBox(g, 2.75, 0.52, 0.86, 0x817970, 0, 2.05, 0, 0.02, { roughness: 1 });
+
+                const portal = new THREE.Mesh(
+                    new THREE.CircleGeometry(0.88, 24),
+                    makeBasicMat(0x77ddff, {
+                        transparent: true,
+                        opacity: 0,
+                        side: THREE.DoubleSide,
+                        depthWrite: false
+                    })
+                );
+                portal.position.set(0, 1.08, 0.03);
+                portal.visible = false;
+                g.add(portal);
+
+                const ring = new THREE.Mesh(
+                    new THREE.TorusGeometry(0.94, 0.045, 6, 28),
+                    makeBasicMat(0x8fe6ff, {
+                        transparent: true,
+                        opacity: 0,
+                        side: THREE.DoubleSide,
+                        depthWrite: false
+                    })
+                );
+                ring.position.set(0, 1.08, 0.05);
+                ring.visible = false;
+                g.add(ring);
+
+                const light = new THREE.PointLight(0x7bdcff, 0, 5);
+                light.position.set(0, 1.15, 0.25);
+                g.add(light);
+
+                const gateMarker = addMapMarker(x, z, "#8b8072", 4, "gate");
+
+                const gate = {
+                    group: g,
+                    marker: gateMarker,
+                    position: new THREE.Vector3(x, 0, z),
+                    range: 2.8,
+                    active: false,
+                    portal,
+                    ring,
+                    light
+                };
+
+                animated.push({ type: "gate", gate });
+                return gate;
+            }
+
+            /******************************************************************
+             * 2시대: 청동기 시대 고인돌 제단
+             ******************************************************************/
+            function buildBronze() {
+                // 황토 언덕. 강은 없지만 돌길과 제단이 중심이 된다.
+                addGround(0x8e6b43, [0xb08653, 0x7d6039, 0xa47c48, 0x63513a, 0xc9a26c]);
+
+                scatterStones(150, -30, 30, -30, 30, [0x786d62, 0x635b55, 0x8b8072, 0x6e6455]);
+                scatterGrass(260, [0x7c6c3a, 0x635a30, 0x8d7a45, 0x544d2b], 3, 31);
+                addTreeLine([0x6a603c, 0x5a5131, 0x776b45], 34, 26, 36);
+
+                // 제단으로 이어지는 돌길
+                addStonePath(0, 16, 0, 6.5, 1.5);
+
+                addDolmen(-8.5, -2.6, 1.1, 0.5);
+                addDolmen(7.5, -2.2, 0.95, -0.4);
+                addDolmen(-2.0, 9.2, 1.15, 0.15);
+                addDolmen(12.0, 6.2, 0.8, 0.8);
+                addDolmen(-12.0, 6.8, 0.75, -0.7);
+
+                addStonePillar(-4.2, 2.5, 2.2);
+                addStonePillar(4.2, 2.5, 2.0);
+                addStonePillar(-3.4, 6.1, 1.75);
+                addStonePillar(3.4, 6.1, 1.85);
+
+                addBronzeAltar(0, 4.0);
+
+                addTorch(-2.4, 2.0);
+                addTorch(2.4, 2.0);
+                addTorch(-2.6, 6.1);
+                addTorch(2.6, 6.1);
+
+                const dagger = createBronzeDaggerFragment(-5.3, 0.8);
+                registerInteractable({
+                    name: "비파형 동검 조각",
+                    group: dagger,
+                    pickup: true,
+                    range: 1.8,
+                    glowColor: 0xffc35d,
+                    description: "흙 속에서 비파형 동검 조각을 찾았습니다.\n얇은 청동 표면은 녹이 슬었지만, 제의의 빛을 머금은 형태가 남아 있습니다."
+                });
+
+                const bell = createBronzeBellArtifact(5.3, -4.4);
+                registerInteractable({
+                    name: "청동 방울",
+                    group: bell,
+                    pickup: true,
+                    range: 1.9,
+                    glowColor: 0xffbd5f,
+                    description: "작은 틀에 걸린 청동 방울을 조사했습니다.\n움직이지 않아도 아주 낮은 울림이 귀 뒤쪽에서 번지는 듯합니다."
+                });
+
+                // 제단 주변의 돌무더기와 장작
+                addStonePile(-9.6, 3.4);
+                addStonePile(10.4, -5.2);
+                addFirewood(-1.8, -3.2);
+                addFirewood(2.2, 8.6);
+
+                const pattern = createAltarPattern(0, 4.0);
+                registerInteractable({
+                    name: "제단 문양",
+                    group: pattern,
+                    pickup: false,
+                    range: 2.0,
+                    glowColor: 0x8ee6ff,
+                    description: "제단 위의 문양을 손끝으로 따라 읽었습니다.\n동심원과 번개 모양 선이 하늘, 조상, 마을을 잇는 길처럼 배치되어 있습니다."
+                });
+
+                // 다음 시대로 이어지는 시간의 문
+                activeGate = createTimeGate(13.5, 12.5, -Math.PI / 6);
+            }
+
+            function addDolmen(x, z, s, rot) {
+                addMapMarker(x, z, "#8a8174", 3, "building");
+                const g = new THREE.Group();
+                g.position.set(x, 0, z);
+                g.scale.setScalar(s);
+                g.rotation.y = rot;
+                world.add(g);
+
+                addBox(g, 0.6, 1.35, 0.75, 0x6d6861, -0.72, 0.68, 0, 0.08, { roughness: 1 });
+                addBox(g, 0.6, 1.25, 0.75, 0x787069, 0.72, 0.63, 0, -0.06, { roughness: 1 });
+                addBox(g, 2.35, 0.42, 1.25, 0x817870, 0, 1.47, 0, 0.02, { roughness: 1 });
+            }
+
+            function addStonePillar(x, z, h) {
+                addMapMarker(x, z, "#7d766c", 2, "prop");
+                const p = addCylinder(world, 0.30, 0.42, h, 5, 0x736a60, x, h * 0.5, z, { roughness: 1 });
+                p.rotation.y = randRange(0, Math.PI);
+                addBlob(world, 0.38, 0x82776c, x, h + 0.15, z, { sx: 0.9, sy: 0.35, sz: 0.9 });
+            }
+
+            function addBronzeAltar(x, z) {
+                addMapMarker(x, z, "#c08a3c", 4, "building");
+                const g = new THREE.Group();
+                g.position.set(x, 0, z);
+                world.add(g);
+
+                addBox(g, 2.8, 0.45, 2.0, 0x65534a, 0, 0.23, 0, 0, { roughness: 1 });
+                addBox(g, 2.15, 0.35, 1.45, 0x7a6658, 0, 0.62, 0, 0, { roughness: 1 });
+                addBox(g, 1.55, 0.20, 1.0, 0x8b735e, 0, 0.90, 0, 0, { roughness: 1 });
+            }
+
+            function addTorch(x, z) {
+                addMapMarker(x, z, "#d4733a", 2, "prop");
+                const g = new THREE.Group();
+                g.position.set(x, 0, z);
+                world.add(g);
+
+                addCylinder(g, 0.055, 0.075, 1.15, 6, 0x51311d, 0, 0.58, 0);
+                addCylinder(g, 0.18, 0.14, 0.18, 8, 0x2f2119, 0, 1.20, 0);
+
+                const flameMat = makeBasicMat(0xff9b35, { transparent: true, opacity: 0.95 });
+                const flame = addCone(g, 0.22, 0.48, 7, 0xff9b35, 0, 1.52, 0, {
+                    material: flameMat,
+                    castShadow: false,
+                    receiveShadow: false
+                });
+
+                const light = new THREE.PointLight(0xff8a33, 0.85, 6);
+                light.position.set(0, 1.35, 0);
+                g.add(light);
+
+                animated.push({
+                    type: "torch",
+                    flame,
+                    light,
+                    baseIntensity: 0.85,
+                    speed: randRange(5.2, 7.0),
+                    phase: randRange(0, Math.PI * 2)
+                });
+            }
+
+            function createBronzeDaggerFragment(x, z) {
+                const g = new THREE.Group();
+                g.position.set(x, 0.08, z);
+                g.rotation.y = 0.72;
+                world.add(g);
+
+                const bronze = makeMat(0xb47b3e, {
+                    metalness: 0.25,
+                    roughness: 0.58,
+                    emissive: 0x2b1405,
+                    emissiveIntensity: 0.08
+                });
+
+                const blade = new THREE.Mesh(new THREE.ConeGeometry(0.34, 1.22, 4), bronze);
+                blade.rotation.x = Math.PI / 2;
+                blade.position.set(0, 0.12, 0.04);
+                blade.castShadow = true;
+                blade.receiveShadow = true;
+                g.add(blade);
+
+                addBox(g, 0.16, 0.08, 0.42, 0x6f4628, 0, 0.12, -0.58, 0, {
+                    metalness: 0.1,
+                    roughness: 0.7
+                });
+
+                return g;
+            }
+
+            function createBronzeBellArtifact(x, z) {
+                const g = new THREE.Group();
+                g.position.set(x, 0, z);
+                g.rotation.y = -0.3;
+                world.add(g);
+
+                addCylinder(g, 0.045, 0.06, 1.25, 6, 0x4d301d, -0.48, 0.63, 0);
+                addCylinder(g, 0.045, 0.06, 1.25, 6, 0x4d301d, 0.48, 0.63, 0);
+                addCylinderBetween(g, new THREE.Vector3(-0.55, 1.20, 0), new THREE.Vector3(0.55, 1.20, 0), 0.045, 0x4d301d);
+
+                const bronze = makeMat(0xb98243, {
+                    metalness: 0.25,
+                    roughness: 0.55,
+                    emissive: 0x291505,
+                    emissiveIntensity: 0.08
+                });
+
+                addCylinder(g, 0.18, 0.40, 0.55, 10, 0xb98243, 0, 0.84, 0, { material: bronze });
+                addBlob(g, 0.08, 0x8d6035, 0, 0.51, 0, {
+                    material: bronze,
+                    sy: 0.75
+                });
+
+                return g;
+            }
+
+            function createAltarPattern(x, z) {
+                const g = new THREE.Group();
+                g.position.set(x, 0.92, z);
+                world.add(g);
+
+                const mat = makeMat(0x69d6e7, {
+                    emissive: 0x1fb6d0,
+                    emissiveIntensity: 0.8,
+                    roughness: 0.4
+                });
+
+                addBox(g, 1.15, 0.035, 0.08, 0x69d6e7, 0, 0.035, 0, 0, { material: mat });
+                addBox(g, 0.08, 0.035, 0.85, 0x69d6e7, 0, 0.04, 0, 0, { material: mat });
+                addBox(g, 0.65, 0.035, 0.06, 0x69d6e7, -0.35, 0.045, 0.32, -0.65, { material: mat });
+                addBox(g, 0.65, 0.035, 0.06, 0x69d6e7, 0.35, 0.045, -0.32, -0.65, { material: mat });
+
+                return g;
+            }
+
+            /******************************************************************
+             * 3시대: 조선 시대 한양 외곽 마을
+             ******************************************************************/
+            function buildJoseon() {
+                // 늦은 저녁. 등불 외에는 빛이 거의 없다.
+                addGround(0x6b5a4a, [0x816c57, 0x54473a, 0x77654c, 0x4a443b, 0x8d7a62]);
+
+                scatterStones(110, -30, 30, -30, 30, [0x5f5d5b, 0x716c66, 0x4f4d4c, 0x57535a]);
+                scatterGrass(240, [0x4a4636, 0x3b3a2c, 0x565033, 0x333127], 3, 31);
+                addTreeLine([0x3b3a49, 0x31303d, 0x454256], 34, 24, 36);
+
+                // 마을을 가로지르는 흙길
+                addStonePath(-16, 10, 12, -8, 2.2);
+
+                // 작은 연못
+                addPond(-11.5, -8.5, 3.4);
+
+                addChoga(-9.5, 4.7, 0.35);
+                addChoga(-12.5, -1.6, -0.55);
+                addGiwa(1.5, 5.8, -0.25);
+                addGiwa(7.7, 1.8, 0.48);
+
+                addGovernmentGate(7.5, -6.0, 0.0);
+                addFence([
+                    [-14.5, -5.2],
+                    [-13.5, 8.0],
+                    [10.5, 8.6],
+                    [13.2, -4.9]
+                ]);
+
+                addStoneWall(-4.8, -6.0, 3.0, -6.5);
+                addStoneWall(3.0, 8.0, 10.5, 7.2);
+                addWell(-2.2, -3.5);
+
+                addLantern(4.6, -5.0);
+                addLantern(10.3, -5.0);
+                addLantern(-5.8, 2.2);
+                addLantern(3.2, 3.2);
+
+                const jangPattern = addJangseung(-8.0, 0.8, 0.28);
+
+                const badge = createBadgeArtifact(5.7, -4.5);
+                registerInteractable({
+                    name: "어사패",
+                    group: badge,
+                    pickup: true,
+                    range: 1.8,
+                    glowColor: 0xffd36d,
+                    description: "관아 입구 근처에서 어사패를 발견했습니다.\n작은 패 위의 문양은 희미하지만, 권한과 감시의 기억이 묵직하게 남아 있습니다."
+                });
+
+                const documentItem = createOldDocument(-2.2, -3.1);
+                registerInteractable({
+                    name: "낡은 문서",
+                    group: documentItem,
+                    pickup: true,
+                    range: 1.8,
+                    glowColor: 0xffe0a0,
+                    description: "우물 옆 낮은 탁자에서 낡은 문서를 회수했습니다.\n먹이 번진 줄 사이로 외곽 마을의 세금, 길, 사람들의 이름이 흐릿하게 이어집니다."
+                });
+
+                registerInteractable({
+                    name: "장승의 문양",
+                    group: jangPattern,
+                    pickup: false,
+                    range: 2.0,
+                    glowColor: 0x9fe0ff,
+                    description: "장승에 새겨진 문양을 조사했습니다.\n마을을 지키던 나무 표식은 밤길과 사람들의 두려움을 조용히 받아내고 있었습니다."
+                });
+            }
+
+            function addChoga(x, z, rot) {
+                addMapMarker(x, z, "#9c8350", 3, "building");
+                const g = new THREE.Group();
+                g.position.set(x, 0, z);
+                g.rotation.y = rot;
+                world.add(g);
+
+                addBox(g, 2.25, 1.05, 1.65, 0xc79d6a, 0, 0.53, 0, 0, { roughness: 1 });
+                const roof = addCone(g, 1.70, 0.88, 4, 0xb68845, 0, 1.35, 0, { roughness: 1 });
+                roof.rotation.y = Math.PI / 4;
+                roof.scale.z = 0.78;
+                addBox(g, 0.52, 0.65, 0.08, 0x36241a, 0, 0.43, 0.84);
+            }
+
+            function addGiwa(x, z, rot) {
+                addMapMarker(x, z, "#6c6470", 3.5, "building");
+                const g = new THREE.Group();
+                g.position.set(x, 0, z);
+                g.rotation.y = rot;
+                world.add(g);
+
+                addBox(g, 2.65, 1.18, 1.95, 0xb99d7a, 0, 0.59, 0, 0, { roughness: 1 });
+                const roof = addCone(g, 1.95, 0.72, 4, 0x2e3542, 0, 1.55, 0, { roughness: 0.8 });
+                roof.rotation.y = Math.PI / 4;
+                roof.scale.z = 0.78;
+                addCylinderBetween(g, new THREE.Vector3(-1.05, 1.88, 0), new THREE.Vector3(1.05, 1.88, 0), 0.055, 0x1f2430);
+                addBox(g, 0.58, 0.72, 0.08, 0x322019, 0, 0.46, 1.0);
+            }
+
+            function addGovernmentGate(x, z, rot) {
+                addMapMarker(x, z, "#b0553a", 4, "building");
+                const g = new THREE.Group();
+                g.position.set(x, 0, z);
+                g.rotation.y = rot;
+                world.add(g);
+
+                addBox(g, 0.42, 1.75, 0.42, 0x5b3026, -1.0, 0.88, 0);
+                addBox(g, 0.42, 1.75, 0.42, 0x5b3026, 1.0, 0.88, 0);
+                addBox(g, 2.65, 0.30, 0.52, 0x3b2b29, 0, 1.78, 0);
+                const roof = addCone(g, 1.62, 0.55, 4, 0x2d3341, 0, 2.08, 0);
+                roof.rotation.y = Math.PI / 4;
+                roof.scale.z = 0.44;
+                addBox(g, 1.05, 0.34, 0.08, 0x84623b, 0, 1.43, 0.28);
+            }
+
+            function addStoneWall(x1, z1, x2, z2) {
+                const n = 13;
+                for (let i = 0; i <= n; i++) {
+                    const t = i / n;
+                    const x = x1 + (x2 - x1) * t + randRange(-0.12, 0.12);
+                    const z = z1 + (z2 - z1) * t + randRange(-0.12, 0.12);
+
+                    addBlob(world, randRange(0.18, 0.32), pick([0x696461, 0x77716c, 0x555250]),
+                        x, randRange(0.16, 0.32), z,
+                        { sx: 1.25, sy: 0.55, sz: 0.85, ry: randRange(0, Math.PI) }
+                    );
+                }
+            }
+
+            function addWell(x, z) {
+                addMapMarker(x, z, "#5b6b74", 2.5, "prop");
+                const g = new THREE.Group();
+                g.position.set(x, 0, z);
+                world.add(g);
+
+                addCylinder(g, 0.78, 0.78, 0.55, 12, 0x716a62, 0, 0.28, 0, { roughness: 1 });
+                addFlatCircle(g, 0.54, 0x15191f, 0, 0.57, 0, 12, {
+                    material: makeBasicMat(0x15191f, { transparent: true, opacity: 0.88, side: THREE.DoubleSide })
+                });
+                addCylinderBetween(g, new THREE.Vector3(-0.75, 1.05, 0), new THREE.Vector3(0.75, 1.05, 0), 0.055, 0x4d3320);
+                addCylinder(g, 0.05, 0.06, 1.0, 6, 0x4d3320, -0.75, 0.55, 0);
+                addCylinder(g, 0.05, 0.06, 1.0, 6, 0x4d3320, 0.75, 0.55, 0);
+            }
+
+            function addLantern(x, z) {
+                addMapMarker(x, z, "#d99a3c", 2, "prop");
+                const g = new THREE.Group();
+                g.position.set(x, 0, z);
+                world.add(g);
+
+                addCylinder(g, 0.04, 0.055, 1.25, 6, 0x3c271b, 0, 0.63, 0);
+                addBox(g, 0.36, 0.42, 0.36, 0xffa84e, 0, 1.30, 0, 0, {
+                    material: makeBasicMat(0xffa84e, {
+                        transparent: true,
+                        opacity: 0.78
+                    }),
+                    castShadow: false,
+                    receiveShadow: false
+                });
+
+                const flame = addCone(g, 0.13, 0.28, 7, 0xffc45f, 0, 1.32, 0, {
+                    material: makeBasicMat(0xffc45f, { transparent: true, opacity: 0.95 }),
+                    castShadow: false,
+                    receiveShadow: false
+                });
+
+                const light = new THREE.PointLight(0xffb066, 2.3, 11);
+                light.position.set(0, 1.25, 0);
+                g.add(light);
+
+                animated.push({
+                    type: "lantern",
+                    flame,
+                    light,
+                    baseIntensity: 2.3,
+                    speed: randRange(4.5, 6.0),
+                    phase: randRange(0, Math.PI * 2)
+                });
+            }
+
+            function addJangseung(x, z, rot) {
+                addMapMarker(x, z, "#8a6a3f", 2.5, "prop");
+                const g = new THREE.Group();
+                g.position.set(x, 0, z);
+                g.rotation.y = rot;
+                world.add(g);
+
+                addCylinder(g, 0.22, 0.28, 1.65, 7, 0x5b3722, 0, 0.83, 0, { roughness: 1 });
+                addBlob(g, 0.33, 0x6a3f28, 0, 1.78, 0, { sx: 0.85, sy: 1.12, sz: 0.75 });
+                addCone(g, 0.36, 0.30, 7, 0x3b261a, 0, 2.17, 0);
+
+                // 얼굴
+                addBox(g, 0.055, 0.055, 0.04, 0x14100d, -0.10, 1.83, 0.25);
+                addBox(g, 0.055, 0.055, 0.04, 0x14100d, 0.10, 1.83, 0.25);
+                addBox(g, 0.26, 0.04, 0.045, 0x14100d, 0, 1.68, 0.25);
+
+                // 조사 대상인 장승 문양만 별도 그룹으로 반환
+                const pattern = new THREE.Group();
+                pattern.position.set(0, 1.17, 0.26);
+                g.add(pattern);
+
+                const pmat = makeMat(0x74d6ff, {
+                    emissive: 0x1d8db6,
+                    emissiveIntensity: 0.7,
+                    roughness: 0.5
+                });
+                addBox(pattern, 0.34, 0.04, 0.045, 0x74d6ff, 0, 0.08, 0, 0, { material: pmat });
+                addBox(pattern, 0.04, 0.34, 0.045, 0x74d6ff, 0, 0.08, 0, 0, { material: pmat });
+                addBox(pattern, 0.24, 0.035, 0.045, 0x74d6ff, 0, -0.08, 0, 0.75, { material: pmat });
+
+                return pattern;
+            }
+
+            function createBadgeArtifact(x, z) {
+                const g = new THREE.Group();
+                g.position.set(x, 0.05, z);
+                g.rotation.y = -0.25;
+                world.add(g);
+
+                addBox(g, 0.72, 0.16, 0.54, 0x5a3c24, 0, 0.08, 0);
+                const gold = makeMat(0xc99b4f, {
+                    metalness: 0.15,
+                    roughness: 0.55,
+                    emissive: 0x241200,
+                    emissiveIntensity: 0.08
+                });
+                addCylinder(g, 0.27, 0.27, 0.07, 8, 0xc99b4f, 0, 0.21, 0, { material: gold });
+                addBox(g, 0.28, 0.035, 0.05, 0x704b24, 0, 0.26, 0.01);
+
+                return g;
+            }
+
+            function createOldDocument(x, z) {
+                const g = new THREE.Group();
+                g.position.set(x, 0.05, z);
+                g.rotation.y = 0.18;
+                world.add(g);
+
+                addBox(g, 1.10, 0.16, 0.72, 0x5b3925, 0, 0.08, 0);
+                addBox(g, 0.92, 0.035, 0.55, 0xd9c39a, 0, 0.19, 0, 0, { roughness: 1 });
+
+                addCylinderBetween(g, new THREE.Vector3(-0.50, 0.24, -0.28), new THREE.Vector3(0.50, 0.24, -0.28), 0.035, 0xb69662);
+                addCylinderBetween(g, new THREE.Vector3(-0.50, 0.24, 0.28), new THREE.Vector3(0.50, 0.24, 0.28), 0.035, 0xb69662);
+
+                for (let i = 0; i < 4; i++) {
+                    addBox(g, 0.60 - i * 0.07, 0.012, 0.025, 0x5b4232, -0.05, 0.215, -0.16 + i * 0.10);
+                }
+
+                return g;
+            }
+
+            /******************************************************************
+             * 시작
+             ******************************************************************/
+            initThree();
+            setupInput();
+
+            // 개발 편의: index.html?era=1 로 특정 시대부터 시작할 수 있다
+            const startEra = THREE.MathUtils.clamp(
+                parseInt(new URLSearchParams(location.search).get("era"), 10) || 0,
+                0, AGE_DATA.length - 1
+            );
+
+            buildAge(startEra);
+            animate();
+        })();
+    </script>
+</body>
+
+</html>
