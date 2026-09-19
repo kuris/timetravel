@@ -16,12 +16,13 @@
  * tiers 표가 정한다. 그래서 같은 자리가 움집 → 청동기 집 → 기와집으로 이어진다.
  */
 import { addFlatCircle, makeBasicMat } from "./build.js";
+import { addBuildPad, startConstruction } from "./construct.js";
 import { openChoiceDialogue, closeDialogue } from "./dialogue.js";
 import { AudioSystem } from "./audio.js";
 import { addJournalEntry } from "./journal.js";
 import { G, progressGoal } from "./state.js";
 import { isUnderwater, terrainHeight } from "./terrain.js";
-import { dom, showMessage } from "./ui.js";
+import { dom, showMessage, updateResourceUI } from "./ui.js";
 
 // 시대별 건물 빌더
 import { addPitHouse, addSmallAltar } from "./eras/neolithic.js";
@@ -234,12 +235,12 @@ export function build(type, x, z) {
     };
     G.village.push(entry);
 
-    // 지금 시대의 모습으로 즉시 세운다
-    spawnBuilding(entry, G.currentAge);
+    // 지금 시대의 모습으로 세운다 — 툭 나타나지 않고, 먼지 속에서 솟아오른다
+    spawnBuilding(entry, G.currentAge, { animate: true });
 
     G.progress += b.progress;
     applyEffect(type);
-    AudioSystem.playPickup();
+    AudioSystem.playBuildStart();
     addJournalEntry("system", b.name + " 건설", "마을에 " + b.name + "을(를) 세웠습니다.");
 
     showMessage(b.name + "을(를) 세웠습니다.\n마을 발전도 " + G.progress + " / " + progressGoal());
@@ -278,11 +279,28 @@ export function applyVillageEffects() {
     }
 }
 
-/** 한 채를 그 시대의 모습으로 세운다 */
-function spawnBuilding(entry, eraIndex) {
+/**
+ * 한 채를 그 시대의 모습으로 세운다.
+ *
+ * 빌더들은 만든 것을 G.world 에 직접 붙이고 돌려주지는 않는다.
+ * 그래서 "세우기 전후의 G.world 자식 목록 차이"를 이번에 생긴 것으로 본다.
+ * 빌더를 하나하나 고쳐 반환값을 맞추지 않아도 되고,
+ * 부품을 여러 덩어리로 붙이는 빌더(울타리 같은 것)도 그대로 잡힌다.
+ *
+ * @param opts.animate  true 면 먼지를 일으키며 솟아오른다 (플레이어가 지금 지은 것)
+ */
+function spawnBuilding(entry, eraIndex, opts = {}) {
     const tier = BUILDING_TYPES[entry.type].tiers[eraIndex];
     if (!tier) return; // 이 시대에는 이 건물이 없다 — 건너뛴다
+
+    // 다져진 땅은 시대가 바뀌어도 같은 자리에 다시 깔린다
+    const pad = addBuildPad(entry.x, entry.z);
+
+    const before = G.world.children.length;
     tier(entry.x, entry.z, entry.rot);
+    if (!opts.animate) return;
+
+    startConstruction(G.world.children.slice(before), entry.x, entry.z, pad);
 }
 
 /**
@@ -340,10 +358,5 @@ export function resetBuildGhost() {
    ================================================================ */
 
 export function updateVillageUI() {
-    if (dom.materialText) {
-        dom.materialText.textContent = "나무 " + G.materials.wood + " · 돌 " + G.materials.stone;
-    }
-    if (dom.progressText) {
-        dom.progressText.textContent = G.progress + " / " + progressGoal();
-    }
+    updateResourceUI();
 }

@@ -11,7 +11,8 @@ export const dom = {
     objectiveText: document.getElementById("objectiveText"),
     countText: document.getElementById("countText"),
     weatherText: document.getElementById("weatherText"),
-    materialText: document.getElementById("materialText"),
+    woodText: document.getElementById("woodText"),
+    stoneText: document.getElementById("stoneText"),
     progressText: document.getElementById("progressText"),
     prompt: document.getElementById("prompt"),
     message: document.getElementById("message"),
@@ -28,6 +29,26 @@ export const dom = {
     timeBtn: document.getElementById("timeBtn"),
     weatherBtn: document.getElementById("weatherBtn")
 };
+
+/**
+ * 상단 자원 표시.
+ *
+ * 값이 바뀔 때만 다시 쓰고, 바뀐 숫자는 한 번 튀게 한다.
+ * 나무 하나가 늘어난 것을 눈이 잡아야 채집이 일처럼 느껴진다.
+ */
+function setResource(el, text) {
+    if (!el || el.textContent === text) return;
+    el.textContent = text;
+    el.classList.remove("bump");
+    void el.offsetWidth; // 애니메이션을 처음부터 다시 돌린다
+    el.classList.add("bump");
+}
+
+export function updateResourceUI() {
+    setResource(dom.woodText, String(G.materials.wood));
+    setResource(dom.stoneText, String(G.materials.stone));
+    setResource(dom.progressText, G.progress + " / " + progressGoal());
+}
 
 export function showMessage(text) {
     dom.message.textContent = text;
@@ -59,12 +80,7 @@ export function updateUI() {
 
     dom.objectiveText.textContent = goal;
     dom.countText.textContent = G.ageProgress + " / " + age.total;
-    if (dom.progressText) {
-        dom.progressText.textContent = G.progress + " / " + progressGoal();
-    }
-    if (dom.materialText) {
-        dom.materialText.textContent = "나무 " + G.materials.wood + " · 돌 " + G.materials.stone;
-    }
+    updateResourceUI();
     dom.weatherText.textContent = weatherLabel();
 
     const visibleItems = G.inventory.slice(-5);

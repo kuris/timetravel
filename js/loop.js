@@ -1,7 +1,10 @@
 /**
  * 애니메이션 갱신과 게임 루프
  */
+import { AudioSystem } from "./audio.js";
 import { updateCamera } from "./camera.js";
+import { updateConstruction } from "./construct.js";
+import { updateGather } from "./gather.js";
 import { updateHint } from "./hint.js";
 import { updatePrompt } from "./interaction.js";
 import { drawMinimap, updateExploration } from "./minimap.js";
@@ -22,6 +25,8 @@ const GLOW_NEAR = 5;
 const GLOW_FAR = 11;
 
 export function updateAnimated(t, delta) {
+    let prune = false;
+
     for (const a of G.animated) {
         if (a.type === "glow") {
             a.group.position.y = a.baseY + Math.sin(t * 2.1 * a.speed + a.phase) * 0.07;
@@ -187,7 +192,16 @@ export function updateAnimated(t, delta) {
             a.gate.portal.material.opacity = 0.27 + Math.sin(t * 3.0) * 0.08;
             a.gate.light.intensity = 1.15 + Math.sin(t * 4.2) * 0.32;
         }
+
+        // 한 채가 솟아오르는 중 (건설 연출)
+        if (a.type === "construct" && !a.done) {
+            updateConstruction(a, delta, AudioSystem);
+            if (a.done) prune = true;
+        }
     }
+
+    // 한 번 쓰고 끝나는 연출은 목록에서 걷어낸다
+    if (prune) G.animated = G.animated.filter((a) => !a.done);
 }
 
 /******************************************************************
@@ -237,6 +251,7 @@ export function animate() {
     updateWeather(delta);
     updateMorph(delta);
     updateAnimated(t, delta);
+    updateGather(delta);
     updateExploration();
     updateBuildGhost();
     G.buildReady = canBuildNow()

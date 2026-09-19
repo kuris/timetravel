@@ -658,6 +658,27 @@ export const AudioSystem = {
         this.tone(784, 0.18, "sine", 0.045, 0.16);
     },
 
+    /** 나무를 치는 소리 — 건설 중에 몇 번 울린다 */
+    playHammer() {
+        const f = 168 + Math.random() * 46;
+        this.tone(f, 0.085, "triangle", 0.042, 0, f * 0.55);
+        this.noiseBurst(0.055, 0.026, "highpass", 1700);
+    },
+
+    /** 땅을 다지는 소리 — 한 채를 세우기 시작할 때 */
+    playBuildStart() {
+        this.tone(132, 0.22, "sine", 0.045, 0, 96);
+        this.noiseBurst(0.26, 0.042, "lowpass", 320);
+    },
+
+    /** 다 섰을 때 — 한 번 내려앉고, 짧게 밝은 음 */
+    playBuildDone() {
+        this.tone(104, 0.3, "sine", 0.05, 0, 74);
+        this.noiseBurst(0.22, 0.038, "lowpass", 260);
+        this.tone(392, 0.14, "triangle", 0.045, 0.1);
+        this.tone(588, 0.18, "sine", 0.04, 0.19);
+    },
+
     playGate() {
         this.tone(130, 1.1, "sine", 0.055, 0, 98);
         this.tone(196, 1.0, "sine", 0.045, 0.03);

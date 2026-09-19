@@ -24,13 +24,32 @@
             <div id="titleRule"></div>
             <div class="stat">현재 시대: <b id="eraText">-</b></div>
             <div class="stat">현재 목표: <b id="objectiveText">-</b></div>
-            <div class="stat">마을 발전도: <b id="progressText">0 / 30</b></div>
-            <div class="stat">재료: <b id="materialText">나무 0 · 돌 0</b></div>
             <div class="stat">유물 조사: <b id="countText">0 / 0</b></div>
             <div class="stat">하늘: <b id="weatherText">-</b></div>
             <div id="weatherControls">
                 <button id="timeBtn" class="mini-btn" title="시간대 변경 (T)">[T] 시간 변경</button>
                 <button id="weatherBtn" class="mini-btn" title="날씨 변경 (Y)">[Y] 날씨 변경</button>
+            </div>
+        </div>
+
+        <!-- 상단 중앙: 가진 것. 무엇이 모자란지 한눈에 보여야 한다 -->
+        <div id="resourceBar" class="panel">
+            <div class="res">
+                <span class="res-icon wood"></span>
+                <b class="res-num" id="woodText">0</b>
+                <span class="res-name">나무</span>
+            </div>
+            <div class="res-sep"></div>
+            <div class="res">
+                <span class="res-icon stone"></span>
+                <b class="res-num" id="stoneText">0</b>
+                <span class="res-name">돌</span>
+            </div>
+            <div class="res-sep"></div>
+            <div class="res">
+                <span class="res-icon village"></span>
+                <b class="res-num" id="progressText">0 / 30</b>
+                <span class="res-name">발전도</span>
             </div>
         </div>
 

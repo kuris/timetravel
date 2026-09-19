@@ -10,6 +10,7 @@ import { buildSamguk } from "./samguk.js";
 import { build1970 } from "./modern1970.js";
 import { build2000 } from "./modern2000.js";
 import { buildNeolithic } from "./neolithic.js";
+import { resetGather } from "../gather.js";
 import { resetHint } from "../hint.js";
 import { createPlayer } from "../player.js";
 import { seedRandom } from "../rng.js";
@@ -170,7 +171,8 @@ export function buildAge(index, opts = {}) {
     G.animated = [];
     G.mapShapes = [];
     G.mapMarkers = [];
-    resetHint(); // 이전 scene 에 붙어 있던 이정표를 버린다
+    resetHint();   // 이전 scene 에 붙어 있던 이정표를 버린다
+    resetGather(); // 캐던 것과 튀어 있던 파편을 버린다
     G.backdrop = null;
     G.sunLight = null;
     G.terrainCarve = null;

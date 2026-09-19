@@ -203,6 +203,18 @@ export function updatePlayerAnimation(delta, isMoving, t) {
 
     // 서 있을 때는 아주 느리게 숨쉬는 느낌
     u.head.position.y = 0.64 + Math.sin(t * 1.6) * 0.006 * (1 - u.moving);
+
+    // 나무를 베거나 돌을 캐는 중이면 걷기 자세를 덮어쓴다.
+    // 두 팔이 함께 올라갔다 내려오고, 내리칠 때 상체가 따라 숙여진다.
+    const chop = gatherPose();
+    if (chop) {
+        u.armL.rotation.x = chop.arm;
+        u.armR.rotation.x = chop.arm;
+        u.body.rotation.x = chop.lean;
+        u.body.rotation.z = 0;
+        u.legL.rotation.x = 0.06;
+        u.legR.rotation.x = -0.06;
+    }
 }
 
 /******************************************************************
