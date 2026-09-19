@@ -18,8 +18,8 @@ import { addMapMarker } from "../minimap.js";
 import { addBirdFlock, addCow, addDog, addVillager, addWorker } from "../npc.js";
 import { addBridge, addCart, addCropField, addHayStack, addJarPlatform, addLaundryLine } from "../props.js";
 import {
-    addConcreteWall, addPowerLine, addPowerPole, addRoad, addSign,
-    addStreetLamp, addStreetTree, addVehicle
+    addBench, addBicycle, addConcreteWall, addHandPump, addPowerLine, addPowerPole,
+    addRoad, addRoadSign, addSign, addStreetLamp, addStreetTree, addUtilityBox, addVehicle
 } from "../props_modern.js";
 import { pick, rand, randRange } from "../rng.js";
 import { G } from "../state.js";
@@ -460,7 +460,15 @@ export function build1970() {
         [14, 4, -0.7, 0.98],
         [-6, -2, 0.2, 1.04],
         [19, 11, -0.25, 0.9],
-        [-22, -2, 0.62, 0.88]
+        [-22, -2, 0.62, 0.88],
+        [8, 18, 0.35, 0.96],
+        [-14, 19, -0.5, 1.02],
+        [22, 16, 0.2, 0.9],
+        [-24, 13, -0.35, 0.94],
+        [10, -6, 0.55, 0.92],
+        [-2, -8, -0.3, 1.0],
+        [24, 3, 0.4, 0.88],
+        [-16, 3, -0.6, 0.96]
     ];
     for (const [u, v, rot, sc] of slates) {
         const c = P(u, v);
@@ -470,47 +478,121 @@ export function build1970() {
     // 아직 초가지붕으로 남은 집 (다 바꾸지는 못했다)
     q = P(-16, 15); addChoga(q[0], q[1], 0.4, 1.0);
     q = P(12, 16); addChoga(q[0], q[1], -0.3, 0.95);
+    q = P(-26, 18); addChoga(q[0], q[1], 0.6, 0.92);
+    q = P(17, 20); addChoga(q[0], q[1], -0.15, 0.98);
+    q = P(-11, -6); addChoga(q[0], q[1], 0.25, 0.9);
 
-    // 시멘트 블록 담
+    // 시멘트 블록 담 — 돌담을 밀어내고 들어온다
     addConcreteWall([P(-13, 9), P(-5, 9), P(-4, 3)], 1.5);
     addConcreteWall([P(6, 12), P(16, 12)], 1.5);
     addConcreteWall([P(-24, 4), P(-20, 4)], 1.4);
+    addConcreteWall([P(-22, 16), P(-12, 17)], 1.5);
+    addConcreteWall([P(5, 16), P(5, 21)], 1.4);
+    addConcreteWall([P(18, 8), P(26, 7)], 1.5);
+    addConcreteWall([P(-8, -5), P(0, -6)], 1.4);
+    addConcreteWall([P(12, -4), P(20, -3)], 1.4);
+
+    // 마을 펌프 (우물 대신 들어왔다)
+    q = P(-7, 8); addHandPump(q[0], q[1], 0.3);
+    q = P(13, 13); addHandPump(q[0], q[1], -0.5);
 
     // ================================================================
     // 탈것
     // ================================================================
-    q = P(-8, 0); addVehicle(q[0], q[1], 0.42, "bus", 0x5d7f9c);
-    q = P(13, -3); addVehicle(q[0], q[1], -0.3, "truck", 0x8c4034);
-    q = P(-20, 2); addVehicle(q[0], q[1], 0.5, "car");
+    const cars = [
+        [-8, 0, 0.42, "bus", 0x5d7f9c],
+        [13, -3, -0.3, "truck", 0x8c4034],
+        [-20, 2, 0.5, "car", null],
+        [22, -4, 0.42, "truck", 0x5a6a52],
+        [-25, 5, 0.42, "car", 0x7a6f5e],
+        [3, -1, 0.42, "car", 0x9ba3aa]
+    ];
+    for (const [cu, cv, crot, ctype, ccol] of cars) {
+        const c = P(cu, cv);
+        addVehicle(c[0], c[1], crot, ctype, ccol);
+    }
     q = P(4, 2); addTractor(q[0], q[1], -0.6);
+    q = P(-15, 20); addTractor(q[0], q[1], 0.4);
 
     // ================================================================
     // 농촌 살림
     // ================================================================
     q = P(-24, 12); addRicePaddy(q[0], q[1], 0.15, 2, 2);
     q = P(22, 2); addRicePaddy(q[0], q[1], -0.25, 2, 1);
+    q = P(-22, -8); addRicePaddy(q[0], q[1], 0.3, 2, 2);
+    q = P(6, -14); addRicePaddy(q[0], q[1], -0.15, 2, 1);
     q = P(-10, 18); addCropField(q[0], q[1], 0.3, 6, 5);
     q = P(20, 17); addCropField(q[0], q[1], -0.3, 5, 4);
+    q = P(-27, 3); addCropField(q[0], q[1], 0.5, 5, 4);
+    q = P(18, -10); addCropField(q[0], q[1], -0.4, 6, 4);
+    q = P(0, 22); addCropField(q[0], q[1], 0.2, 5, 5);
 
-    q = P(7, 12); addHayStack(q[0], q[1], 1.0);
-    q = P(5, 11); addHayStack(q[0], q[1], 0.85);
-    q = P(-18, 12); addHayStack(q[0], q[1], 0.9);
-    q = P(-2, 10); addJarPlatform(q[0], q[1], 0.3);
-    q = P(16, 8); addJarPlatform(q[0], q[1], -0.5);
-    let l1 = P(-11, 4), l2 = P(-7, 3);
-    addLaundryLine(l1[0], l1[1], l2[0], l2[1]);
+    // 볏가리
+    for (const [hu, hv, hs] of [[7, 12, 1.0], [5, 11, 0.85], [-18, 12, 0.9],
+                                 [9, 21, 0.95], [-21, 20, 0.88], [20, 13, 0.8],
+                                 [-13, 22, 0.92]]) {
+        const c = P(hu, hv);
+        addHayStack(c[0], c[1], hs);
+    }
+
+    // 장독대
+    for (const [ju, jv, jr] of [[-2, 10, 0.3], [16, 8, -0.5], [-20, 10, 0.2],
+                                 [7, 16, -0.3], [-10, 17, 0.5]]) {
+        const c = P(ju, jv);
+        addJarPlatform(c[0], c[1], jr);
+    }
+
+    // 빨랫줄
+    for (const [au, av, bu2, bv2] of [[-11, 4, -7, 3], [3, 17, 7, 16],
+                                       [-20, 15, -16, 14], [19, 6, 23, 5]]) {
+        const c1 = P(au, av), c2 = P(bu2, bv2);
+        addLaundryLine(c1[0], c1[1], c2[0], c2[1]);
+    }
+
     q = P(-1, 3); addCart(q[0], q[1], 0.7);
-    q = P(11, 14); addFirewood(q[0], q[1]);
-    q = P(-15, 1); addStonePile(q[0], q[1]);
+    q = P(11, 19); addCart(q[0], q[1], -0.4);
+    q = P(-23, 8); addCart(q[0], q[1], 0.9);
 
-    // 가로수
-    for (const [tu, tv] of [[-22, 6], [-13, 5], [-4, 4], [5, 2], [15, 0], [23, -2]]) {
+    for (const [fu, fv] of [[11, 14], [-6, 15], [21, 9], [-17, 5]]) {
+        const c = P(fu, fv);
+        addFirewood(c[0], c[1]);
+    }
+    for (const [su, sv] of [[-15, 1], [9, 3], [-4, 20], [23, 14]]) {
+        const c = P(su, sv);
+        addStonePile(c[0], c[1]);
+    }
+
+    // 평상과 자전거
+    for (const [bu2, bv2, br] of [[-5, 6, 0.4], [10, 11, -0.3], [-18, 17, 0.6]]) {
+        const c = P(bu2, bv2);
+        addBench(c[0], c[1], br);
+    }
+    for (const [cu, cv, cr] of [[-4, 5, 0.5], [1, 12, -0.2], [15, 6, 0.9], [-21, 6, 0.3]]) {
+        const c = P(cu, cv);
+        addBicycle(c[0], c[1], cr);
+    }
+
+    // 표지판과 배전함
+    q = P(-9, 3); addRoadSign(q[0], q[1], 0.78, 0x2f6a4a);
+    q = P(12, -1); addRoadSign(q[0], q[1], 0.78, 0x8c3a2a);
+    q = P(-13, 2); addUtilityBox(q[0], q[1], 0.4);
+    q = P(7, 0); addUtilityBox(q[0], q[1], -0.3);
+
+    // 신작로를 따라 심은 가로수
+    for (const [tu, tv] of [
+        [-26, 7], [-22, 6], [-17, 5.5], [-13, 5], [-8, 4.5], [-4, 4],
+        [1, 3], [5, 2], [10, 1], [15, 0], [19, -1], [23, -2], [27, -3],
+        [-19, 12], [-6, 13], [8, 14], [21, 12], [-24, 17], [14, 21]
+    ]) {
         const c = P(tu, tv);
-        addStreetTree(c[0], c[1], randRange(0.9, 1.25));
+        addStreetTree(c[0], c[1], randRange(0.9, 1.3));
     }
 
     // 가게 앞 가로등 하나 (아직 몇 개 없다)
-    q = P(-1, 4); addStreetLamp(q[0], q[1], { height: 4.6, intensity: 1.8, distance: 11 });
+    for (const [lu, lv] of [[-1, 4], [-14, 6], [12, 1], [-22, 9], [8, 15]]) {
+        const c = P(lu, lv);
+        addStreetLamp(c[0], c[1], { height: 4.6, intensity: 1.7, distance: 11 });
+    }
 
     // ================================================================
     // 사람과 짐승
@@ -527,8 +609,19 @@ export function build1970() {
     // 공사가 멈춘 자리
     q = P(17, -6); addWorker(q[0], q[1], "modern", { rot: -1.2 });
 
+    addVillager([P(14, 14), P(20, 16), P(24, 12), P(18, 10)], "modern", { hat: "straw" });
+    addVillager([P(-24, 14), P(-20, 18), P(-14, 21), P(-19, 16)], "modern", { speed: 0.8 });
+    addVillager([P(6, 19), P(11, 22), P(3, 23), P(0, 19)], "modern");
+    addVillager([P(-6, -6), P(2, -8), P(8, -5), P(0, -3)], "modern", { speed: 0.9 });
+
+    q = P(-8, 9); addWorker(q[0], q[1], "modern", { rot: 1.0, hat: "straw" });
+    q = P(12, 12); addWorker(q[0], q[1], "modern", { rot: -0.6 });
+    q = P(-21, -7); addWorker(q[0], q[1], "modern", { rot: 0.3, hat: "straw" });
+
     q = P(-19, 17); addCow(q[0], q[1], 0.7);
+    q = P(-17, 19); addCow(q[0], q[1], 1.3);
     addDog([P(-3, 7), P(3, 5), P(-1, 11), P(-8, 8)]);
+    addDog([P(15, 15), P(20, 18), P(17, 12)]);
     addBirdFlock(P(-6, 20)[0], 10, P(-6, 20)[1], 12);
 
     // ================================================================

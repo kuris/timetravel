@@ -19,8 +19,9 @@ import { addMapMarker } from "../minimap.js";
 import { addBirdFlock, addDog, addVillager, addWorker } from "../npc.js";
 import { addBridge } from "../props.js";
 import {
-    addConcreteWall, addCrosswalk, addPlanter, addPowerLine, addPowerPole,
-    addRoad, addSign, addStreetLamp, addStreetTree, addVehicle
+    addBench, addBicycle, addBollards, addConcreteWall, addCrosswalk, addPlanter,
+    addPowerLine, addPowerPole, addRoad, addRoadSign, addSidewalk, addSign,
+    addStreetLamp, addStreetTree, addTrashBin, addUtilityBox, addVehicle
 } from "../props_modern.js";
 import { pick, rand, randRange } from "../rng.js";
 import { G } from "../state.js";
@@ -496,6 +497,12 @@ export function build2000() {
     q = P(-21, 11); addShopBuilding(q[0], q[1], 0.4, 3, { signColor: 0x2f4a7a });
     q = P(23, 9); addShopBuilding(q[0], q[1], -0.5, 2, { signColor: 0xb07a2a, width: 6.0 });
     q = P(-4, -12); addShopBuilding(q[0], q[1], 0.25, 2, { signColor: 0x2f6a8a, width: 7.0 });
+    q = P(-14, -9); addShopBuilding(q[0], q[1], -0.3, 3, { signColor: 0x8c3a2a, width: 5.8 });
+    q = P(9, -12); addShopBuilding(q[0], q[1], 0.4, 2, { signColor: 0xb07a2a, width: 6.2 });
+    q = P(-24, -4); addShopBuilding(q[0], q[1], 0.6, 2, { signColor: 0x2f6a4a, width: 5.2 });
+    q = P(24, -14); addShopBuilding(q[0], q[1], -0.2, 3, { signColor: 0x2f4a7a, width: 6.4 });
+    q = P(17, 16); addShopBuilding(q[0], q[1], 0.15, 2, { signColor: 0x8c3a2a, width: 5.6 });
+    q = P(-22, 16); addShopBuilding(q[0], q[1], -0.4, 3, { signColor: 0xb07a2a, width: 6.0 });
 
     // 버스 정류장
     q = P(-6, 6); addBusStop(q[0], q[1], 0.78);
@@ -511,20 +518,87 @@ export function build2000() {
     }
     addPowerLine(poles);
 
-    for (const [lu, lv] of [[-22, 6], [-12, 4], [-2, 2], [8, 0], [18, -2], [26, -4],
-                            [0, 14], [-1, -10]]) {
+    for (const [lu, lv] of [
+        [-26, 7], [-20, 5], [-14, 4], [-8, 3], [-2, 2], [4, 0], [10, -1],
+        [16, -2], [22, -4], [28, -5],
+        [-22, -4], [-10, -6], [2, -8], [14, -10], [24, -11],
+        [4, 13], [4, 18], [-4, 12], [-4, 18], [-1, -15]
+    ]) {
         const c = P(lu, lv);
         addStreetLamp(c[0], c[1], { height: 5.4, intensity: 2.6, distance: 16, color: 0xcfe0ea });
     }
 
-    // 가로수와 화단
-    for (const [tu, tv] of [[-24, 4], [-18, 2], [-12, 1], [-6, -1], [0, -2],
-                            [6, -3], [12, -4], [18, -5], [24, -7]]) {
+    // ---- 인도 ----
+    // 큰길 양쪽으로 보도블록을 깐다. 도시가 되었다는 가장 확실한 표시.
+    let s1 = P(-28, 6), s2 = P(28, -2);
+    addSidewalk(s1[0], s1[1], s2[0], s2[1], 2.8);
+    s1 = P(-28, -2); s2 = P(28, -10);
+    addSidewalk(s1[0], s1[1], s2[0], s2[1], 2.8);
+    s1 = P(6, 20); s2 = P(2, -20);
+    addSidewalk(s1[0], s1[1], s2[0], s2[1], 2.6);
+    s1 = P(-2, 20); s2 = P(-6, -20);
+    addSidewalk(s1[0], s1[1], s2[0], s2[1], 2.6);
+
+    // 가로수 — 인도를 따라 촘촘히
+    for (const [tu, tv] of [
+        [-26, 5], [-22, 4.5], [-18, 4], [-14, 3.5], [-10, 3], [-6, 2.5],
+        [-2, 2], [2, 1.5], [6, 1], [10, 0.5], [14, 0], [18, -0.5],
+        [22, -1], [26, -1.5],
+        [-24, -3], [-18, -4], [-12, -5], [-6, -6], [0, -7], [6, -8], [12, -9],
+        [5, 12], [5, 17], [-3, 12], [-3, 17], [4, -12], [-5, -14]
+    ]) {
         const c = P(tu, tv);
-        addStreetTree(c[0], c[1], randRange(0.95, 1.3));
+        addStreetTree(c[0], c[1], randRange(0.9, 1.35));
     }
-    q = P(-15, 15); addPlanter(q[0], q[1], 0.3, 4.0, 1.4);
-    q = P(8, 5); addPlanter(q[0], q[1], -0.4, 3.2, 1.2);
+
+    // 화단
+    for (const [pu, pv, prot, pw] of [
+        [-15, 15, 0.3, 4.0], [10, 5, -0.4, 3.2], [-20, -6, 0.2, 3.6],
+        [16, 14, -0.3, 3.4], [-8, -16, 0.5, 3.0], [22, -12, 0.1, 3.8]
+    ]) {
+        const c = P(pu, pv);
+        addPlanter(c[0], c[1], prot, pw, 1.3);
+    }
+
+    // ---- 거리 소품 ----
+    for (const [bu, bv, brot] of [
+        [-10, 5, 0.78], [8, 2, 0.78], [-4, 14, -0.78], [18, -3, 0.78],
+        [-20, 3, 0.78], [3, -10, -0.78]
+    ]) {
+        const c = P(bu, bv);
+        addBench(c[0], c[1], brot);
+    }
+
+    for (const [tu, tv] of [[-9, 4], [7, 1], [-3, 13], [17, -4], [-19, 2], [2, -11],
+                            [12, 7], [-14, -4]]) {
+        const c = P(tu, tv);
+        addTrashBin(c[0], c[1]);
+    }
+
+    for (const [uu, uv, urot] of [[-13, 3, 0.4], [11, -1, -0.3], [-1, 16, 0.8],
+                                   [21, -6, 0.2]]) {
+        const c = P(uu, uv);
+        addUtilityBox(c[0], c[1], urot);
+    }
+
+    for (const [su, sv, srot, scol] of [
+        [-7, 3, 0.78, 0x2f6a4a], [9, 0, -2.36, 0x2f4a7a], [-3, 10, 0.78, 0x8c3a2a],
+        [15, -5, 0.78, 0x2f6a4a]
+    ]) {
+        const c = P(su, sv);
+        addRoadSign(c[0], c[1], srot, scol);
+    }
+
+    // 편의점 앞 자전거
+    for (const [cu, cv, crot] of [[-11, 8, 0.4], [-12, 7, 1.1], [5, 9, -0.3],
+                                   [19, 5, 0.7]]) {
+        const c = P(cu, cv);
+        addBicycle(c[0], c[1], crot);
+    }
+
+    // 문화재 둘레 볼라드
+    let v1 = P(14, -1), v2 = P(26, -3);
+    addBollards(v1[0], v1[1], v2[0], v2[1], 7);
 
     // 담장
     addConcreteWall([P(-26, 18), P(-16, 19)], 1.7);
@@ -533,12 +607,28 @@ export function build2000() {
     // ================================================================
     // 차
     // ================================================================
-    q = P(-12, 2); addVehicle(q[0], q[1], 0.42, "bus", 0x4a7a6a);
-    q = P(6, -2); addVehicle(q[0], q[1], 0.42, "car");
-    q = P(-20, 4); addVehicle(q[0], q[1], 0.42, "car", 0x9ba3aa);
-    q = P(16, -4); addVehicle(q[0], q[1], -2.72, "truck");
-    q = P(2, 8); addVehicle(q[0], q[1], -0.2, "car", 0x5c6470);
-    q = P(-8, -14); addVehicle(q[0], q[1], 0.9, "car", 0xb0a696);
+    // 큰길을 달리거나 길가에 세워 둔 차들
+    const cars = [
+        [-12, 2, 0.42, "bus", 0x4a7a6a],
+        [6, -2, 0.42, "car", null],
+        [-20, 4, 0.42, "car", 0x9ba3aa],
+        [16, -4, -2.72, "truck", null],
+        [2, 8, -0.2, "car", 0x5c6470],
+        [-8, -14, 0.9, "car", 0xb0a696],
+        [-24, 2, 0.42, "car", 0x6f7a80],
+        [22, -6, 0.42, "bus", 0xc9c2b0],
+        [11, 4, -0.3, "car", 0x9ba3aa],
+        [-16, 10, 0.5, "truck", 0x5a6a52],
+        [-4, -18, 0.78, "car", 0x5c6470],
+        [24, 2, -0.6, "car", 0xb0a696],
+        [-2, 17, 0.1, "car", 0x6f7a80],
+        [13, -13, 0.78, "car", null],
+        [-21, -8, 0.42, "car", 0x9ba3aa]
+    ];
+    for (const [cu, cv, crot, ctype, ccol] of cars) {
+        const c = P(cu, cv);
+        addVehicle(c[0], c[1], crot, ctype, ccol);
+    }
 
     // ================================================================
     // 그 돌 — 이제 문화재다
@@ -564,7 +654,20 @@ export function build2000() {
     q = P(13, -7); addWorker(q[0], q[1], "modern", { rot: -0.5 });
     q = P(17, -10); addWorker(q[0], q[1], "modern", { rot: 1.4 });
 
+    addVillager([P(-14, 12), P(-20, 14), P(-24, 10), P(-18, 8)], "modern", { speed: 1.0 });
+    addVillager([P(14, 14), P(20, 12), P(22, 16), P(16, 17)], "modern", { speed: 0.9 });
+    addVillager([P(-10, -8), P(-16, -11), P(-12, -14), P(-6, -12)], "modern");
+    addVillager([P(8, -12), P(14, -15), P(20, -12), P(12, -9)], "modern", { speed: 0.95 });
+    addVillager([P(0, 16), P(6, 18), P(2, 12), P(-4, 15)], "modern", { speed: 0.85 });
+
+    // 편의점 앞, 벤치, 건널목에 선 사람들
+    q = P(-10, 9); addWorker(q[0], q[1], "modern", { rot: 1.2 });
+    q = P(8, 3); addWorker(q[0], q[1], "modern", { rot: -0.4 });
+    q = P(-3, 15); addWorker(q[0], q[1], "modern", { rot: 2.2 });
+    q = P(18, -2); addWorker(q[0], q[1], "modern", { rot: 0.6 });
+
     addDog([P(-4, 8), P(2, 5), P(-1, 13)]);
+    addDog([P(16, -6), P(22, -8), P(19, -3)]);
     addBirdFlock(P(-4, 18)[0], 12, P(-4, 18)[1], 10);
 
     // ================================================================

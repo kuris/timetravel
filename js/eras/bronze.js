@@ -6,7 +6,7 @@ import { registerInteractable } from "../interaction.js";
 import { addMapMarker } from "../minimap.js";
 import { pick, randRange } from "../rng.js";
 import { GATE_SPOT, S } from "../landmarks.js";
-import { addAnimalPen, addHayStack, addJarPlatform, addStoragePit } from "../props.js";
+import { addAnimalPen, addHayStack, addJarPlatform, addLaundryLine, addStoragePit } from "../props.js";
 import { addBirdFlock, addDog, addPig, addVillager, addWorker } from "../npc.js";
 import { addFirewood, addHearth, addStonePile, createTimeGate } from "./neolithic.js";
 import { G } from "../state.js";
@@ -46,7 +46,11 @@ export function buildBronze() {
     addBronzeAltar(q[0], q[1]);
 
     // 제단으로 이어지는 선돌 열
-    const menhirRow = [[-2, 4], [10, 4], [-3, 8], [11, 8]];
+    const menhirRow = [
+        [-2, 4], [10, 4], [-3, 8], [11, 8],
+        [-4, 12], [12, 12], [-5, 16], [13, 16],
+        [-18, 6], [20, 6], [-12, 22], [16, 23]
+    ];
     for (const [mu, mv] of menhirRow) {
         const c = P(mu, mv);
         addMenhir(c[0], c[1], randRange(2.0, 2.9));
@@ -55,17 +59,23 @@ export function buildBronze() {
     // 제단을 둘러싼 고인돌들 (두 형식을 섞는다)
     q = P(-8, 16); addDolmenTable(q[0], q[1], 1.15, 0.5);
     q = P(16, 17); addDolmenTable(q[0], q[1], 0.95, -0.4);
+    q = P(-20, 19); addDolmenTable(q[0], q[1], 0.85, 0.9);
     q = P(-14, 9); addDolmenGoban(q[0], q[1], 1.1, 0.15);
     q = P(19, 9); addDolmenGoban(q[0], q[1], 0.9, 0.8);
     q = P(9, 20); addDolmenGoban(q[0], q[1], 1.2, -0.7);
+    q = P(24, 4); addDolmenGoban(q[0], q[1], 1.0, 0.3);
+    q = P(-24, 12); addDolmenGoban(q[0], q[1], 0.95, -0.2);
+    q = P(2, 23); addDolmenGoban(q[0], q[1], 1.1, 0.6);
 
     // 돌널무덤 구역
-    q = P(-18, 14); addStoneCist(q[0], q[1], 0.3);
-    q = P(-20, 11); addStoneCist(q[0], q[1], -0.5);
-    q = P(22, 14); addStoneCist(q[0], q[1], 0.9);
+    for (const [cu, cv, cr] of [[-18, 14, 0.3], [-20, 11, -0.5], [22, 14, 0.9],
+                                 [-15, 17, 0.6], [25, 10, -0.2], [7, 25, 0.4]]) {
+        q = P(cu, cv); addStoneCist(q[0], q[1], cr);
+    }
 
     // 제단 둘레의 횃불
-    for (const [tu, tv] of [[0, 11], [8, 11], [0, 17], [8, 17], [-4, 14], [12, 14]]) {
+    for (const [tu, tv] of [[0, 11], [8, 11], [0, 17], [8, 17], [-4, 14], [12, 14],
+                            [-10, 20], [14, 20], [-6, 7], [14, 7], [-16, 13], [20, 13]]) {
         const c = P(tu, tv);
         addTorch(c[0], c[1]);
     }
@@ -79,7 +89,12 @@ export function buildBronze() {
         [-20, -12, 0.22, 1.05],
         [-6, -16, -0.42, 0.95],
         [-14, -18, 0.62, 0.88],
-        [-22, -3, -0.2, 0.95]
+        [-22, -3, -0.2, 0.95],
+        [-2, -12, 0.45, 0.98],
+        [-25, -8, -0.35, 0.9],
+        [-11, -3, 0.15, 1.02],
+        [4, -16, -0.6, 0.94],
+        [-18, -22, 0.3, 0.88]
     ];
     for (const [u, v, rot, sc] of houses) {
         const c = P(u, v);
@@ -87,9 +102,10 @@ export function buildBronze() {
     }
 
     // 고상 창고 — 벼농사가 시작된 시대의 표식
-    q = P(-13, -2); addRaisedGranary(q[0], q[1], 0.3);
-    q = P(-18, -15); addRaisedGranary(q[0], q[1], -0.6);
-    q = P(-4, -11); addRaisedGranary(q[0], q[1], 0.9);
+    for (const [gu, gv, gr] of [[-13, -2, 0.3], [-18, -15, -0.6], [-4, -11, 0.9],
+                                 [-24, -16, 0.2], [2, -20, -0.4], [-8, -21, 0.7]]) {
+        q = P(gu, gv); addRaisedGranary(q[0], q[1], gr);
+    }
 
     // 목책과 망루
     addPalisade([P(-26, 2), P(-24, -8), P(-16, -21), P(-2, -22)]);
@@ -98,11 +114,21 @@ export function buildBronze() {
     q = P(0, -21); addWatchtower(q[0], q[1], -0.3);
 
     // 마을 살림
-    q = P(-12, -13); addStoragePit(q[0], q[1]);
-    q = P(-8, -6); addStoragePit(q[0], q[1]);
-    q = P(-19, -8); addHayStack(q[0], q[1], 0.9);
-    q = P(-17, -9.5); addHayStack(q[0], q[1], 0.75);
-    q = P(-9, -3); addJarPlatform(q[0], q[1], 0.4);
+    for (const [su, sv] of [[-12, -13], [-8, -6], [-21, -19], [0, -17], [-16, -10]]) {
+        q = P(su, sv); addStoragePit(q[0], q[1]);
+    }
+    for (const [hu, hv, hs] of [[-19, -8, 0.9], [-17, -9.5, 0.75], [-6, -19, 0.85],
+                                 [-26, -11, 0.8], [1, -13, 0.9]]) {
+        q = P(hu, hv); addHayStack(q[0], q[1], hs);
+    }
+    for (const [ju, jv, jr] of [[-9, -3, 0.4], [-19, -5, -0.3], [-3, -9, 0.6],
+                                 [-14, -15, 0.2]]) {
+        q = P(ju, jv); addJarPlatform(q[0], q[1], jr);
+    }
+    for (const [au, av, bu2, bv2] of [[-13, -6, -9, -7], [-22, -14, -18, -13]]) {
+        const c1 = P(au, av), c2 = P(bu2, bv2);
+        addLaundryLine(c1[0], c1[1], c2[0], c2[1]);
+    }
     q = P(-22, -18); addAnimalPen(q[0], q[1], 2.6);
     q = P(-22.4, -17.6); addPig(q[0], q[1]);
     q = P(-21.2, -18.6); addPig(q[0], q[1]);
@@ -116,6 +142,8 @@ export function buildBronze() {
     q = P(14, -8); addRicePaddy(q[0], q[1], 0.15, 2, 2);
     q = P(22, -16); addRicePaddy(q[0], q[1], -0.2, 2, 1);
     q = P(6, -18); addRicePaddy(q[0], q[1], 0.35, 2, 1);
+    q = P(24, -5); addRicePaddy(q[0], q[1], 0.1, 2, 1);
+    q = P(13, -21); addRicePaddy(q[0], q[1], -0.3, 2, 1);
 
     // 논 사이의 돌무더기와 장작
     q = P(10, -2); addStonePile(q[0], q[1]);
@@ -141,7 +169,17 @@ export function buildBronze() {
     // 논일
     q = P(15, -9); addWorker(q[0], q[1], "bronze", { rot: -0.4 });
 
+    addVillager([P(-24, -6), P(-20, -14), P(-26, -18), P(-22, -10)], "bronze", { speed: 0.8 });
+    addVillager([P(-2, -14), P(4, -18), P(-4, -20), P(-8, -15)], "bronze");
+    addVillager([P(20, -4), P(24, -10), P(18, -14), P(16, -6)], "bronze", { speed: 0.9 });
+    addVillager([P(-16, 12), P(-22, 16), P(-18, 20), P(-12, 15)], "bronze", { speed: 0.7 });
+
+    q = P(-20, -13); addWorker(q[0], q[1], "bronze", { rot: 0.6 });
+    q = P(22, -15); addWorker(q[0], q[1], "bronze", { rot: -0.8 });
+
     addDog([P(-14, -6), P(-8, -10), P(-18, -12), P(-20, -4)]);
+    addDog([P(-4, -14), P(2, -18), P(-1, -12)]);
+    addBirdFlock(P(-14, 24)[0], 8, P(-14, 24)[1], 10);
     addBirdFlock(P(6, 22)[0], 9, P(6, 22)[1], 12);
 
     // ================================================================
