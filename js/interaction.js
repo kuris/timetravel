@@ -6,7 +6,7 @@ import { addBlob, fadeGroup, makeBasicMat } from "./build.js";
 import { AGE_DATA } from "./config.js";
 import { addMapMarker } from "./minimap.js";
 import { randRange } from "./rng.js";
-import { G } from "./state.js";
+import { G , progressGoal } from "./state.js";
 import { terrainHeight } from "./terrain.js";
 import { transitionToAge } from "./transition.js";
 import { addInventoryItem, dom, showMessage, updateUI } from "./ui.js";
@@ -22,13 +22,17 @@ export function registerInteractable({
     glowColor = 0xffd071,
     locked = false,      // 잠긴 유물: 단서 필요
     unlockClue = null,   // 필요 단서 ID
-    lockedMsg = null     // 잠겼을 때 메시지
+    lockedMsg = null,    // 잠겼을 때 메시지
+    material = null,     // 재료 노드면 "wood" | "stone"
+    amount = 1           // 주울 개수
 }) {
     const p = new THREE.Vector3();
     group.getWorldPosition(p);
 
     const glow = createInteractionGlow(p.x, p.z, locked ? 0x6090c0 : glowColor);
     const item = {
+        material,
+        amount,
         name,
         description,
         group,
@@ -42,7 +46,10 @@ export function registerInteractable({
         position: new THREE.Vector3(p.x, 0, p.z)
     };
 
-    item.marker = addMapMarker(p.x, p.z, locked ? "#6090c0" : "#ffd071", 3, "artifact");
+    // 재료는 지도에 찍지 않는다. 찾는 재미가 남아야 한다.
+    if (!material) {
+        item.marker = addMapMarker(p.x, p.z, locked ? "#6090c0" : "#ffd071", 3, "artifact");
+    }
 
     G.interactables.push(item);
     return item;
@@ -127,6 +134,11 @@ export function getNearestAction() {
         }
     }
 
+    // 아무 대상도 없고 지을 수 있는 자리라면 "짓기"
+    if (!best && G.buildReady) {
+        best = { kind: "build", distance: 0 };
+    }
+
     if (G.activeGate) {
         const dx = G.activeGate.position.x - G.player.position.x;
         const dz = G.activeGate.position.z - G.player.position.z;
@@ -156,11 +168,13 @@ export function updatePrompt() {
         return;
     }
 
-    if (action.kind === "object") {
+    if (action.kind === "build") {
+        dom.prompt.textContent = "[E] 이 자리에 짓기";
+    } else if (action.kind === "object") {
         const isLocked = action.item.locked && action.item.unlockClue && !G.clues.has(action.item.unlockClue);
         dom.prompt.textContent = isLocked
             ? "🔒 " + action.item.name + " (단서 필요)"
-            : "[E] 조사 · " + action.item.name;
+            : (action.item.material ? "[E] 줍기 · " : "[E] 조사 · ") + action.item.name;
     } else if (action.kind === "npc") {
         dom.prompt.textContent = "[E] " + (action.npc.isAnimal ? "교감 · " : "대화 · ") + action.npc.name;
     } else if (action.kind === "gate") {
@@ -184,6 +198,8 @@ export function tryInteract() {
 
     if (action.kind === "object") {
         investigateObject(action.item);
+    } else if (action.kind === "build") {
+        import("./village.js").then((m) => m.openBuildMenu());
     } else if (action.kind === "npc") {
         if (action.npc.choices && action.npc.choices.length > 0) {
             openChoiceDialogue(action.npc);
@@ -195,7 +211,7 @@ export function tryInteract() {
         transitionToAge(G.currentAge + 1);
     } else if (action.kind === "inactiveGate") {
         AudioSystem.playInvestigate();
-        showMessage("돌 구조물은 아직 차갑게 잠들어 있습니다.\n이 시대에 흩어진 세 흔적을 모두 조사해야 시간의 문이 열릴 것 같습니다.");
+        showMessage("돌 구조물은 아직 차갑게 잠들어 있습니다.\n마을이 더 자라야 시간의 문이 열릴 것 같습니다.\n\n발전도 " + G.progress + " / " + progressGoal());
     }
 }
 
@@ -234,6 +250,20 @@ export function talkToNPC(npc) {
 export function investigateObject(item) {
     if (item.done) return;
 
+    // 재료 채집 — 조사가 아니라 줍는 것이다. 발전도와 무관하다.
+    if (item.material) {
+        item.done = true;
+        if (item.glow) item.glow.visible = false;
+        fadeGroup(item.group);
+        G.materials[item.material] = (G.materials[item.material] || 0) + (item.amount || 1);
+        AudioSystem.playPickup();
+        const label = { wood: "나무", stone: "돌" }[item.material] || item.material;
+        showMessage(label + "을(를) " + (item.amount || 1) + "개 주웠습니다.\n"
+            + "가진 것 — 나무 " + G.materials.wood + ", 돌 " + G.materials.stone);
+        import("./village.js").then((m) => m.updateVillageUI());
+        return;
+    }
+
     // 프롤로그 낯선 돌 — 전용 플로우 (카운트/게이트와 무관)
     if (item.prologueGate) {
         item.done = true;
@@ -266,11 +296,19 @@ export function investigateObject(item) {
 
     addInventoryItem(item.name);
 
+    // 유물은 단서이자 재원이다. 조사하면 마을에 쓸 것이 생긴다.
+    // 탐험을 해야 마을이 자라고, 마을이 자라야 다음 시대가 열린다.
+    G.materials.wood += 3;
+    G.materials.stone += 2;
+    G.progress += 4;
+    const reward = "\n\n(나무 +3, 돌 +2, 발전도 +4)";
+
     // 일지 기록
     addJournalEntry("artifact", item.name, item.description);
 
     const extra = handleAgeCompletion();
-    showMessage(item.description + (extra ? "\n\n" + extra : ""));
+    showMessage(item.description + reward + (extra ? "\n\n" + extra : ""));
+    import("./village.js").then((m) => m.updateVillageUI());
     updateUI();
 }
 
@@ -282,8 +320,12 @@ export function investigateObject(item) {
  */
 export function handleAgeCompletion() {
     const age = AGE_DATA[G.currentAge];
+    if (!age) return "";
 
-    if (G.ageProgress < age.total || G.ageCompleteTriggered) return "";
+    // 진급 조건은 "유물 3개"가 아니라 "마을 발전도"다.
+    // 무엇을 지을지는 플레이어가 고르고, 유물은 그 재원이 된다.
+    const goal = progressGoal();
+    if (G.progress < goal || G.ageCompleteTriggered) return "";
     G.ageCompleteTriggered = true;
 
     const isLast = G.currentAge >= AGE_DATA.length - 1;

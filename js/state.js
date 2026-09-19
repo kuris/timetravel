@@ -66,8 +66,33 @@ export const G = {
 
     // --- 시대별 리소스 ---
     TEX: {},          // 절차적 텍스처 캐시
-    terrainCarve: null // 시대별 지형 변형 (예: 강바닥 파내기)
+    terrainCarve: null, // 시대별 지형 변형 (예: 강바닥 파내기)
+
+    // --- 여섯 시대가 공유하는 자연 지형 ---
+    // 한 판에 한 번만 만들어진다. 시대는 이것을 자기 색으로 칠하기만 한다.
+    // 그래야 신석기에서 본 바위를 2000년대에 다시 만날 수 있다.
+    runSeed: 1,
+    baseMap: null,
+
+    // --- 마을 (시대를 넘어 계승된다) ---
+    // 플레이어가 지은 것. buildAge 에서 절대 초기화하지 말 것.
+    // 시대가 바뀌면 같은 좌표에 다음 시대의 건물이 들어선다.
+    village: [],                        // [{ x, z, type, builtAtEra }]
+    materials: { wood: 0, stone: 0 },   // 탐험으로 줍는다
+    progress: 0                         // 발전도. 목표치에 닿으면 시간의 문이 깨어난다
 };
+
+/**
+ * 마을 발전도 목표.
+ *
+ * G.progress 는 시대를 넘어 누적되므로 목표도 누적이어야 한다.
+ * 시대별로 새로 필요한 양은 30, 40, 50 ... 으로 늘어난다.
+ *   신석기 30 → 청동기 70 → 삼국 120 → 조선 180 → 1970 250 → 2000 330
+ */
+export function progressGoal(age = G.currentAge) {
+    const a = Math.max(0, age);
+    return (a + 1) * (30 + 5 * a);
+}
 
 export const clock = new THREE.Clock();
 

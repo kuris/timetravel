@@ -13,6 +13,7 @@
  *   목간에 그 이유가, 기와에 공사를 맡은 사람의 이름이 남았다.
  */
 import { addBlob, addBox, addCone, addCylinder, addCylinderBetween, addFlatCircle, makeBasicMat, makeMat } from "../build.js";
+import { paintBaseMap } from "../basemap.js";
 import { registerInteractable } from "../interaction.js";
 import { GATE_SPOT, S, addRiver, carveRiver, riverPoint } from "../landmarks.js";
 import { addMapMarker } from "../minimap.js";
@@ -501,9 +502,15 @@ export function buildSamguk() {
 
     addGround(0x8a7048, [0xa88a58, 0x736040, 0x9c7e4e, 0x5f5238, 0xc0a068]);
 
-    scatterStones(130, -30, 30, -30, 30, [0x786d62, 0x635b55, 0x8b8072]);
-    scatterGrass(300, [0x757a3c, 0x5f6531, 0x878c4a, 0x4e5329], 3, 31);
-    addTreeLine([0x5d6338, 0x4c512c, 0x6b7141], 36, 24, 36);
+    // 신석기와 같은 돌, 같은 자리. 색만 이 시대의 것이다.
+    // 성을 쌓고 논을 열면서 나무가 눈에 띄게 줄었다.
+    paintBaseMap({
+        stone: [0x786d62, 0x635b55, 0x8b8072],
+        grass: [0x757a3c, 0x5f6531, 0x878c4a, 0x4e5329],
+        tree: [0x5d6338, 0x4c512c, 0x6b7141],
+        treeSurvival: 0.7,
+        grassDensity: 0.85
+    });
 
     addRiver();
 

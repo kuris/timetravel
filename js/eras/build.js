@@ -19,6 +19,8 @@ import { makeMistTexture, makeStoneTexture, makeTerrainTexture, makeThatchTextur
 import { dom, showMessage, updateUI } from "../ui.js";
 import { addBackdrop, addDustMotes, addLights, addMistLayers, cssHex, cssRGBA } from "../world.js";
 import { disposeGroup, disposeTextures } from "../morph.js";
+import { renderVillage, resetBuildGhost, updateVillageUI } from "../village.js";
+import { scatterMaterials } from "../materials.js";
 import { initWeather } from "../weather.js";
 
 /**
@@ -225,6 +227,14 @@ export function buildAge(index, opts = {}) {
     // ---- 시대에 맞는 배경음으로 전환 ----
     if (AudioSystem.started) AudioSystem.setEra(index);
 
+    // ---- 지금까지 지은 마을을 이 시대의 모습으로 다시 세운다 ----
+    // 같은 자리에 다음 시대의 건물이 선다. 이것이 "내 마을이 시간을 통과한다"의 실체다.
+    resetBuildGhost();
+    renderVillage(index);
+
+    // ---- 재료 노드 ----
+    scatterMaterials(index);
+
     // ---- 플레이어 배치 ----
     G.player = createPlayer();
     G.player.position.set(age.start.x, terrainHeight(age.start.x, age.start.z), age.start.z);
@@ -234,5 +244,6 @@ export function buildAge(index, opts = {}) {
     cameraTarget.set(G.player.position.x, 0.6, G.player.position.z);
     updateCamera(0, true);
     updateUI();
+    updateVillageUI();
     showMessage(age.intro + "\n첫 키 입력 또는 클릭 후 소리가 켜집니다.");
 }

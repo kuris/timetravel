@@ -2,6 +2,7 @@
  * 1시대 — 신석기 강가 마을
  */
 import { addBlob, addBox, addCone, addCylinder, addCylinderBetween, addFlatCircle, makeBasicMat, makeMat } from "../build.js";
+import { paintBaseMap } from "../basemap.js";
 import { registerInteractable } from "../interaction.js";
 import { addMapMarker, addMapShape } from "../minimap.js";
 import { smooth } from "../noise.js";
@@ -33,17 +34,17 @@ export function buildNeolithic() {
         addReedCluster(x, z, Math.floor(randRange(5, 10)));
     }
 
-    // 마을 안쪽의 생기 있는 풀밭
-    scatterGrass(360, [0x4d6e36, 0x5d8042, 0x6f8f4a, 0x3d592a, 0x7ea354], 3, 31);
-
-    // ---- 돌과 자갈 ----
-    scatterStones(130, -30, 30, -30, 30, [0x77706a, 0x8b8172, 0x625c55, 0x8f8a74]);
-
-    // 시대를 가로질러 같은 자리에 남는 큰 바위
-    for (const r of SHARED_ROCKS) addBoulder(r.x, r.z, r.s);
-
-    // ---- 먼 나무 실루엣 (푸른 녹음) ----
-    addTreeLine([0x38523c, 0x2e4532, 0x48664e, 0x273b2a], 40, 26, 36);
+    // ---- 자연 지형 ----
+    // 돌과 풀과 나무의 자리는 여섯 시대가 공유한다.
+    // 여기서 하는 일은 그것을 신석기의 색으로 칠하는 것뿐이다.
+    // 사람이 아직 땅을 별로 바꾸지 않은 시대라 나무가 가장 많이 남아 있다.
+    paintBaseMap({
+        stone: [0x77706a, 0x8b8172, 0x625c55, 0x8f8a74],
+        grass: [0x4d6e36, 0x5d8042, 0x6f8f4a, 0x3d592a, 0x7ea354],
+        tree: [0x38523c, 0x2e4532, 0x48664e, 0x273b2a],
+        treeSurvival: 1.0,
+        grassDensity: 1.0
+    });
 
     // ================================================================
     // 마을 — 화면 좌표 S(u, v) 로 배치한다. u = 오른쪽, v = 위쪽.

@@ -6,6 +6,7 @@ import { updateHint } from "./hint.js";
 import { updatePrompt } from "./interaction.js";
 import { drawMinimap, updateExploration } from "./minimap.js";
 import { updateMorph } from "./morph.js";
+import { canBuildHere, updateBuildGhost } from "./village.js";
 import { updateMovement, updatePlayerAnimation, updatePlayerOcclusion } from "./player.js";
 import { postCamera, postMaterial, postScene, renderTarget } from "./postprocess.js";
 import { randRange } from "./rng.js";
@@ -220,6 +221,8 @@ export function animate() {
     updateAnimated(t, delta);
     updateCombat(delta);
     updateExploration();
+    updateBuildGhost();
+    G.buildReady = canBuildHere(G.player.position.x, G.player.position.z).ok;
     updatePrompt();
     updateHint();
     drawMinimap();
