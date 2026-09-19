@@ -72,7 +72,102 @@ export function createPlayer() {
         moving: 0    // 0..1 이동 여부 보간값
     };
 
+    // 3인칭에서 건물에 가려져도 보이도록 외곽 링 + 발광 마커
+    const ringGeo = new THREE.RingGeometry(0.42, 0.58, 24);
+    const ringMat = new THREE.MeshBasicMaterial({
+        color: 0xffd071,
+        transparent: true,
+        opacity: 0.9,
+        side: THREE.DoubleSide,
+        depthTest: false,
+        depthWrite: false
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.05;
+    ring.renderOrder = 21;
+    g.add(ring);
+    g.userData.markerRing = ring;
+
+    // 머리 위 마커 — 건물 뒤에서도 위치가 보인다
+    const dotGeo = new THREE.SphereGeometry(0.07, 8, 8);
+    const dotMat = new THREE.MeshBasicMaterial({
+        color: 0xffe6a0,
+        transparent: true,
+        opacity: 0.95,
+        depthTest: false,
+        depthWrite: false
+    });
+    const dot = new THREE.Mesh(dotGeo, dotMat);
+    dot.position.y = 1.35;
+    dot.renderOrder = 22;
+    g.add(dot);
+    g.userData.markerDot = dot;
+
     return g;
+}
+
+/**
+ * 카메라→플레이어 시선을 가리는 오브젝트를 반투명화한다.
+ * 3인칭 쿼터뷰에서 건물 뒤에 숨는 문제를 해결한다.
+ */
+const _occOrigin = new THREE.Vector3();
+const _occDir = new THREE.Vector3();
+const _occRay = new THREE.Raycaster();
+let _occFaded = [];
+
+function clearOcclusionFade() {
+    for (const m of _occFaded) {
+        if (!m.userData._occSaved) continue;
+        m.material.transparent = m.userData._occSaved.transparent;
+        m.material.opacity = m.userData._occSaved.opacity;
+        m.material.depthWrite = m.userData._occSaved.depthWrite;
+        delete m.userData._occSaved;
+    }
+    _occFaded = [];
+}
+
+export function updatePlayerOcclusion() {
+    clearOcclusionFade();
+    if (!G.player || !G.camera || G.isFirstPerson) return;
+    if (!G.player.visible) return;
+
+    _occOrigin.copy(G.camera.position);
+    _occDir.copy(G.player.position).sub(G.camera.position);
+    const dist = _occDir.length();
+    if (dist < 0.001) return;
+    _occDir.normalize();
+
+    _occRay.set(_occOrigin, _occDir);
+    _occRay.far = dist - 0.6;
+    if (_occRay.far <= 0) return;
+
+    const hits = _occRay.intersectObjects(G.world ? G.world.children : [], true);
+    for (const h of hits) {
+        let o = h.object;
+        // 플레이어 자신·마커·바닥은 제외
+        let p = o;
+        let isPlayer = false;
+        while (p) {
+            if (p === G.player) { isPlayer = true; break; }
+            p = p.parent;
+        }
+        if (isPlayer) continue;
+        if (o.userData && o.userData.base) continue;
+        if (!o.isMesh || !o.material || Array.isArray(o.material)) continue;
+        if (o.userData._occSaved) continue;
+
+        o.userData._occSaved = {
+            transparent: o.material.transparent,
+            opacity: o.material.opacity,
+            depthWrite: o.material.depthWrite
+        };
+        o.material.transparent = true;
+        o.material.opacity = 0.25;
+        o.material.depthWrite = false;
+        _occFaded.push(o);
+        if (_occFaded.length >= 12) break;
+    }
 }
 
 /** 걷기 애니메이션: 팔다리 스윙 + 상체 흔들림 */

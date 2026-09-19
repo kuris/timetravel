@@ -6,7 +6,7 @@ import { updateHint } from "./hint.js";
 import { updatePrompt } from "./interaction.js";
 import { drawMinimap, updateExploration } from "./minimap.js";
 import { updateMorph } from "./morph.js";
-import { updateMovement, updatePlayerAnimation } from "./player.js";
+import { updateMovement, updatePlayerAnimation, updatePlayerOcclusion } from "./player.js";
 import { postCamera, postMaterial, postScene, renderTarget } from "./postprocess.js";
 import { randRange } from "./rng.js";
 import { G, clock } from "./state.js";
@@ -214,6 +214,7 @@ export function animate() {
 
     updatePlayerAnimation(delta, moving, t);
     updateCamera(delta);
+    updatePlayerOcclusion();
     updateWeather(delta);
     updateMorph(delta);
     updateAnimated(t, delta);
