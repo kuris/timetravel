@@ -353,9 +353,10 @@ export function addDog(waypoints) {
  * 목적지는 raid.js 가 매 프레임 갈아 끼우고, 걷는 것은 loop.js 의 npc 애니메이터가 맡는다.
  */
 export function addWolf(x, z) {
+    // 갈색 땅 위에서 읽혀야 한다. 잿빛 털이 가장 잘 떨어진다.
     const g = createQuadruped({
         bodyW: 0.26, bodyH: 0.28, bodyL: 0.68, legH: 0.31, legR: 0.042,
-        color: pick([0x4a4640, 0x565049, 0x3e3a35]), snout: 0x27241f,
+        color: pick([0x8e8a80, 0x7d7871, 0x9a9488]), snout: 0x2f2b26,
         shadow: 0.30, horns: false
     });
 
@@ -367,6 +368,25 @@ export function addWolf(x, z) {
             castShadow: false, receiveShadow: false
         });
     }
+
+    // 발밑의 붉은 고리 — 위협이라는 것이 한눈에 보여야 한다
+    const mark = new THREE.Mesh(
+        new THREE.TorusGeometry(0.58, 0.045, 5, 20),
+        makeBasicMat(0xb03a25, {
+            transparent: true, opacity: 0.62, side: THREE.DoubleSide, depthWrite: false
+        })
+    );
+    mark.rotation.x = Math.PI / 2;
+    mark.position.y = 0.04;
+    mark.renderOrder = 4;
+    g.add(mark);
+
+    addFlatCircle(g, 0.58, 0x7a2417, 0, 0.032, 0, 14, {
+        material: makeBasicMat(0x7a2417, {
+            transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false
+        }),
+        castShadow: false, receiveShadow: false
+    });
 
     g.position.set(x, terrainHeight(x, z), z);
     G.world.add(g);

@@ -10,7 +10,7 @@
  * 여기서는 그 순서를 한 줄로 일러 주기만 한다. 강제하지는 않는다.
  * 무엇을 지을지는 여전히 플레이어가 고른다.
  */
-import { raidActive } from "./raid.js";
+import { isGuarded, raidActive } from "./raid.js";
 import { G, progressGoal } from "./state.js";
 import { josa } from "./ui.js";
 import { BUILDING_TYPES } from "./village.js";
@@ -82,7 +82,11 @@ export function advisorText() {
     }
 
     if (raidActive()) {
-        return "들개가 내려왔습니다 — 다가가면 물러섭니다. 화톳불을 피우세요";
+        // 이미 다 막아 두었으면 할 일을 다시 말해 줄 이유가 없다
+        const open = G.village.filter((b) => b.type === "house" && !isGuarded(b.x, b.z));
+        return open.length
+            ? "들개가 내려왔습니다 — 집 " + open.length + "채가 비어 있습니다. 화톳불을 피우세요"
+            : "들개가 불빛 밖에서 겉돌고 있습니다 — 곧 물러갑니다";
     }
 
     const type = recommendedType();

@@ -1,6 +1,7 @@
 /**
  * 애니메이션 갱신과 게임 루프
  */
+import { advisorText } from "./advisor.js";
 import { AudioSystem } from "./audio.js";
 import { updateCamera } from "./camera.js";
 import { updateConstruction } from "./construct.js";
@@ -269,10 +270,12 @@ export function animate() {
     updateHint();
     drawMinimap();
 
-    // 날씨 표시는 자주 바꿀 필요가 없다 (1초에 두 번)
+    // 날씨와 안내 줄은 자주 바꿀 필요가 없다 (1초에 두 번).
+    // 안내는 재료가 늘거나 들개가 내려오면 바뀌므로 여기서 같이 갱신한다.
     if (t - lastWeatherLabel > 0.5) {
         lastWeatherLabel = t;
         dom.weatherText.textContent = weatherLabel();
+        if (G.currentAge >= 0 && !G.prologue) dom.objectiveText.textContent = advisorText();
     }
 
     // 후처리 유니폼 갱신
