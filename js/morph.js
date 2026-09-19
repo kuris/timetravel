@@ -167,9 +167,6 @@ export function startMorph(oldWorld, newWorld, onDone, extraDispose, oldTextures
     G.scene.add(MORPH.sparks);
 }
 
-export function isMorphing() {
-    return MORPH.active;
-}
 
 /** 매 프레임 호출 */
 export function updateMorph(delta) {

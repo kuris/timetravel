@@ -6,7 +6,7 @@ import { PLAYER_SPEED, SPRINT_MULTIPLIER, WORLD_LIMIT } from "./config.js";
 import { G, keys } from "./state.js";
 import { terrainHeight } from "./terrain.js";
 import { W } from "./weather.js";
-import { updateStaminaBar } from "./combat.js";
+
 
 export function createPlayer() {
     const g = new THREE.Group();
@@ -283,7 +283,7 @@ export function updateMovement(delta) {
             G.player.rotation.y += diff * Math.min(1, delta * 12);
         }
     } else {
-        // 몈춰 있으면 스태미나 회복
+        // 멈춰 있으면 스태미나 회복
         G.stamina = Math.min(G.maxStamina, G.stamina + delta * 18);
         if (G.isFirstPerson) {
             G.player.rotation.y = G.fpvYaw + Math.PI;
@@ -294,22 +294,6 @@ export function updateMovement(delta) {
 
     if (!usedDir) sprinting = false;
 
-    // 잠긴 구역 충돌
-    for (const zone of G.lockedZones) {
-        if (G.inventory.includes(zone.requiredItem)) continue; // 아이템 보유 시 통과
-        const dx = G.player.position.x - zone.x;
-        const dz = G.player.position.z - zone.z;
-        if (Math.sqrt(dx * dx + dz * dz) < zone.radius) {
-            G.player.position.copy(prevPos);
-            if (!zone._warned) {
-                zone._warned = true;
-                // showMessage 이 프레임마다 호출 안 되도록 쿼다운 사용
-                zone._warnTimeout = setTimeout(() => { zone._warned = false; }, 4000);
-                import("./ui.js").then(m => m.showMessage("🔒 " + (zone.message || "이곳을 지나가려면 " + zone.requiredItem + "가 필요합니다.")));
-            }
-            break;
-        }
-    }
 
     // 물속으로는 들어가지 못한다 (전투도 수영도 없는 게임)
     const h = terrainHeight(G.player.position.x, G.player.position.z);
@@ -320,4 +304,19 @@ export function updateMovement(delta) {
     }
 
     return Boolean(usedDir);
+}
+
+/**
+ * 스태미나 바.
+ *
+ * 전투가 없는 게임이라 HP 는 없다. 이 막대는 Shift 달리기에만 쓰인다.
+ */
+export function updateStaminaBar() {
+    const bar = document.getElementById("staminaFill");
+    if (!bar) return;
+    const pct = Math.max(0, G.stamina / G.maxStamina * 100);
+    bar.style.width = pct + "%";
+    if (pct > 50) bar.style.background = "linear-gradient(90deg, #1a6e9e, #2894cc)";
+    else if (pct > 20) bar.style.background = "linear-gradient(90deg, #9e7c1a, #c8a022)";
+    else bar.style.background = "linear-gradient(90deg, #7a1a1a, #aa2222)";
 }

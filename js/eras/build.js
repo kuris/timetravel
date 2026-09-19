@@ -19,7 +19,7 @@ import { makeMistTexture, makeStoneTexture, makeTerrainTexture, makeThatchTextur
 import { dom, showMessage, updateUI } from "../ui.js";
 import { addBackdrop, addDustMotes, addLights, addMistLayers, cssHex, cssRGBA } from "../world.js";
 import { disposeGroup, disposeTextures } from "../morph.js";
-import { renderVillage, resetBuildGhost, updateVillageUI } from "../village.js";
+import { renderVillage, resetBuildGhost, updateVillageUI, applyVillageEffects } from "../village.js";
 import { scatterMaterials } from "../materials.js";
 import { initWeather } from "../weather.js";
 
@@ -162,16 +162,11 @@ export function buildAge(index, opts = {}) {
     G.clickTarget = null;
     G.interactables = [];
     G.npcs = [];
-    G.enemies = [];
-    G.lockedZones = [];
     G.exploredTiles = new Set();
     G.inventory = [];
     // fateChoice는 시대를 잇는 인과 기록이라 유지, 단서는 시대마다 초기화
     G.clues = new Set();
-    G.hp = G.maxHp;
     G.stamina = G.maxStamina;
-    G.hpCooldown = 0;
-    G.respawnPending = false;
     G.animated = [];
     G.mapShapes = [];
     G.mapMarkers = [];
@@ -231,6 +226,11 @@ export function buildAge(index, opts = {}) {
     // 같은 자리에 다음 시대의 건물이 선다. 이것이 "내 마을이 시간을 통과한다"의 실체다.
     resetBuildGhost();
     renderVillage(index);
+
+    // 이정표는 시대마다 세 번. 망루 시야는 지은 만큼 이어진다.
+    G.hintCharges = 3;
+    applyVillageEffects();
+    import("../hint.js").then((m) => m.updateHintBadge());
 
     // ---- 재료 노드 ----
     scatterMaterials(index);

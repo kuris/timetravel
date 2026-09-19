@@ -93,6 +93,9 @@ export function createInteractionGlow(x, z, color) {
         ring,
         mote,
         light,
+        // 거리에 따라 흐려질 때의 기준값 (loop.js 가 쓴다)
+        ringOpacity: 0.75,
+        moteOpacity: 0.9,
         baseY: g.position.y,
         speed: randRange(0.8, 1.25),
         phase: randRange(0, Math.PI * 2)

@@ -30,12 +30,20 @@ export function updateExploration() {
     if (!G.player) return;
     const tx = Math.round(G.player.position.x / FOW_TILE);
     const tz = Math.round(G.player.position.z / FOW_TILE);
-    // 주변 2칸 반경도 함께 밝힌다
-    for (let dx = -2; dx <= 2; dx++) {
-        for (let dz = -2; dz <= 2; dz++) {
+    // 주변도 함께 밝힌다. 망루를 지으면 이 반경이 넓어진다.
+    const R = G.sightRadius || 2;
+    for (let dx = -R; dx <= R; dx++) {
+        for (let dz = -R; dz <= R; dz++) {
             G.exploredTiles.add((tx + dx) + "," + (tz + dz));
         }
     }
+}
+
+/** 그 자리를 지나가 봤는가 */
+function isExplored(x, z) {
+    const tx = Math.round(x / FOW_TILE);
+    const tz = Math.round(z / FOW_TILE);
+    return G.exploredTiles.has(tx + "," + tz);
 }
 
 export function drawMinimap() {
@@ -79,6 +87,10 @@ export function drawMinimap() {
         if (px < -6 || px > S + 6 || py < -6 || py > S + 6) continue;
 
         if (m.kind === "artifact") {
+            // 아직 못 찾은 것은 지도에 없다.
+            // 미리 다 찍어 주면 탐험이 아니라 심부름이 된다.
+            if (!m.done && !isExplored(m.x, m.z)) continue;
+
             // 조사 대상은 깜빡이는 마름모
             const blink = m.done ? 0.22 : 0.65 + Math.sin(clock.elapsedTime * 3.4) * 0.35;
             ctx.fillStyle = m.done ? "#6a5936" : "#ffd071";

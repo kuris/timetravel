@@ -877,3 +877,9 @@ body.fpv-mode #prompt {
 .dialogue-choice.dialogue-close:hover {
     color: #aa8860;
 }
+
+/* 이정표를 다 쓴 상태 — 제단을 지으면 다시 채워진다 */
+#hintBtn.empty {
+    opacity: 0.45;
+    filter: grayscale(0.6);
+}

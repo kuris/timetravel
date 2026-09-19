@@ -201,6 +201,12 @@ export function openBuildMenu() {
 export function build(type, x, z) {
     const b = BUILDING_TYPES[type];
 
+    // 이 시대에 없는 건물은 지을 수 없다 (신석기의 망루 같은 것)
+    if (!b || !b.tiers[G.currentAge]) {
+        showMessage("아직 그런 것을 세울 줄 모릅니다.");
+        return false;
+    }
+
     if (!canAfford(type)) {
         showMessage("재료가 모자랍니다.\n필요 — " + costText(type));
         return false;
@@ -220,6 +226,7 @@ export function build(type, x, z) {
     spawnBuilding(entry, G.currentAge);
 
     G.progress += b.progress;
+    applyEffect(type);
     AudioSystem.playPickup();
     addJournalEntry("system", b.name + " 건설", "마을에 " + b.name + "을(를) 세웠습니다.");
 
@@ -233,6 +240,30 @@ export function build(type, x, z) {
     });
 
     return true;
+}
+
+/**
+ * 건물마다 쓸모가 달라야 "지금 뭐가 급한가"가 결정이 된다.
+ *
+ *   망루 — 한 번에 밝히는 지도 범위가 넓어진다 (성장이 탐험을 돕는다)
+ *   제단 — 이정표를 다시 세울 수 있다 (유물 쪽을 일러 준다)
+ */
+function applyEffect(type) {
+    if (type === "tower") {
+        G.sightRadius = Math.min(6, (G.sightRadius || 2) + 1);
+        showMessage("망루에서 멀리까지 보입니다.\n지도가 더 넓게 열립니다.");
+    } else if (type === "altar") {
+        G.hintCharges += 2;
+        import("./hint.js").then((m) => m.updateHintBadge());
+    }
+}
+
+/** 시대가 바뀌어도 이미 지은 망루의 시야는 남는다 */
+export function applyVillageEffects() {
+    G.sightRadius = 2;
+    for (const b of G.village) {
+        if (b.type === "tower") G.sightRadius = Math.min(6, G.sightRadius + 1);
+    }
 }
 
 /** 한 채를 그 시대의 모습으로 세운다 */

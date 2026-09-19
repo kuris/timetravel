@@ -13,10 +13,13 @@ import { randRange } from "./rng.js";
 import { G, clock } from "./state.js";
 import { terrainHeight } from "./terrain.js";
 import { updateWeather, weatherLabel } from "./weather.js";
-import { updateCombat, updateHPBar, updateStaminaBar } from "./combat.js";
 import { dom } from "./ui.js";
 
 let lastWeatherLabel = 0;
+
+/** 유물 발광이 완전히 드러나는 거리 / 완전히 사라지는 거리 */
+const GLOW_NEAR = 5;
+const GLOW_FAR = 11;
 
 export function updateAnimated(t, delta) {
     for (const a of G.animated) {
@@ -24,7 +27,22 @@ export function updateAnimated(t, delta) {
             a.group.position.y = a.baseY + Math.sin(t * 2.1 * a.speed + a.phase) * 0.07;
             a.ring.rotation.z += delta * 1.1;
             a.mote.position.y = 0.50 + Math.sin(t * 3.0 + a.phase) * 0.06;
-            a.light.intensity = 0.32 + Math.sin(t * 2.7 + a.phase) * 0.12;
+
+            // 멀리서도 훤히 빛나면 걸어갈 곳이 미리 정해진다.
+            // 가까워져야 드러나도록 거리로 흐릿하게 만든다.
+            let near = 1;
+            if (G.player) {
+                const d = Math.hypot(
+                    a.group.position.x - G.player.position.x,
+                    a.group.position.z - G.player.position.z
+                );
+                near = 1 - (d - GLOW_NEAR) / (GLOW_FAR - GLOW_NEAR);
+                near = Math.max(0, Math.min(1, near));
+            }
+            a.group.visible = near > 0.02;
+            a.light.intensity = (0.32 + Math.sin(t * 2.7 + a.phase) * 0.12) * near;
+            a.ring.material.opacity = a.ringOpacity * near;
+            a.mote.material.opacity = a.moteOpacity * near;
         }
 
         if (a.type === "wave") {
@@ -219,7 +237,6 @@ export function animate() {
     updateWeather(delta);
     updateMorph(delta);
     updateAnimated(t, delta);
-    updateCombat(delta);
     updateExploration();
     updateBuildGhost();
     G.buildReady = canBuildHere(G.player.position.x, G.player.position.z).ok;

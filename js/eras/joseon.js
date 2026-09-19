@@ -471,19 +471,6 @@ export function addGovernmentGate(x, z, rot) {
     return g;
 }
 
-export function addStoneWall(x1, z1, x2, z2) {
-    const n = 13;
-    for (let i = 0; i <= n; i++) {
-        const t = i / n;
-        const x = x1 + (x2 - x1) * t + randRange(-0.12, 0.12);
-        const z = z1 + (z2 - z1) * t + randRange(-0.12, 0.12);
-
-        addBlob(G.world, randRange(0.18, 0.32), pick([0x696461, 0x77716c, 0x555250]),
-            x, randRange(0.16, 0.32), z,
-            { sx: 1.25, sy: 0.55, sz: 0.85, ry: randRange(0, Math.PI) }
-        );
-    }
-}
 
 export function addWell(x, z) {
     addMapMarker(x, z, "#5b6b74", 2.5, "prop");

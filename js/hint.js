@@ -81,6 +81,14 @@ export function createSignpost() {
     return g;
 }
 
+/** 남은 횟수를 버튼에 적는다 */
+export function updateHintBadge() {
+    if (dom.hintBtn) {
+        dom.hintBtn.textContent = "[H] 이정표 (" + Math.max(0, G.hintCharges) + ")";
+        dom.hintBtn.classList.toggle("empty", G.hintCharges <= 0);
+    }
+}
+
 export function toggleHint() {
     hintActive ? hideHint() : showHint();
 }
@@ -93,6 +101,16 @@ export function showHint() {
         showMessage("지금은 안내할 곳이 없습니다.");
         return;
     }
+
+    // 무제한이면 걸어다닐 이유가 없어진다. 시대마다 세 번.
+    // 제단을 세우면 다시 채워진다 — 그것이 제단의 쓸모다.
+    if (G.hintCharges <= 0) {
+        AudioSystem.playInvestigate();
+        showMessage("이정표를 더 세울 나뭇가지가 없습니다.\n제단을 지으면 다시 길을 일러 줍니다.");
+        return;
+    }
+    G.hintCharges--;
+    updateHintBadge();
 
     hintActive = true;
     dom.hintBtn.classList.add("on");

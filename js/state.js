@@ -44,16 +44,11 @@ export const G = {
     npcs: [],
     animated: [],
     inventory: [],
-    enemies: [],       // 위험 NPC (접근 시 피해)
-    lockedZones: [],   // 진입 제한 구역
 
-    // --- HP / 스태미나 ---
-    hp: 100,
-    maxHp: 100,
+    // --- 스태미나 ---
+    // 전투가 없으므로 HP 는 두지 않는다. Shift 달리기에만 쓰인다.
     stamina: 100,
     maxStamina: 100,
-    hpCooldown: 0,     // 피해 후 무적 시간
-    respawnPending: false,
 
     // --- 단서 / 일지 ---
     clues: new Set(),       // 획득한 단서 ID
@@ -63,6 +58,12 @@ export const G = {
     mapShapes: [],
     mapMarkers: [],
     exploredTiles: new Set(), // Fog of War — 지나간 격자
+    sightRadius: 2,           // 한 번에 밝히는 격자 반경. 망루가 넓힌다.
+
+    // --- 이정표 ---
+    // 무제한이면 탐험이 "표시된 점 찍기"가 된다. 시대마다 세 번.
+    // 제단을 지으면 충전된다 (제단이 유물 쪽을 알려 준다는 뜻).
+    hintCharges: 3,
 
     // --- 시대별 리소스 ---
     TEX: {},          // 절차적 텍스처 캐시

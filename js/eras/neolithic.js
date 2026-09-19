@@ -9,8 +9,7 @@ import { smooth } from "../noise.js";
 import { pick, rand, randRange, seedRandom } from "../rng.js";
 import { addAnimalPen, addCanoe, addCropField, addFishingNet, addHayStack, addJarPlatform, addLaundryLine, addStoragePit, addStoneWallRun } from "../props.js";
 import { addBirdFlock, addCow, addDog, addPig, addVillager, addWorker, registerNPC } from "../npc.js";
-import { registerEnemy } from "../combat.js";
-import { GATE_SPOT, RIVER, S, SHARED_ROCKS, addRiver, carveRiver, riverPerp, riverPoint } from "../landmarks.js";
+import { GATE_SPOT, RIVER, S, addRiver, carveRiver, riverPerp, riverPoint } from "../landmarks.js";
 import { G } from "../state.js";
 import { terrainHeight } from "../terrain.js";
 import { addGround, addInstanced, addTreeLine, scatterGrass, scatterStones } from "../world.js";
@@ -178,23 +177,12 @@ export function buildNeolithic() {
             },
             {
                 text: "마을 숲 쪽으로 가도 됩니까?",
-                response: "숲가에는 사나운 늑대가 어슬렁거리고 있어. 가까이 가면 크게 다치니 멀리 피해 다니게!",
-                followUp: "...(조심하라는 듯 손짓을 한다)"
+                response: "가 보게. 쓰러진 나무와 돌무더기가 널려 있으니 쓸 만한 것을 주워 오게나. 집 한 채가 서면 마을이 그만큼 자라는 걸세.",
+                followUp: "...(숲 쪽을 가리킨다)"
             }
         ]
     });
 
-    // 마을 동쪽 숲 부근 위험 요소 (늑대)
-    registerEnemy({
-        type: "wolf",
-        name: "늑대",
-        waypoints: [P(16, -12), P(22, -8), P(20, -16)],
-        speed: 1.8,
-        detectRadius: 5.0,
-        attackRadius: 1.5,
-        damage: 18,
-        attackCooldown: 1.8
-    });
 
     // 화덕 앞에서 불을 지피는 사람
     q = P(0.8, 0.6); addWorker(q[0], q[1], "neolithic", { rot: -2.3 });
@@ -256,32 +244,6 @@ export function buildNeolithic() {
     G.activeGate = createTimeGate(GATE_SPOT.x, GATE_SPOT.z, GATE_SPOT.rot);
 }
 
-/** 큰 바위: 여러 덩이를 겹쳐 자연스러운 형태로 만든다 */
-export function addBoulder(x, z, scale) {
-    addMapMarker(x, z, "#6f6960", 2.5, "prop");
-    const y = terrainHeight(x, z);
-    const g = new THREE.Group();
-    g.position.set(x, y, z);
-    g.rotation.y = randRange(0, Math.PI);
-    G.world.add(g);
-
-    const chunks = Math.floor(randRange(3, 6));
-    for (let i = 0; i < chunks; i++) {
-        const r = randRange(0.45, 0.85) * scale;
-        addBlob(g, r, pick([0x7b746c, 0x8d8478, 0x655f58]),
-            randRange(-0.5, 0.5) * scale,
-            r * randRange(0.45, 0.8),
-            randRange(-0.5, 0.5) * scale, {
-            sx: randRange(1.0, 1.6),
-            sy: randRange(0.55, 1.0),
-            sz: randRange(0.9, 1.5),
-            ry: randRange(0, Math.PI),
-            rz: randRange(-0.2, 0.2),
-            roughness: 1,
-            map: G.TEX.stone
-        });
-    }
-}
 
 
 
