@@ -7,7 +7,6 @@
 import { AudioSystem } from "./audio.js";
 import { addBlob, addBox, addCylinder, makeBasicMat } from "./build.js";
 import { updateCamera } from "./camera.js";
-import { AGE_DATA } from "./config.js";
 import { resetHint } from "./hint.js";
 import { registerInteractable } from "./interaction.js";
 import { GATE_SPOT } from "./landmarks.js";
@@ -18,8 +17,8 @@ import { G, cameraTarget } from "./state.js";
 import { terrainHeight } from "./terrain.js";
 import { makeMistTexture, makeStoneTexture, makeTerrainTexture, makeThatchTexture, makeWaterTexture, makeWoodTexture } from "./textures.js";
 import { addJournalEntry } from "./journal.js";
-import { dom, showMessage, updateUI } from "./ui.js";
-import { addBackdrop, addDustMotes, addGround, addLights, addMistLayers, cssHex, cssRGBA } from "./world.js";
+import { dom, showMessage } from "./ui.js";
+import { addBackdrop, addDustMotes, addGround, addLights, addMistLayers } from "./world.js";
 import { disposeGroup, disposeTextures } from "./morph.js";
 import { initWeather } from "./weather.js";
 import { addStreetLamp } from "./props_modern.js";
@@ -139,10 +138,8 @@ export function buildPrologue() {
     addMistLayers(PROLOGUE_AGE.fog, 5);
     addDustMotes(0xb9c4d8, 90);
 
-    overrideAgeData();
-    initWeather(0);
-    restoreAgeData();
-    applyPrologueWeather();
+    G.prologueAge = PROLOGUE_AGE;
+    initWeather(0, PROLOGUE_AGE);
 
     if (AudioSystem.started) AudioSystem.setEra(5);
 
@@ -158,25 +155,6 @@ export function buildPrologue() {
 }
 
 // addGround 순환 import 회피용 (world.js는 state만 참조하므로 직접 import)
-// weather.js가 AGE_DATA[index]를 직접 읽기 때문에 프롤로그 동안만 0번을 덮어쓴다
-let savedAge0 = null;
-function overrideAgeData() {
-    savedAge0 = AGE_DATA[0];
-    AGE_DATA[0] = PROLOGUE_AGE;
-}
-function restoreAgeData() {
-    if (savedAge0) AGE_DATA[0] = savedAge0;
-    savedAge0 = null;
-}
-function applyPrologueWeather() {
-    // initWeather(0)이 신석기 band로 돌려놨을 수 있으니 프롤로그 값으로 고정
-    import("./weather.js").then((m) => {
-        m.W.band = PROLOGUE_AGE.weather.band.slice();
-        m.W.dayT = 0.06;
-        m.W.dir = 1;
-        m.W.speed = PROLOGUE_AGE.weather.speed;
-    });
-}
 
 function updatePrologueUI() {
     dom.eraText.textContent = PROLOGUE_AGE.name;

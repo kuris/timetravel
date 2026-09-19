@@ -74,8 +74,9 @@ export const W = {
 };
 
 /** 시대가 바뀔 때 호출. 그 시대의 시간대와 날씨로 초기화한다. */
-export function initWeather(index) {
-    const age = AGE_DATA[index];
+export function initWeather(index, ageOverride = null) {
+    const age = ageOverride || AGE_DATA[index];
+    if (!age) return;
     const w = age.weather;
 
     W.band = w.band.slice();
@@ -95,7 +96,7 @@ export function initWeather(index) {
     W.snowMesh = null;
     buildRain();
     buildSnow();
-    apply(index, 0, true);
+    apply(index, 0, true, ageOverride);
 }
 
 /** 빗줄기: 카메라를 따라다니는 인스턴싱 박스 */
@@ -211,8 +212,9 @@ function currentFactors() {
 const _tmpColor = new THREE.Color();
 
 /** 계산된 값들을 실제 장면에 반영한다 */
-function apply(index, delta, immediate) {
-    const age = AGE_DATA[index];
+function apply(index, delta, immediate, ageOverride = null) {
+    const age = ageOverride || AGE_DATA[index];
+    if (!age) return;
     const f = currentFactors();
 
     // --- 시간에 따른 태양/달 위치 및 세기 (0..1 전체 시간대 지원) ---
@@ -320,7 +322,11 @@ export function updateWeather(delta) {
     }
     if (W.blend < 1) W.blend = Math.min(1, W.blend + delta / 8);
 
-    apply(G.currentAge, delta, false);
+    if (G.prologue && G.prologueAge) {
+        apply(G.currentAge, delta, false, G.prologueAge);
+    } else {
+        apply(G.currentAge, delta, false);
+    }
 
     // --- 빗줄기 낙하 ---
     if (W.rainMesh && W.rainMesh.visible) {
@@ -388,7 +394,7 @@ export function cycleWeather() {
     W.type = nextType;
     W.next = nextType;
     W.blend = 1;
-    apply(G.currentAge, 0, true);
+    apply(G.currentAge, 0, true, G.prologue ? G.prologueAge : null);
     return WEATHER_TYPES[nextType].name;
 }
 
@@ -403,6 +409,6 @@ export function cycleTime() {
         }
     }
     W.dayT = TIME_PRESETS[nextIdx].t;
-    apply(G.currentAge, 0, true);
+    apply(G.currentAge, 0, true, G.prologue ? G.prologueAge : null);
     return TIME_PRESETS[nextIdx].name;
 }

@@ -36,6 +36,7 @@ export function transitionToAge(nextAge, opts = {}) {
         buildAge(nextAge, { keepOld: true });
         if (opts.fromPrologue) {
             G.prologue = false;
+            G.prologueAge = null;
             G.prologueDone = true;
         }
 
