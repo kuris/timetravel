@@ -19,10 +19,9 @@ export const AGE_DATA = [
         // 화면 좌표 (0, 0) — 마을 한가운데
         start: { x: 0.0, z: 0.0 },
 
-        // 늦은 오후에서 해질녘 사이를 오간다
-        // 강가 습지. 안개가 잦다. 이 시대의 하늘은 대체로 흐릿하다.
+        // 한낮에서 이른 오후로. 하루의 시작 지점.
         weather: {
-            band: [0.60, 0.80],
+            band: [0.58, 0.70],
             speed: 0.0042,
             start: "clear",
             pool: ["haze", "clear", "haze", "overcast", "rain", "haze", "clear"]
@@ -74,10 +73,9 @@ export const AGE_DATA = [
         total: 3,
         start: { x: 0.0, z: 0.0 },
 
-        // 해질녘 고정에 가깝다. 제의의 시간.
-        // 메마른 황토 언덕. 제의를 지내는 날은 하늘이 맑다.
+        // 이른 오후에서 늦은 오후로. 해가 기울며 제의가 시작된다.
         weather: {
-            band: [0.72, 0.88],
+            band: [0.70, 0.80],
             speed: 0.0030,
             start: "clear",
             pool: ["clear", "clear", "haze", "overcast", "clear"]
@@ -127,10 +125,9 @@ export const AGE_DATA = [
         // 화면 좌표 (0, -4) — 마을 한가운데, 성벽이 화면에 들어오는 자리
         start: { x: 2.8, z: 2.8 },
 
-        // 이른 오후에서 늦은 오후로. 성벽 그림자가 길어진다.
-        // 낙동강 유역. 강안개와 비가 번갈아 온다.
+        // 해질녘. 성벽과 고분이 긴 그림자를 끈다.
         weather: {
-            band: [0.48, 0.70],
+            band: [0.80, 0.88],
             speed: 0.0038,
             start: "clear",
             pool: ["clear", "haze", "rain", "haze", "overcast", "clear"]
@@ -157,8 +154,9 @@ export const AGE_DATA = [
             ambient: 0x90a89a,
             ambientIntensity: 0.28,
             sun: 0xffedd2,
-            sunIntensity: 2.05,
-            sunPos: [-14, 16, -15],
+            sunIntensity: 1.85,
+            // 해질녘 — 해가 낮게 걸린다
+            sunPos: [-15, 11, -15],
             fillIntensity: 0.18
         },
 
@@ -181,10 +179,10 @@ export const AGE_DATA = [
         total: 3,
         start: { x: 0.0, z: 0.0 },
 
-        // 저녁에서 밤으로. 등불이 살아나는 시간.
-        // 저녁. 땅이 식으면서 안개가 내려앉는다.
+        // 저녁에서 밤으로. 고대에서 이어온 하루가 여기서 저문다.
+        // 이야기에서도 가장 어두운 지점이다 — 금기와 두려움의 시대.
         weather: {
-            band: [0.80, 0.91],
+            band: [0.88, 0.95],
             speed: 0.0026,
             start: "clear",
             pool: ["clear", "haze", "overcast", "haze", "rain", "clear"]
@@ -235,10 +233,10 @@ export const AGE_DATA = [
         // 화면 좌표 (0, -9.5) — 마을 한가운데, 신작로 옆
         start: { x: 6.7, z: 6.7 },
 
-        // 한낮의 마른 햇볕
-        // 한낮. 대체로 맑고, 가끔 소나기가 지나간다.
+        // 아침에서 한낮으로. 여기서 하루가 새로 시작된다.
+        // 조선의 밤 다음에 오는 이 아침이 "새 시대가 밝았다"가 된다.
         weather: {
-            band: [0.40, 0.62],
+            band: [0.34, 0.52],
             speed: 0.0040,
             start: "clear",
             pool: ["clear", "clear", "haze", "rain", "overcast", "clear"]
@@ -266,7 +264,8 @@ export const AGE_DATA = [
             ambientIntensity: 0.30,
             sun: 0xffedd6,
             sunIntensity: 2.15,
-            sunPos: [-14, 19, -14],
+            // 아침 해 — 반대편에서 비친다
+            sunPos: [15, 17, 13],
             fillIntensity: 0.20
         },
 
@@ -290,10 +289,9 @@ export const AGE_DATA = [
         start: { x: 6.7, z: 6.7 },
         night: true,
 
-        // 해질녘에서 초저녁. 간판과 가로등이 켜지는 시간.
-        // 도시. 맑은 날에도 박무가 걷히지 않는다.
+        // 해질녘에서 저녁으로. 두 번째 하루가 저물며 답이 나온다.
         weather: {
-            band: [0.78, 0.90],
+            band: [0.76, 0.90],
             speed: 0.0028,
             start: "haze",
             pool: ["haze", "clear", "haze", "rain", "overcast", "haze"]
