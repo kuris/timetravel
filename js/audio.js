@@ -178,11 +178,13 @@ export const AudioSystem = {
      * 모든 소리는 아주 작게. 탐험을 방해하면 안 된다.
      */
     setEra(index) {
-        this.era = index;
+        // 프롤로그(currentAge -1) 등 범위 밖은 가장 가까운 시대로 클램프
+        const safe = Math.max(0, Math.min(index, this.ERA_SOUND.length - 1));
+        this.era = safe;
         if (!this.ctx) return;
 
         const t = this.ctx.currentTime;
-        const cfg = this.ERA_SOUND[index];
+        const cfg = this.ERA_SOUND[safe];
 
         if (this.windFilter) {
             this.windFilter.frequency.setTargetAtTime(cfg.windCutoff, t, 1.2);
