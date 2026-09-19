@@ -3,6 +3,7 @@
  */
 import { addBlob, addBox, addCone, addCylinder, addFlatCircle, makeBasicMat } from "./build.js";
 import { PLAYER_SPEED, SPRINT_MULTIPLIER, WORLD_LIMIT } from "./config.js";
+import { gatherPose } from "./gather.js";
 import { G, keys } from "./state.js";
 import { terrainHeight } from "./terrain.js";
 import { W } from "./weather.js";
