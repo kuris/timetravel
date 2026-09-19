@@ -4,7 +4,7 @@
 import { updateCamera } from "./camera.js";
 import { updateHint } from "./hint.js";
 import { updatePrompt } from "./interaction.js";
-import { drawMinimap } from "./minimap.js";
+import { drawMinimap, updateExploration } from "./minimap.js";
 import { updateMorph } from "./morph.js";
 import { updateMovement, updatePlayerAnimation } from "./player.js";
 import { postCamera, postMaterial, postScene, renderTarget } from "./postprocess.js";
@@ -12,6 +12,7 @@ import { randRange } from "./rng.js";
 import { G, clock } from "./state.js";
 import { terrainHeight } from "./terrain.js";
 import { updateWeather, weatherLabel } from "./weather.js";
+import { updateCombat, updateHPBar, updateStaminaBar } from "./combat.js";
 import { dom } from "./ui.js";
 
 let lastWeatherLabel = 0;
@@ -216,6 +217,8 @@ export function animate() {
     updateWeather(delta);
     updateMorph(delta);
     updateAnimated(t, delta);
+    updateCombat(delta);
+    updateExploration();
     updatePrompt();
     updateHint();
     drawMinimap();

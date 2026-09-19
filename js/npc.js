@@ -11,6 +11,7 @@ import { addBlob, addBox, addCone, addCylinder, addFlatCircle, makeBasicMat } fr
 import { pick, rand, randRange } from "./rng.js";
 import { G } from "./state.js";
 import { terrainHeight } from "./terrain.js";
+import { addJournalEntry } from "./journal.js";
 
 /* ------------------------------------------------------------------ 주민 */
 
@@ -110,6 +111,56 @@ function createPerson(palette, hatType) {
     return g;
 }
 
+/* ------------------------------------------------------------------ 주민 대화 */
+export const DEFAULT_DIALOGUES = {
+    neolithic: [
+        "마을이 한 번 크게 불탄 적이 있어. 그런데 저 동쪽 한 자리만 불길이 닿지 않았지.",
+        "강가 흙더미 옆에서 불탄 흔적을 보았는가? 화덕 옆 땅을 파보면 나올걸세.",
+        "조개더미 사이를 잘 살펴보게. 깨진 빗살무늬 토기 조각이 묻혀 있을 거야.",
+        "매끈하게 갈아 만든 돌도구는 떠난 이를 위해 부러뜨려 묻어둔 것이라 들었네.",
+        "저 큰 고인돌은 우리 할아버지 때부터 저기 서 있었지. 아무도 손대지 않는 자리야."
+    ],
+    bronze: [
+        "오늘 밤 제천 행사를 올리오. 제단 한가운데 문양은 하늘이 아니라 땅속을 가리킨다오.",
+        "비파형 동검의 날을 일부러 부러뜨려 바쳤소. 누군가를 기리기 위한 것이지.",
+        "청동 방울 소리가 바람을 타고 울리면, 이 언덕의 공기가 엄숙해진다오.",
+        "이 언덕의 돌들은 선대부터 신성하게 여겨 온 곳이오. 함부로 치우지 않소."
+    ],
+    samguk: [
+        "성을 쌓을 때 왜 저 돌만 피해서 벽을 꺾었냐고? 허물지 말라는 관아의 엄명이 있었기 때문이지.",
+        "목간에 적힌 기록의 마지막 줄을 보았소? 누군가 다른 필체로 글을 덧대어 놓았더군.",
+        "명문 기와 조각이 성벽 아래 묻혀 있소. 옛 마을의 기억이 그 아래 잠들어 있지.",
+        "저 고인돌 주변의 흙은 이상하게도 늘 서늘한 기운이 감돈다오."
+    ],
+    joseon: [
+        "어두워지면 저 고인돌 근처엔 가지 말게. 장승 셋이 다 같은 곳을 쏘아보고 있지 않나.",
+        "관아의 옛 책에 '그 자리를 범치 말라'는 금기가 대대로 전해져 내려온다네.",
+        "밤길을 순찰하던 야경꾼이 그 돌 주변에서 푸른 기운을 보았다고 하더군.",
+        "마을 어귀 장승의 문양을 보았는가? 선사시대부터 전해진 표식이라더군."
+    ],
+    modern: [
+        "안길 포장 공사를 하다가 갑자기 중단됐어. 포크레인 기사가 땅속에서 뭘 봤다더군.",
+        "공사 장부의 사유란이 비어 있어... 어르신들이 저 자리는 절대 손대지 말라고 신신당부하셨지.",
+        "저 고인돌은 어릴 때부터 동네 아이들의 놀이터였는데, 신비로운 구석이 있어.",
+        "아파트 단지 발굴 구덩이 맨 아래층에서... 선사시대 아이의 유골이 확인되었다더군요."
+    ]
+};
+
+export function registerNPC({ name, group, lines, range = 2.4, isAnimal = false, choices = null, greeting = null }) {
+    const npc = {
+        name: name || (isAnimal ? "동물" : "마을 주민"),
+        group,
+        lines: lines && lines.length > 0 ? lines : ["..."],
+        lineIndex: 0,
+        range,
+        isAnimal,
+        choices,
+        greeting
+    };
+    G.npcs.push(npc);
+    return npc;
+}
+
 /**
  * 순찰하는 주민.
  * waypoints 를 천천히 돌고, 가끔 멈춰 선다.
@@ -124,15 +175,28 @@ export function addVillager(waypoints, palette, opts = {}) {
     g.position.set(start[0], terrainHeight(start[0], start[1]), start[1]);
     G.world.add(g);
 
-    G.animated.push({
+    const animData = {
         type: "npc",
         group: g,
         waypoints,
         index: 0,
         speed: opts.speed || randRange(0.7, 1.25),
-        // 지점에 닿으면 잠시 쉰다
         pauseLeft: randRange(0, 3),
         pauseRange: opts.pauseRange || [1.5, 5]
+    };
+    G.animated.push(animData);
+    g.userData.anim = animData;
+
+    // 대화 등록
+    const diagPool = DEFAULT_DIALOGUES[palette] || DEFAULT_DIALOGUES.neolithic;
+    const lines = opts.dialogue ? (Array.isArray(opts.dialogue) ? opts.dialogue : [opts.dialogue]) : [pick(diagPool), pick(diagPool)];
+    registerNPC({
+        name: opts.name || (palette === "joseon" ? "마을 양반" : "마을 사람"),
+        group: g,
+        lines,
+        range: 2.3,
+        choices: opts.choices || null,
+        greeting: opts.greeting || null
     });
 
     return g;
@@ -147,11 +211,23 @@ export function addWorker(x, z, palette, opts = {}) {
     g.rotation.y = opts.rot ?? randRange(0, Math.PI * 2);
     G.world.add(g);
 
-    G.animated.push({
+    const animData = {
         type: "worker",
         group: g,
         speed: randRange(1.4, 2.4),
         phase: randRange(0, Math.PI * 2)
+    };
+    G.animated.push(animData);
+    g.userData.anim = animData;
+
+    // 대화 등록
+    const diagPool = DEFAULT_DIALOGUES[palette] || DEFAULT_DIALOGUES.neolithic;
+    const lines = opts.dialogue ? (Array.isArray(opts.dialogue) ? opts.dialogue : [opts.dialogue]) : [pick(diagPool)];
+    registerNPC({
+        name: opts.name || "일하는 사람",
+        group: g,
+        lines,
+        range: 2.2
     });
 
     return g;
@@ -225,6 +301,7 @@ export function addCow(x, z, rot) {
     G.world.add(g);
 
     G.animated.push({ type: "graze", group: g, phase: randRange(0, Math.PI * 2), speed: randRange(0.3, 0.6) });
+    registerNPC({ name: "누렁이", group: g, lines: ["음메~ (느긋하게 풀을 되새김질한다)", "커다란 눈망울로 물끄러미 바라본다."], isAnimal: true, range: 2.3 });
     return g;
 }
 
@@ -239,6 +316,7 @@ export function addPig(x, z) {
     g.rotation.y = randRange(0, Math.PI * 2);
     G.world.add(g);
     G.animated.push({ type: "graze", group: g, phase: randRange(0, Math.PI * 2), speed: randRange(0.8, 1.4) });
+    registerNPC({ name: "토종 돼지", group: g, lines: ["꿀꿀! (흙바닥을 코로 킁킁거리며 파헤친다)", "꿀~"], isAnimal: true, range: 2.0 });
     return g;
 }
 
@@ -254,11 +332,15 @@ export function addDog(waypoints) {
     g.position.set(s[0], terrainHeight(s[0], s[1]), s[1]);
     G.world.add(g);
 
-    G.animated.push({
+    const animData = {
         type: "npc", group: g, waypoints, index: 0,
         speed: randRange(1.6, 2.6), pauseLeft: randRange(0, 2), pauseRange: [0.6, 2.4],
         quad: true
-    });
+    };
+    G.animated.push(animData);
+    g.userData.anim = animData;
+
+    registerNPC({ name: "바둑이", group: g, lines: ["멍! 멍! (반갑게 꼬리를 세차게 흔든다)", "손을 핥으며 발치 주위를 맴돈다."], isAnimal: true, range: 2.2 });
     return g;
 }
 

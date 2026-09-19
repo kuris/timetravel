@@ -26,6 +26,10 @@
             <div class="stat">현재 목표: <b id="objectiveText">-</b></div>
             <div class="stat">조사 진행: <b id="countText">0 / 0</b></div>
             <div class="stat">하늘: <b id="weatherText">-</b></div>
+            <div id="weatherControls">
+                <button id="timeBtn" class="mini-btn" title="시간대 변경 (T)">[T] 시간 변경</button>
+                <button id="weatherBtn" class="mini-btn" title="날씨 변경 (Y)">[Y] 날씨 변경</button>
+            </div>
         </div>
 
         <!-- 우측 상단: 조작 안내 -->
@@ -33,8 +37,28 @@
             WASD / 방향키: 이동<br>
             Shift: 달리기<br>
             E: 조사 / 획득 / 사용<br>
+            V: 1인칭 / 3인칭 전환<br>
+            T / Y: 시간 / 날씨 조절<br>
             H: 이정표 (방향 안내)<br>
-            마우스 클릭: 이동
+            J: 탐험 일지<br>
+            마우스 클릭: 이동 / 시선 고정
+        </div>
+
+        <!-- HP / 스태미나 바 -->
+        <div id="statusBars">
+            <div class="status-row">
+                <span class="status-icon">❤️</span>
+                <div class="bar-wrap">
+                    <div id="hpFill" class="bar-fill"></div>
+                </div>
+                <span id="hpLabel" class="bar-label">100 / 100</span>
+            </div>
+            <div class="status-row">
+                <span class="status-icon">⚡</span>
+                <div class="bar-wrap">
+                    <div id="staminaFill" class="bar-fill"></div>
+                </div>
+            </div>
         </div>
 
         <!-- 미니맵: 등각 화면과 같은 방향으로 회전해서 그린다 -->
@@ -55,21 +79,45 @@
             </div>
         </div>
 
+        <div id="crosshair" class="hidden"></div>
         <div id="prompt" class="hidden">[E] 조사</div>
         <div id="message" class="panel">불러오는 중...</div>
 
-        <!-- 유물 5칸 -->
+        <!-- 인벤토리: 유물 5칸 + 일지 버튼 -->
         <div id="inventory">
             <div class="slot"></div>
             <div class="slot"></div>
             <div class="slot"></div>
             <div class="slot"></div>
             <div class="slot"></div>
+            <button id="journalBtn" class="mini-btn" title="탐험 일지 (J)">
+                📜 일지 <span id="journalBadge"></span>
+            </button>
         </div>
     </div>
 
     <div id="flash"></div>
     <div id="glitch"></div>
+
+    <!-- 탐험 일지 오버레이 -->
+    <div id="journalOverlay" tabindex="-1">
+        <div id="journalPanel" class="panel">
+            <div id="journalHeader">
+                <span>📜 탐험 일지</span>
+                <button id="journalClose" onclick="document.getElementById('journalOverlay').classList.remove('open')">✕</button>
+            </div>
+            <div id="journalList"></div>
+        </div>
+    </div>
+
+    <!-- 선택지 대화 오버레이 -->
+    <div id="dialogueOverlay" tabindex="-1">
+        <div id="dialoguePanel" class="panel">
+            <div id="dialogueName"></div>
+            <p id="dialoguePrompt"></p>
+            <div id="dialogueChoices"></div>
+        </div>
+    </div>
 
     <div id="completeOverlay">
         <div id="completeBox" class="panel">

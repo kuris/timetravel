@@ -17,22 +17,27 @@ export const WEATHER_TYPES = {
     clear: {
         name: "맑음",
         fogMul: 1.00, sunMul: 1.00, ambMul: 1.00,
-        rain: 0, satMul: 1.00, contrastAdd: 0.00
+        rain: 0, snow: 0, satMul: 1.00, contrastAdd: 0.00
     },
     haze: {
         name: "엷은 안개",
         fogMul: 1.32, sunMul: 0.88, ambMul: 1.12,
-        rain: 0, satMul: 0.92, contrastAdd: -0.04
+        rain: 0, snow: 0, satMul: 0.92, contrastAdd: -0.04
     },
     overcast: {
         name: "흐림",
         fogMul: 1.18, sunMul: 0.52, ambMul: 1.28,
-        rain: 0, satMul: 0.84, contrastAdd: -0.06
+        rain: 0, snow: 0, satMul: 0.84, contrastAdd: -0.06
     },
     rain: {
         name: "비",
         fogMul: 1.55, sunMul: 0.34, ambMul: 1.24,
-        rain: 1, satMul: 0.72, contrastAdd: -0.02
+        rain: 1, snow: 0, satMul: 0.72, contrastAdd: -0.02
+    },
+    snow: {
+        name: "눈",
+        fogMul: 1.40, sunMul: 0.45, ambMul: 1.35,
+        rain: 0, snow: 1, satMul: 0.65, contrastAdd: 0.05
     }
 };
 
@@ -62,7 +67,10 @@ export const W = {
     timer: 90,          // 다음 변화까지 남은 시간(초)
 
     rainAmount: 0,      // 0..1 실제로 내리는 양 (부드럽게 따라간다)
-    rainMesh: null
+    rainMesh: null,
+
+    snowAmount: 0,      // 0..1 실제로 내리는 눈 양
+    snowMesh: null
 };
 
 /** 시대가 바뀔 때 호출. 그 시대의 시간대와 날씨로 초기화한다. */
@@ -80,10 +88,13 @@ export function initWeather(index) {
     W.blend = 1;
     W.timer = 60 + Math.random() * 50;
     W.rainAmount = WEATHER_TYPES[w.start].rain;
+    W.snowAmount = WEATHER_TYPES[w.start].snow ?? 0;
     W.pool = w.pool;
 
     W.rainMesh = null; // 새 scene 에서 다시 만든다
+    W.snowMesh = null;
     buildRain();
+    buildSnow();
     apply(index, 0, true);
 }
 
@@ -125,6 +136,48 @@ function buildRain() {
     W.rainMesh = mesh;
 }
 
+/** 눈송이: 카메라를 따라다니는 인스턴싱 박스 */
+function buildSnow() {
+    const COUNT = 600;
+    const geo = new THREE.BoxGeometry(0.18, 0.18, 0.18);
+    const mat = new THREE.MeshBasicMaterial({
+        color: 0xeef4ff,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        fog: true
+    });
+
+    const mesh = new THREE.InstancedMesh(geo, mat, COUNT);
+    mesh.frustumCulled = false;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+    mesh.visible = false;
+
+    const m = new THREE.Matrix4();
+    const flakes = [];
+
+    for (let i = 0; i < COUNT; i++) {
+        const f = {
+            x: (Math.random() - 0.5) * 50,
+            y: Math.random() * 22,
+            z: (Math.random() - 0.5) * 50,
+            v: 1.2 + Math.random() * 1.4,    // 낙하 속도 (느리게)
+            wx: (Math.random() - 0.5) * 0.8, // 흔들림 X
+            wz: (Math.random() - 0.5) * 0.8, // 흔들림 Z
+            phase: Math.random() * Math.PI * 2
+        };
+        flakes.push(f);
+        m.makeTranslation(f.x, f.y, f.z);
+        mesh.setMatrixAt(i, m);
+    }
+
+    mesh.userData.flakes = flakes;
+    mesh.userData.time = 0;
+    G.scene.add(mesh);
+    W.snowMesh = mesh;
+}
+
 /** 다음 날씨를 고른다 (같은 날씨가 연달아 나오지 않게) */
 function rollWeather() {
     const pool = W.pool || ["clear"];
@@ -150,6 +203,7 @@ function currentFactors() {
         satMul: a.satMul + (b.satMul - a.satMul) * k,
         contrastAdd: a.contrastAdd + (b.contrastAdd - a.contrastAdd) * k,
         rain: a.rain + (b.rain - a.rain) * k,
+        snow: (a.snow ?? 0) + ((b.snow ?? 0) - (a.snow ?? 0)) * k,
         name: k < 0.5 ? a.name : b.name
     };
 }
@@ -161,33 +215,51 @@ function apply(index, delta, immediate) {
     const age = AGE_DATA[index];
     const f = currentFactors();
 
-    // --- 시간에 따른 태양 위치 ---
-    // 구간 안에서만 움직이므로 시대의 인상은 유지된다.
-    const k = (W.dayT - W.band[0]) / Math.max(0.0001, W.band[1] - W.band[0]);
-    const ang = (k - 0.5) * 0.85;           // 좌우로 회전
-    const drop = 1 - Math.abs(k - 0.15) * 0.45; // 늦어질수록 낮아진다
+    // --- 시간에 따른 태양/달 위치 및 세기 (0..1 전체 시간대 지원) ---
+    const t = W.dayT;
+    const isNight = t < 0.22 || t > 0.88;
+    const isSunset = t >= 0.78 && t <= 0.88;
+    const isDawn = t >= 0.22 && t < 0.35;
 
+    // 태양 수평 회전 각도 (-Math.PI/3 ~ +Math.PI/3)
+    const sunAngle = (t - 0.55) * Math.PI * 0.9;
+    const cos = Math.cos(sunAngle), sin = Math.sin(sunAngle);
     const [sx, sy, sz] = age.light.sunPos;
-    const cos = Math.cos(ang), sin = Math.sin(ang);
 
     if (G.sunLight) {
         G.sunLight.userData.ox = sx * cos - sz * sin;
-        G.sunLight.userData.oy = Math.max(2.5, sy * drop);
         G.sunLight.userData.oz = sx * sin + sz * cos;
-        G.sunLight.intensity = age.light.sunIntensity * f.sunMul;
 
-        // 해가 낮아질수록 붉어진다
-        _tmpColor.set(age.light.sun);
-        _tmpColor.lerp(new THREE.Color(0xff9a4e), Math.max(0, k - 0.3) * 0.5);
-        G.sunLight.color.copy(_tmpColor);
+        if (isNight) {
+            // 밤: 차가운 달빛으로 변하고 높이는 고정, 강도는 대폭 감소
+            G.sunLight.userData.oy = Math.max(10, sy * 0.8);
+            G.sunLight.intensity = age.light.sunIntensity * 0.18 * f.sunMul;
+            G.sunLight.color.set(0x7a92b0); // 푸른 달빛
+        } else {
+            // 낮/노을/새벽: 시간에 따라 고도와 색상 변화
+            const sunElevation = Math.sin((t - 0.2) / 0.68 * Math.PI);
+            G.sunLight.userData.oy = Math.max(2.5, sy * Math.max(0.18, sunElevation));
+            G.sunLight.intensity = age.light.sunIntensity * Math.max(0.3, sunElevation) * f.sunMul;
+
+            _tmpColor.set(age.light.sun);
+            if (isSunset) {
+                // 노을: 붉은 주황빛
+                _tmpColor.lerp(new THREE.Color(0xff6e30), 0.75);
+            } else if (isDawn) {
+                // 새벽: 은은한 분홍/보랏빛
+                _tmpColor.lerp(new THREE.Color(0xdda6a0), 0.5);
+            }
+            G.sunLight.color.copy(_tmpColor);
+        }
     }
 
-    if (G.hemiLight) G.hemiLight.intensity = age.light.hemiIntensity * f.ambMul;
-    if (G.ambientLight) G.ambientLight.intensity = age.light.ambientIntensity * f.ambMul;
+    const nightDim = isNight ? 0.35 : 1.0;
+    if (G.hemiLight) G.hemiLight.intensity = age.light.hemiIntensity * f.ambMul * nightDim;
+    if (G.ambientLight) G.ambientLight.intensity = age.light.ambientIntensity * f.ambMul * (isNight ? 0.45 : 1.0);
 
     // --- 안개 ---
     if (G.scene && G.scene.fog) {
-        const target = age.fogDensity * f.fogMul;
+        const target = age.fogDensity * f.fogMul * (isNight ? 1.25 : 1.0);
         G.scene.fog.density = immediate
             ? target
             : G.scene.fog.density + (target - G.scene.fog.density) * Math.min(1, delta * 0.5);
@@ -195,13 +267,14 @@ function apply(index, delta, immediate) {
 
     // --- 후처리 색보정 ---
     const g = age.grade;
+    const nightSat = isNight ? 0.6 : 1.0;
     applyGrade({
-        tint: g.tint,
-        lift: g.lift,
-        sat: g.sat * f.satMul,
-        sepia: g.sepia,
+        tint: isNight ? [g.tint[0] * 0.75, g.tint[1] * 0.85, g.tint[2] * 1.15] : g.tint,
+        lift: isNight ? [g.lift[0] * 0.5, g.lift[1] * 0.5, g.lift[2] * 0.7] : g.lift,
+        sat: g.sat * f.satMul * nightSat,
+        sepia: isNight ? g.sepia * 0.4 : g.sepia,
         contrast: g.contrast + f.contrastAdd,
-        vignette: g.vignette
+        vignette: isNight ? g.vignette * 1.25 : g.vignette
     });
 
     // --- 비 ---
@@ -215,6 +288,16 @@ function apply(index, delta, immediate) {
     }
 
     AudioSystem.setRain(W.rainAmount);
+
+    // --- 눈 ---
+    const targetSnow = f.snow ?? 0;
+    W.snowAmount += (targetSnow - W.snowAmount) * Math.min(1, delta * 0.6);
+    if (immediate) W.snowAmount = targetSnow;
+
+    if (W.snowMesh) {
+        W.snowMesh.visible = W.snowAmount > 0.02;
+        W.snowMesh.material.opacity = W.snowAmount * 0.72;
+    }
 }
 
 const _m = new THREE.Matrix4();
@@ -223,15 +306,19 @@ const _m = new THREE.Matrix4();
 export function updateWeather(delta) {
     if (!G.scene) return;
 
-    // --- 시간 흐름 (구간 안에서 왕복) ---
-    W.dayT += W.speed * delta * W.dir;
-    if (W.dayT > W.band[1]) { W.dayT = W.band[1]; W.dir = -1; }
-    if (W.dayT < W.band[0]) { W.dayT = W.band[0]; W.dir = 1; }
+    // --- 시간 흐름 (수동 조절 모드가 아닐 때만 자동 흐름) ---
+    if (!W.manualTime) {
+        W.dayT += W.speed * delta * W.dir;
+        if (W.dayT > W.band[1]) { W.dayT = W.band[1]; W.dir = -1; }
+        if (W.dayT < W.band[0]) { W.dayT = W.band[0]; W.dir = 1; }
+    }
 
     // --- 날씨 전환 ---
-    W.timer -= delta;
-    if (W.timer <= 0 && W.blend >= 1) rollWeather();
-    if (W.blend < 1) W.blend = Math.min(1, W.blend + delta / 12); // 12초에 걸쳐 섞인다
+    if (!W.manualWeather) {
+        W.timer -= delta;
+        if (W.timer <= 0 && W.blend >= 1) rollWeather();
+    }
+    if (W.blend < 1) W.blend = Math.min(1, W.blend + delta / 8);
 
     apply(G.currentAge, delta, false);
 
@@ -251,9 +338,71 @@ export function updateWeather(delta) {
         }
         W.rainMesh.instanceMatrix.needsUpdate = true;
     }
+
+    // --- 눈송이 낙하 ---
+    if (W.snowMesh && W.snowMesh.visible) {
+        W.snowMesh.userData.time += delta;
+        const t = W.snowMesh.userData.time;
+        const flakes = W.snowMesh.userData.flakes;
+        for (let i = 0; i < flakes.length; i++) {
+            const f = flakes[i];
+            f.y -= f.v * delta;
+            // 좌우로 부드럽게 흔들림
+            const sway = Math.sin(t * 0.9 + f.phase) * 0.55;
+            if (f.y < -1) {
+                f.y = 21 + Math.random() * 4;
+                f.x = (Math.random() - 0.5) * 50;
+                f.z = (Math.random() - 0.5) * 50;
+            }
+            _m.makeTranslation(
+                cameraTarget.x + f.x + sway * f.wx,
+                f.y,
+                cameraTarget.z + f.z + sway * f.wz
+            );
+            W.snowMesh.setMatrixAt(i, _m);
+        }
+        W.snowMesh.instanceMatrix.needsUpdate = true;
+    }
 }
 
 /** UI 에 보여 줄 문구 */
 export function weatherLabel() {
     return currentFactors().name + " · " + timeName(W.dayT);
+}
+
+const WEATHER_LIST = ["clear", "haze", "overcast", "rain", "snow"];
+const TIME_PRESETS = [
+    { t: 0.50, name: "한낮" },
+    { t: 0.74, name: "늦은 오후" },
+    { t: 0.85, name: "해질녘" },
+    { t: 0.08, name: "깊은 밤" },
+    { t: 0.28, name: "새벽" }
+];
+
+/** 날씨 순환 변경 (clear -> haze -> overcast -> rain) */
+export function cycleWeather() {
+    W.manualWeather = true;
+    const curIdx = WEATHER_LIST.indexOf(W.type);
+    const nextType = WEATHER_LIST[(curIdx + 1) % WEATHER_LIST.length];
+
+    W.type = nextType;
+    W.next = nextType;
+    W.blend = 1;
+    apply(G.currentAge, 0, true);
+    return WEATHER_TYPES[nextType].name;
+}
+
+/** 시간대 순환 변경 (한낮 -> 늦은 오후 -> 해질녘 -> 깊은 밤 -> 새벽) */
+export function cycleTime() {
+    W.manualTime = true;
+    let nextIdx = 0;
+    for (let i = 0; i < TIME_PRESETS.length; i++) {
+        if (Math.abs(W.dayT - TIME_PRESETS[i].t) < 0.08) {
+            nextIdx = (i + 1) % TIME_PRESETS.length;
+            break;
+        }
+    }
+    W.dayT = TIME_PRESETS[nextIdx].t;
+    apply(G.currentAge, 0, true);
+    return TIME_PRESETS[nextIdx].name;
 }

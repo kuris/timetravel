@@ -5,6 +5,8 @@ import { addBlob, addBox, addCone, addCylinder, addFlatCircle, makeBasicMat } fr
 import { PLAYER_SPEED, SPRINT_MULTIPLIER, WORLD_LIMIT } from "./config.js";
 import { G, keys } from "./state.js";
 import { terrainHeight } from "./terrain.js";
+import { W } from "./weather.js";
+import { updateStaminaBar } from "./combat.js";
 
 export function createPlayer() {
     const g = new THREE.Group();
@@ -101,6 +103,9 @@ export function updatePlayerAnimation(delta, isMoving, t) {
     u.body.rotation.z = Math.sin(u.walk) * 0.035 * u.moving;
     u.body.rotation.x = (sprinting ? 0.16 : 0.02) * u.moving;
 
+    // 1인칭 헤드 바빙
+    G.fpvBob = Math.sin(u.walk * 2) * (sprinting ? 0.035 : 0.02) * u.moving;
+
     // 서 있을 때는 아주 느리게 숨쉬는 느낌
     u.head.position.y = 0.64 + Math.sin(t * 1.6) * 0.006 * (1 - u.moving);
 }
@@ -153,23 +158,63 @@ export function updateMovement(delta) {
     }
 
     if (usedDir) {
-        // Shift: 달리기. 등각 탐험 게임이라 과하지 않게 두 배 이하로.
-        sprinting = keys.has("ShiftLeft") || keys.has("ShiftRight");
+        // Shift: 달리기. 스태미나가 있어야 달릴 수 있다.
+        const wantSprint = keys.has("ShiftLeft") || keys.has("ShiftRight");
+        sprinting = wantSprint && G.stamina > 0;
+
+        // 낮: 최대 스태미나 감소 (70%)
+        const isNight = W.dayT < 0.22 || W.dayT > 0.88;
+        G.maxStamina = isNight ? 70 : 100;
+
         const speed = PLAYER_SPEED * (sprinting ? SPRINT_MULTIPLIER : 1);
+
+        // 스태미나 소모 / 회복
+        if (sprinting) {
+            G.stamina = Math.max(0, G.stamina - delta * 22);
+        }
 
         G.player.position.addScaledVector(usedDir, speed * delta);
         G.player.position.x = THREE.MathUtils.clamp(G.player.position.x, -WORLD_LIMIT, WORLD_LIMIT);
         G.player.position.z = THREE.MathUtils.clamp(G.player.position.z, -WORLD_LIMIT, WORLD_LIMIT);
 
-        // 진행 방향으로 몸을 돌린다 (부드럽게)
-        const target = Math.atan2(usedDir.x, usedDir.z);
-        let diff = target - G.player.rotation.y;
-        while (diff > Math.PI) diff -= Math.PI * 2;
-        while (diff < -Math.PI) diff += Math.PI * 2;
-        G.player.rotation.y += diff * Math.min(1, delta * 12);
+        // 진행 방향으로 머뢰 돌린다
+        if (G.isFirstPerson) {
+            G.player.rotation.y = G.fpvYaw + Math.PI;
+        } else {
+            const target = Math.atan2(usedDir.x, usedDir.z);
+            let diff = target - G.player.rotation.y;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            G.player.rotation.y += diff * Math.min(1, delta * 12);
+        }
+    } else {
+        // 몈춰 있으면 스태미나 회복
+        G.stamina = Math.min(G.maxStamina, G.stamina + delta * 18);
+        if (G.isFirstPerson) {
+            G.player.rotation.y = G.fpvYaw + Math.PI;
+        }
     }
 
+    updateStaminaBar();
+
     if (!usedDir) sprinting = false;
+
+    // 잠긴 구역 충돌
+    for (const zone of G.lockedZones) {
+        if (G.inventory.includes(zone.requiredItem)) continue; // 아이템 보유 시 통과
+        const dx = G.player.position.x - zone.x;
+        const dz = G.player.position.z - zone.z;
+        if (Math.sqrt(dx * dx + dz * dz) < zone.radius) {
+            G.player.position.copy(prevPos);
+            if (!zone._warned) {
+                zone._warned = true;
+                // showMessage 이 프레임마다 호출 안 되도록 쿼다운 사용
+                zone._warnTimeout = setTimeout(() => { zone._warned = false; }, 4000);
+                import("./ui.js").then(m => m.showMessage("🔒 " + (zone.message || "이곳을 지나가려면 " + zone.requiredItem + "가 필요합니다.")));
+            }
+            break;
+        }
+    }
 
     // 물속으로는 들어가지 못한다 (전투도 수영도 없는 게임)
     const h = terrainHeight(G.player.position.x, G.player.position.z);

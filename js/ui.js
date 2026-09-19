@@ -22,7 +22,9 @@ export const dom = {
     signpost: document.getElementById("signpost"),
     signArrow: document.getElementById("signArrow"),
     signText: document.getElementById("signText"),
-    signDist: document.getElementById("signDist")
+    signDist: document.getElementById("signDist"),
+    timeBtn: document.getElementById("timeBtn"),
+    weatherBtn: document.getElementById("weatherBtn")
 };
 
 export function showMessage(text) {

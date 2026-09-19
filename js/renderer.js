@@ -23,10 +23,15 @@ export function initThree() {
 
     dom.game.appendChild(G.renderer.domElement);
 
-    // CAMERA: 고정 등각(Isometric). 절대 캐릭터 뒤를 따라가지 않는다.
-    G.camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 260);
-    G.camera.position.copy(cameraOffset);
-    G.camera.lookAt(0, 0, 0);
+    // CAMERA: 고정 등각(Isometric) 및 1인칭(Perspective)
+    G.isoCamera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 260);
+    G.isoCamera.position.copy(cameraOffset);
+    G.isoCamera.lookAt(0, 0, 0);
+
+    const aspect = window.innerWidth / window.innerHeight;
+    G.fpvCamera = new THREE.PerspectiveCamera(72, aspect, 0.08, 200);
+
+    G.camera = G.isFirstPerson ? G.fpvCamera : G.isoCamera;
 
     initPost();
 
@@ -44,9 +49,17 @@ export function resizeRenderer() {
     postMaterial.uniforms.uRes.value.set(w, h);
 
     const aspect = window.innerWidth / window.innerHeight;
-    G.camera.left = -VIEW_SIZE * aspect * 0.5;
-    G.camera.right = VIEW_SIZE * aspect * 0.5;
-    G.camera.top = VIEW_SIZE * 0.5;
-    G.camera.bottom = -VIEW_SIZE * 0.5;
-    G.camera.updateProjectionMatrix();
+
+    if (G.isoCamera) {
+        G.isoCamera.left = -VIEW_SIZE * aspect * 0.5;
+        G.isoCamera.right = VIEW_SIZE * aspect * 0.5;
+        G.isoCamera.top = VIEW_SIZE * 0.5;
+        G.isoCamera.bottom = -VIEW_SIZE * 0.5;
+        G.isoCamera.updateProjectionMatrix();
+    }
+
+    if (G.fpvCamera) {
+        G.fpvCamera.aspect = aspect;
+        G.fpvCamera.updateProjectionMatrix();
+    }
 }

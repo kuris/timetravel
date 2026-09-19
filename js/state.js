@@ -12,6 +12,12 @@ export const G = {
     // --- Three.js 핵심 ---
     renderer: null,
     camera: null,
+    isoCamera: null,
+    fpvCamera: null,
+    isFirstPerson: false,
+    fpvYaw: -Math.PI * 0.75, // 초기 쿼터뷰 시선 방향과 유사하게 설정
+    fpvPitch: -0.15,
+    fpvBob: 0,
     scene: null,
     world: null,     // 시대별 오브젝트가 들어가는 그룹
     player: null,
@@ -32,12 +38,28 @@ export const G = {
     activeGate: null,
     clickTarget: null,
     interactables: [],
+    npcs: [],
     animated: [],
     inventory: [],
+    enemies: [],       // 위험 NPC (접근 시 피해)
+    lockedZones: [],   // 진입 제한 구역
+
+    // --- HP / 스태미나 ---
+    hp: 100,
+    maxHp: 100,
+    stamina: 100,
+    maxStamina: 100,
+    hpCooldown: 0,     // 피해 후 무적 시간
+    respawnPending: false,
+
+    // --- 단서 / 일지 ---
+    clues: new Set(),       // 획득한 단서 ID
+    journal: [],            // { type, title, text, age } 기록
 
     // --- 미니맵 ---
     mapShapes: [],
     mapMarkers: [],
+    exploredTiles: new Set(), // Fog of War — 지나간 격자
 
     // --- 시대별 리소스 ---
     TEX: {},          // 절차적 텍스처 캐시

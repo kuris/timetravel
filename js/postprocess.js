@@ -5,12 +5,12 @@ export let renderTarget, postScene, postCamera, postMaterial;
 
 // 시대별 그레이딩 값. buildAge()에서 갱신된다.
 export const grade = {
-    tint: new THREE.Color(1.06, 0.97, 0.80), // 전체 색조
-    lift: new THREE.Color(0.045, 0.026, 0.012), // 검정을 갈색으로 들어올림
-    sat: 0.58,   // 0=흑백, 1=원본
-    sepia: 0.34, // 세피아 혼합량
-    contrast: 1.14,
-    vignette: 1.0
+    tint: new THREE.Color(1.02, 1.00, 0.96), // 맑은 전체 색조 밸런스
+    lift: new THREE.Color(0.012, 0.012, 0.015), // 자연스러운 암부
+    sat: 0.88,   // 풍부한 채도 복원
+    sepia: 0.08, // 세피아를 은은하게만 유지하여 흙탕물 톤 제거
+    contrast: 1.12,
+    vignette: 0.95
 };
 
 export const POST_VERT = [
@@ -86,8 +86,8 @@ export const POST_FRAG = [
     "  float lum = dot(col, vec3(0.299, 0.587, 0.114));",
     "  col = mix(vec3(lum), col, uSat);",
 
-    // --- 세피아 / 황갈색 필터 ---
-    "  vec3 sepia = lum * vec3(1.18, 0.93, 0.64);",
+    // --- 은은한 웜톤 필터 ---
+    "  vec3 sepia = lum * vec3(1.08, 0.98, 0.82);",
     "  col = mix(col, sepia, uSepia);",
 
     // --- 시대별 색조 + 검정 들어올리기 ---

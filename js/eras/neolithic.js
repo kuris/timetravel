@@ -7,7 +7,8 @@ import { addMapMarker, addMapShape } from "../minimap.js";
 import { smooth } from "../noise.js";
 import { pick, rand, randRange, seedRandom } from "../rng.js";
 import { addAnimalPen, addCanoe, addCropField, addFishingNet, addHayStack, addJarPlatform, addLaundryLine, addStoragePit, addStoneWallRun } from "../props.js";
-import { addBirdFlock, addCow, addDog, addPig, addVillager, addWorker } from "../npc.js";
+import { addBirdFlock, addCow, addDog, addPig, addVillager, addWorker, registerNPC } from "../npc.js";
+import { registerEnemy } from "../combat.js";
 import { GATE_SPOT, RIVER, S, SHARED_ROCKS, addRiver, carveRiver, riverPerp, riverPoint } from "../landmarks.js";
 import { G } from "../state.js";
 import { terrainHeight } from "../terrain.js";
@@ -32,8 +33,8 @@ export function buildNeolithic() {
         addReedCluster(x, z, Math.floor(randRange(5, 10)));
     }
 
-    // 마을 안쪽의 마른 풀
-    scatterGrass(330, [0x8d7b45, 0x6f6a38, 0xa08a4e, 0x5f5c33, 0x7a6b3c], 3, 31);
+    // 마을 안쪽의 생기 있는 풀밭
+    scatterGrass(360, [0x4d6e36, 0x5d8042, 0x6f8f4a, 0x3d592a, 0x7ea354], 3, 31);
 
     // ---- 돌과 자갈 ----
     scatterStones(130, -30, 30, -30, 30, [0x77706a, 0x8b8172, 0x625c55, 0x8f8a74]);
@@ -41,8 +42,8 @@ export function buildNeolithic() {
     // 시대를 가로질러 같은 자리에 남는 큰 바위
     for (const r of SHARED_ROCKS) addBoulder(r.x, r.z, r.s);
 
-    // ---- 먼 나무 실루엣 ----
-    addTreeLine([0x77714a, 0x655f3c, 0x837a52, 0x6d6742], 40, 26, 36);
+    // ---- 먼 나무 실루엣 (푸른 녹음) ----
+    addTreeLine([0x38523c, 0x2e4532, 0x48664e, 0x273b2a], 40, 26, 36);
 
     // ================================================================
     // 마을 — 화면 좌표 S(u, v) 로 배치한다. u = 오른쪽, v = 위쪽.
@@ -154,6 +155,46 @@ export function buildNeolithic() {
     addVillager([P(-8, 5), P(-2, 6.5), P(4, 6), P(-4, 4)], "neolithic", { speed: 0.9 });
     addVillager([P(16, 6), P(20, 6.5), P(18, 3), P(13, 5)], "neolithic", { speed: 0.85 });
 
+    // 장로: 선택지 대화 NPC — 화재와 단서를 알려준다
+    addVillager([P(-4, -2), P(0, 0), P(-3, 2), P(-5, 0)], "neolithic", {
+        name: "마을 장로",
+        hat: "straw",
+        speed: 0.4,
+        greeting: "음... 길을 잃은 나그네인가? 무엇이든 물어보게.",
+        choices: [
+            {
+                text: "마을이 불탄 적이 있다고 들었습니다.",
+                response: "그래... 옛날에 큰불이 마을을 집어삼켰지. 하지만 저 동쪽 화덕 옆 땅만은 신기하게도 불길이 비껴갔어. 그곳 흙을 잘 살펴보게.",
+                clue: "neolithic_fire",
+                journal: true,
+                followUp: "...(먼 산을 바라보며 깊은 생각에 잠긴다)"
+            },
+            {
+                text: "부러진 간석기는 왜 묻어둔 건가요?",
+                response: "간석기는 쓰던 이와 함께 묻는 것이라네. 부러뜨려 묻는 것은 물건의 명을 다하게 하여 저승에서도 쓰게 하려는 선조들의 뜻이지.",
+                journal: true,
+                followUp: "선대의 돌에 대해 더 알고 싶다면 돌무더기를 조사해보게."
+            },
+            {
+                text: "마을 숲 쪽으로 가도 됩니까?",
+                response: "숲가에는 사나운 늑대가 어슬렁거리고 있어. 가까이 가면 크게 다치니 멀리 피해 다니게!",
+                followUp: "...(조심하라는 듯 손짓을 한다)"
+            }
+        ]
+    });
+
+    // 마을 동쪽 숲 부근 위험 요소 (늑대)
+    registerEnemy({
+        type: "wolf",
+        name: "늑대",
+        waypoints: [P(16, -12), P(22, -8), P(20, -16)],
+        speed: 1.8,
+        detectRadius: 5.0,
+        attackRadius: 1.5,
+        damage: 18,
+        attackCooldown: 1.8
+    });
+
     // 화덕 앞에서 불을 지피는 사람
     q = P(0.8, 0.6); addWorker(q[0], q[1], "neolithic", { rot: -2.3 });
     q = P(-11.4, -6.4); addWorker(q[0], q[1], "neolithic", { rot: 0.9 });
@@ -204,7 +245,10 @@ export function buildNeolithic() {
         group: burntWood,
         pickup: true,
         range: 1.9,
-        description: "불탄 나무 조각\n\n화덕이 아니라 그 옆 땅에서 나왔습니다.\n마을이 한 번 크게 탄 적이 있습니다.\n그런데 마을 동쪽 한 자리만 불길이 비껴갔습니다."
+        locked: true,
+        unlockClue: "neolithic_fire",
+        lockedMsg: "흙 속에 무언가 묻혀 있으나 어디를 파야 할지 알 수 없습니다.\n(마을 장로와 대화하여 단서를 얻으세요)",
+        description: "불탄 나무 조각\n\n화덕 옆 땅에서 회수했습니다.\n마을이 한 번 크게 탄 적이 있습니다.\n장로의 말대로 마을 동쪽 한 자리만 불길이 비껴갔습니다."
     });
 
     // ---- 시간의 문 (고인돌) ----
@@ -252,7 +296,7 @@ export function addReedCluster(x, z, count = 6) {
         const h = randRange(0.9, 2.1);
         const reed = addBox(g,
             randRange(0.035, 0.075), h, 0.03,
-            pick([0xa8924f, 0x8c7a3c, 0xc0a75f, 0x6f6431]),
+            pick([0x58783e, 0x6e8e46, 0x86a250, 0x486430, 0xb09c52]),
             randRange(-0.45, 0.45), h * 0.5, randRange(-0.45, 0.45),
             randRange(0, Math.PI), {
             roughness: 1,
@@ -263,7 +307,7 @@ export function addReedCluster(x, z, count = 6) {
 
         // 이삭
         if (rand() > 0.45) {
-            addBox(g, 0.07, 0.2, 0.05, 0x6e5a2a,
+            addBox(g, 0.07, 0.2, 0.05, 0x7a6430,
                 reed.position.x, h * 0.98, reed.position.z,
                 reed.rotation.y, { castShadow: false, receiveShadow: false });
         }

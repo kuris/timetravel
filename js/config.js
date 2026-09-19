@@ -27,42 +27,42 @@ export const AGE_DATA = [
             start: "clear",
             pool: ["haze", "clear", "haze", "overcast", "rain", "haze", "clear"]
         },
-        fog: 0x7b6343,
-        fogDensity: 0.0125,
+        fog: 0x5e706c,
+        fogDensity: 0.0115,
 
-        // 지평선 하늘 그라데이션 (위 -> 아래)
-        sky: { top: 0x4a3a28, mid: 0x8e7148, bottom: 0xd2ad78 },
+        // 지평선 하늘 그라데이션 (맑은 푸른빛과 따뜻한 수평선)
+        sky: { top: 0x364f66, mid: 0x688494, bottom: 0xb5cbd2 },
 
-        // 멀어질수록 옅어지는 산 능선
+        // 멀어질수록 옅어지는 푸르스름한 산 능선
         ridges: [
-            { dist: 74, height: 34, color: 0xa48a63, opacity: 0.55, base: -6 },
-            { dist: 56, height: 25, color: 0x8d7450, opacity: 0.60, base: -5 },
-            { dist: 42, height: 17, color: 0x74603f, opacity: 0.68, base: -4 },
-            { dist: 30, height: 10, color: 0x5e4d33, opacity: 0.75, base: -3 }
+            { dist: 74, height: 34, color: 0x657878, opacity: 0.55, base: -6 },
+            { dist: 56, height: 25, color: 0x526868, opacity: 0.60, base: -5 },
+            { dist: 42, height: 17, color: 0x415757, opacity: 0.68, base: -4 },
+            { dist: 30, height: 10, color: 0x334949, opacity: 0.75, base: -3 }
         ],
 
         intro: "강가의 얕게 깎인 신석기 마을입니다.\n움집과 갈대밭 사이로 오랜 생활의 흔적이 남아 있습니다.\n주변을 조사해 보세요.",
 
         light: {
-            hemiSky: 0xffdcab,
-            hemiGround: 0x4a3724,
-            hemiIntensity: 0.52,
-            ambient: 0xc79a6e,
-            ambientIntensity: 0.24,
-            sun: 0xffd9a4,
-            sunIntensity: 2.10,
+            hemiSky: 0xdff0fa,
+            hemiGround: 0x3e4a3c,
+            hemiIntensity: 0.58,
+            ambient: 0x8ea89a,
+            ambientIntensity: 0.28,
+            sun: 0xffedd2,
+            sunIntensity: 2.15,
             sunPos: [-13, 14, -16],
-            fillIntensity: 0.16
+            fillIntensity: 0.18
         },
 
-        // 후처리 그레이딩: 바랜 세피아 사진
+        // 후처리 그레이딩: 맑고 선명한 색감 복원
         grade: {
-            tint: [1.10, 0.96, 0.75],
-            lift: [0.028, 0.017, 0.008],
-            sat: 0.58,
-            sepia: 0.36,
-            contrast: 1.24,
-            vignette: 1.0
+            tint: [1.02, 1.00, 0.96],
+            lift: [0.012, 0.012, 0.015],
+            sat: 0.88,
+            sepia: 0.08,
+            contrast: 1.15,
+            vignette: 0.95
         }
     },
 
@@ -109,12 +109,12 @@ export const AGE_DATA = [
         },
 
         grade: {
-            tint: [1.09, 0.95, 0.75],
-            lift: [0.028, 0.017, 0.007],
-            sat: 0.56,
-            sepia: 0.33,
-            contrast: 1.26,
-            vignette: 1.05
+            tint: [1.03, 1.00, 0.95],
+            lift: [0.014, 0.012, 0.012],
+            sat: 0.86,
+            sepia: 0.10,
+            contrast: 1.18,
+            vignette: 1.0
         }
     },
 
@@ -136,39 +136,39 @@ export const AGE_DATA = [
             pool: ["clear", "haze", "rain", "haze", "overcast", "clear"]
         },
 
-        fog: 0x7f6a48,
-        fogDensity: 0.0120,
+        fog: 0x687870,
+        fogDensity: 0.0115,
 
-        sky: { top: 0x47412c, mid: 0x8c7a4e, bottom: 0xd0b581 },
+        sky: { top: 0x3a4e60, mid: 0x6e8494, bottom: 0xc4d4db },
 
         ridges: [
-            { dist: 74, height: 34, color: 0x9a8f63, opacity: 0.55, base: -6 },
-            { dist: 56, height: 25, color: 0x847a52, opacity: 0.60, base: -5 },
-            { dist: 42, height: 17, color: 0x6a6340, opacity: 0.68, base: -4 },
-            { dist: 30, height: 10, color: 0x545033, opacity: 0.75, base: -3 }
+            { dist: 74, height: 34, color: 0x687b80, opacity: 0.55, base: -6 },
+            { dist: 56, height: 25, color: 0x54676c, opacity: 0.60, base: -5 },
+            { dist: 42, height: 17, color: 0x43565a, opacity: 0.68, base: -4 },
+            { dist: 30, height: 10, color: 0x36484c, opacity: 0.75, base: -3 }
         ],
 
         intro: "낙동강을 따라 자리한 마을입니다.\n토성과 고분, 논과 대장간이 어우러져 있습니다.\n성벽이 한 자리에서만 바깥으로 꺾여 있습니다.",
 
         light: {
-            hemiSky: 0xffe6bc,
-            hemiGround: 0x4e4128,
+            hemiSky: 0xe2f0fa,
+            hemiGround: 0x3e4838,
             hemiIntensity: 0.58,
-            ambient: 0xcaa878,
-            ambientIntensity: 0.26,
-            sun: 0xffe0ae,
+            ambient: 0x90a89a,
+            ambientIntensity: 0.28,
+            sun: 0xffedd2,
             sunIntensity: 2.05,
             sunPos: [-14, 16, -15],
             fillIntensity: 0.18
         },
 
         grade: {
-            tint: [1.07, 0.98, 0.79],
-            lift: [0.030, 0.020, 0.010],
-            sat: 0.60,
-            sepia: 0.30,
-            contrast: 1.22,
-            vignette: 1.0
+            tint: [1.01, 1.01, 0.98],
+            lift: [0.012, 0.012, 0.014],
+            sat: 0.90,
+            sepia: 0.06,
+            contrast: 1.14,
+            vignette: 0.95
         }
     },
 
@@ -217,12 +217,12 @@ export const AGE_DATA = [
 
         // 밤이지만 전체 게임의 낡은 필터는 유지한다
         grade: {
-            tint: [1.06, 1.00, 0.97],
-            lift: [0.092, 0.082, 0.090],
-            sat: 0.62,
-            sepia: 0.22,
-            contrast: 1.06,
-            vignette: 0.78
+            tint: [0.98, 1.00, 1.04],
+            lift: [0.045, 0.045, 0.060],
+            sat: 0.90,
+            sepia: 0.05,
+            contrast: 1.10,
+            vignette: 0.82
         }
     },
 
@@ -244,39 +244,39 @@ export const AGE_DATA = [
             pool: ["clear", "clear", "haze", "rain", "overcast", "clear"]
         },
 
-        fog: 0x85714c,
+        fog: 0x6e786b,
         fogDensity: 0.0100,
 
-        sky: { top: 0x4e4a30, mid: 0x928052, bottom: 0xd6bc8a },
+        sky: { top: 0x385268, mid: 0x768f9e, bottom: 0xccd8db },
 
         ridges: [
-            { dist: 74, height: 34, color: 0x9a9066, opacity: 0.55, base: -6 },
-            { dist: 56, height: 25, color: 0x847b56, opacity: 0.60, base: -5 },
-            { dist: 42, height: 17, color: 0x6a6444, opacity: 0.68, base: -4 },
-            { dist: 30, height: 10, color: 0x545037, opacity: 0.75, base: -3 }
+            { dist: 74, height: 34, color: 0x687b70, opacity: 0.55, base: -6 },
+            { dist: 56, height: 25, color: 0x54675c, opacity: 0.60, base: -5 },
+            { dist: 42, height: 17, color: 0x43564b, opacity: 0.68, base: -4 },
+            { dist: 30, height: 10, color: 0x36483d, opacity: 0.75, base: -3 }
         ],
 
         intro: "햇살이 비추는 시골 마을입니다.\n전봇대가 하늘을 가르고 신작로에 버스가 들어옵니다.\n마을 안길 공사가 한 자리에서 멈춰 있습니다.",
 
         light: {
-            hemiSky: 0xffeecb,
-            hemiGround: 0x4e4630,
+            hemiSky: 0xe6f2fa,
+            hemiGround: 0x3e4834,
             hemiIntensity: 0.62,
-            ambient: 0xd2b489,
+            ambient: 0xa4b89e,
             ambientIntensity: 0.30,
-            sun: 0xfff0cd,
+            sun: 0xffedd6,
             sunIntensity: 2.15,
             sunPos: [-14, 19, -14],
             fillIntensity: 0.20
         },
 
         grade: {
-            tint: [1.05, 0.99, 0.83],
-            lift: [0.032, 0.024, 0.014],
-            sat: 0.64,
-            sepia: 0.26,
-            contrast: 1.18,
-            vignette: 0.98
+            tint: [1.02, 1.01, 0.97],
+            lift: [0.014, 0.014, 0.015],
+            sat: 0.90,
+            sepia: 0.06,
+            contrast: 1.15,
+            vignette: 0.95
         }
     },
 
@@ -302,13 +302,13 @@ export const AGE_DATA = [
         fog: 0x4a4c56,
         fogDensity: 0.0145,
 
-        sky: { top: 0x2a3042, mid: 0x5a5462, bottom: 0xa08470 },
+        sky: { top: 0x242e44, mid: 0x4e5468, bottom: 0x8c8490 },
 
         ridges: [
-            { dist: 74, height: 32, color: 0x585c6e, opacity: 0.55, base: -6 },
-            { dist: 56, height: 24, color: 0x484c5c, opacity: 0.62, base: -5 },
-            { dist: 42, height: 16, color: 0x393d4c, opacity: 0.72, base: -4 },
-            { dist: 30, height: 10, color: 0x2e313e, opacity: 0.80, base: -3 }
+            { dist: 74, height: 32, color: 0x505668, opacity: 0.55, base: -6 },
+            { dist: 56, height: 24, color: 0x404658, opacity: 0.62, base: -5 },
+            { dist: 42, height: 16, color: 0x32384a, opacity: 0.72, base: -4 },
+            { dist: 30, height: 10, color: 0x262c3e, opacity: 0.80, base: -3 }
         ],
 
         intro: "한강이 흐르는 작은 신도시입니다.\n아파트와 상가, 편의점 불빛이 이어집니다.\n길 한가운데, 울타리에 둘러싸인 돌 하나가 남아 있습니다.",
@@ -326,11 +326,11 @@ export const AGE_DATA = [
         },
 
         grade: {
-            tint: [1.02, 1.00, 1.02],
-            lift: [0.080, 0.076, 0.086],
-            sat: 0.66,
-            sepia: 0.18,
-            contrast: 1.08,
+            tint: [0.98, 1.00, 1.02],
+            lift: [0.045, 0.045, 0.055],
+            sat: 0.94,
+            sepia: 0.04,
+            contrast: 1.10,
             vignette: 0.82
         }
     }

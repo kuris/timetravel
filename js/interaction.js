@@ -10,6 +10,8 @@ import { G } from "./state.js";
 import { terrainHeight } from "./terrain.js";
 import { transitionToAge } from "./transition.js";
 import { addInventoryItem, dom, showMessage, updateUI } from "./ui.js";
+import { addJournalEntry } from "./journal.js";
+import { openChoiceDialogue } from "./dialogue.js";
 
 export function registerInteractable({
     name,
@@ -17,12 +19,15 @@ export function registerInteractable({
     group,
     pickup = true,
     range = 1.75,
-    glowColor = 0xffd071
+    glowColor = 0xffd071,
+    locked = false,      // 잠긴 유물: 단서 필요
+    unlockClue = null,   // 필요 단서 ID
+    lockedMsg = null     // 잠겼을 때 메시지
 }) {
     const p = new THREE.Vector3();
     group.getWorldPosition(p);
 
-    const glow = createInteractionGlow(p.x, p.z, glowColor);
+    const glow = createInteractionGlow(p.x, p.z, locked ? 0x6090c0 : glowColor);
     const item = {
         name,
         description,
@@ -31,10 +36,13 @@ export function registerInteractable({
         range,
         done: false,
         glow,
+        locked,
+        unlockClue,
+        lockedMsg,
         position: new THREE.Vector3(p.x, 0, p.z)
     };
 
-    item.marker = addMapMarker(p.x, p.z, "#ffd071", 3, "artifact");
+    item.marker = addMapMarker(p.x, p.z, locked ? "#6090c0" : "#ffd071", 3, "artifact");
 
     G.interactables.push(item);
     return item;
@@ -105,6 +113,20 @@ export function getNearestAction() {
         }
     }
 
+    // NPC 대화 대상
+    if (G.npcs) {
+        for (const npc of G.npcs) {
+            const dx = npc.group.position.x - G.player.position.x;
+            const dz = npc.group.position.z - G.player.position.z;
+            const d = Math.sqrt(dx * dx + dz * dz);
+
+            if (d <= npc.range && d < bestDist) {
+                bestDist = d;
+                best = { kind: "npc", npc, distance: d };
+            }
+        }
+    }
+
     if (G.activeGate) {
         const dx = G.activeGate.position.x - G.player.position.x;
         const dz = G.activeGate.position.z - G.player.position.z;
@@ -135,7 +157,12 @@ export function updatePrompt() {
     }
 
     if (action.kind === "object") {
-        dom.prompt.textContent = "[E] 조사 · " + action.item.name;
+        const isLocked = action.item.locked && action.item.unlockClue && !G.clues.has(action.item.unlockClue);
+        dom.prompt.textContent = isLocked
+            ? "🔒 " + action.item.name + " (단서 필요)"
+            : "[E] 조사 · " + action.item.name;
+    } else if (action.kind === "npc") {
+        dom.prompt.textContent = "[E] " + (action.npc.isAnimal ? "교감 · " : "대화 · ") + action.npc.name;
     } else if (action.kind === "gate") {
         dom.prompt.textContent = "[E] 시대 이동";
     } else {
@@ -151,12 +178,18 @@ export function tryInteract() {
     const action = getNearestAction();
 
     if (!action) {
-        showMessage("조사할 대상에 조금 더 가까이 다가가세요.");
+        showMessage("조사하거나 대화할 대상에 조금 더 가까이 다가가세요.");
         return;
     }
 
     if (action.kind === "object") {
         investigateObject(action.item);
+    } else if (action.kind === "npc") {
+        if (action.npc.choices && action.npc.choices.length > 0) {
+            openChoiceDialogue(action.npc);
+        } else {
+            talkToNPC(action.npc);
+        }
     } else if (action.kind === "gate") {
         showMessage("고인돌 사이의 푸른빛이 화면을 삼킵니다.\n잊힌 시간의 결을 따라 다음 시대로 이동합니다.");
         transitionToAge(G.currentAge + 1);
@@ -166,8 +199,47 @@ export function tryInteract() {
     }
 }
 
+export function talkToNPC(npc) {
+    if (!G.player) return;
+
+    // NPC가 플레이어를 바라보도록 회전
+    const dx = G.player.position.x - npc.group.position.x;
+    const dz = G.player.position.z - npc.group.position.z;
+    npc.group.rotation.y = Math.atan2(dx, dz);
+
+    // 순찰 중이었다면 5초간 멈춰 섬
+    if (npc.group.userData && npc.group.userData.anim) {
+        npc.group.userData.anim.pauseLeft = 5.0;
+    }
+
+    // 소리
+    if (npc.isAnimal) {
+        AudioSystem.playPickup();
+    } else {
+        AudioSystem.playInvestigate();
+    }
+
+    // 대사 출력 (순환)
+    const line = npc.lines[npc.lineIndex % npc.lines.length];
+    npc.lineIndex++;
+
+    showMessage("【 " + npc.name + " 】\n\n\"" + line + "\"");
+
+    // 첫 대화만 일지에 기록
+    if (npc.lineIndex === 1) {
+        addJournalEntry("npc", npc.name, line);
+    }
+}
+
 export function investigateObject(item) {
     if (item.done) return;
+
+    // 잠금 확인
+    if (item.locked && item.unlockClue && !G.clues.has(item.unlockClue)) {
+        AudioSystem.playInvestigate();
+        showMessage("🔒 " + (item.lockedMsg || "이 유물을 조사하려면 먼저 단서가 필요합니다.\nNPC와 대화하여 단서를 수집해 보세요."));
+        return;
+    }
 
     item.done = true;
     G.ageProgress++;
@@ -183,6 +255,9 @@ export function investigateObject(item) {
     }
 
     addInventoryItem(item.name);
+
+    // 일지 기록
+    addJournalEntry("artifact", item.name, item.description);
 
     const extra = handleAgeCompletion();
     showMessage(item.description + (extra ? "\n\n" + extra : ""));

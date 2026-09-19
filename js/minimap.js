@@ -24,6 +24,20 @@ export function addMapShape(points, color) {
     G.mapShapes.push({ points, color });
 }
 
+/** Fog of War — 플레이어 위치로 탐험 격자 기록 */
+const FOW_TILE = 4; // 격자 크기 (월드 단위)
+export function updateExploration() {
+    if (!G.player) return;
+    const tx = Math.round(G.player.position.x / FOW_TILE);
+    const tz = Math.round(G.player.position.z / FOW_TILE);
+    // 주변 2칸 반경도 함께 밝힌다
+    for (let dx = -2; dx <= 2; dx++) {
+        for (let dz = -2; dz <= 2; dz++) {
+            G.exploredTiles.add((tx + dx) + "," + (tz + dz));
+        }
+    }
+}
+
 export function drawMinimap() {
     const cv = dom.minimap;
     if (!cv) return;
@@ -95,6 +109,22 @@ export function drawMinimap() {
         } else {
             ctx.fillStyle = m.color;
             ctx.fillRect(px - m.size * 0.5, py - m.size * 0.5, m.size, m.size);
+        }
+    }
+
+    // ---- Fog of War 오버레이 ----
+    const fowTileSize = FOW_TILE * (S * 0.5 / MAP_RANGE) * Math.SQRT2;
+    const gridRange = Math.ceil(MAP_RANGE / FOW_TILE) + 2;
+    for (let tx = -gridRange; tx <= gridRange; tx++) {
+        for (let tz = -gridRange; tz <= gridRange; tz++) {
+            const key = tx + "," + tz;
+            if (G.exploredTiles.has(key)) continue;
+            const wx = tx * FOW_TILE;
+            const wz = tz * FOW_TILE;
+            const [cx, cy] = worldToMap(wx, wz, S);
+            if (cx < -fowTileSize || cx > S + fowTileSize || cy < -fowTileSize || cy > S + fowTileSize) continue;
+            ctx.fillStyle = "rgba(8, 5, 3, 0.84)";
+            ctx.fillRect(cx - fowTileSize / 2 - 1, cy - fowTileSize / 2 - 1, fowTileSize + 2, fowTileSize + 2);
         }
     }
 

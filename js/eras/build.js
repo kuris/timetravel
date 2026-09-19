@@ -30,11 +30,11 @@ export const TEX_PALETTE = [
     {
         dirtBase: 0x9d7249,
         dirtSpots: [0xc59a62, 0x7d6b42, 0xb5854f, 0x6d5637, 0xd8b784],
-        stoneBase: 0x77706a,
-        stoneSpots: [0x9a9187, 0x5a554f, 0x6f7a55],
+        stoneBase: 0x726e68,
+        stoneSpots: [0x8a9287, 0x54584f, 0x5b724e], // 초록 이끼 낀 돌 포인트
         thatch: [0xb08a4c, 0x6b4f26, 0xd8b877],
         wood: [0x6d4a26, 0x33210f],
-        water: [0x52707a, 0xd8e6dc],
+        water: [0x367a88, 0xcae5e8],
         cloth: [0x6a5a44, 0x2f2718]
     },
     // 청동기: 붉은 황토
@@ -42,10 +42,10 @@ export const TEX_PALETTE = [
         dirtBase: 0x8e6b43,
         dirtSpots: [0xb08653, 0x6f5637, 0xa47c48, 0x5d4a30, 0xc7a06a],
         stoneBase: 0x6f665d,
-        stoneSpots: [0x8e8378, 0x4f4941, 0x6b6f4d],
+        stoneSpots: [0x8e8378, 0x4f4941, 0x5c7250],
         thatch: [0xa87f45, 0x63481f, 0xd0ac6a],
         wood: [0x66421f, 0x2d1c0c],
-        water: [0x4e6a6d, 0xcfdcd2],
+        water: [0x386d75, 0xc8dede],
         cloth: [0x6b4f33, 0x2b1d10]
     },
     // 삼국: 다져 올린 흙과 기와
@@ -53,10 +53,10 @@ export const TEX_PALETTE = [
         dirtBase: 0x8a7048,
         dirtSpots: [0xa88a58, 0x6f5d3d, 0x9c7e4e, 0x5c5136, 0xbf9f66],
         stoneBase: 0x736c63,
-        stoneSpots: [0x8f887c, 0x524c45, 0x6b7150],
+        stoneSpots: [0x8f887c, 0x524c45, 0x5e7552],
         thatch: [0xa88a4e, 0x63481f, 0xd0ac6a],
         wood: [0x66421f, 0x2d1c0c],
-        water: [0x50666d, 0xcfdcd2],
+        water: [0x356872, 0xc5deda],
         cloth: [0x6b5236, 0x2b1d10]
     },
     // 조선: 밤의 흙길
@@ -159,6 +159,16 @@ export function buildAge(index, opts = {}) {
     G.activeGate = null;
     G.clickTarget = null;
     G.interactables = [];
+    G.npcs = [];
+    G.enemies = [];
+    G.lockedZones = [];
+    G.exploredTiles = new Set();
+    G.inventory = [];
+    G.clues = new Set();
+    G.hp = G.maxHp;
+    G.stamina = G.maxStamina;
+    G.hpCooldown = 0;
+    G.respawnPending = false;
     G.animated = [];
     G.mapShapes = [];
     G.mapMarkers = [];
@@ -217,6 +227,7 @@ export function buildAge(index, opts = {}) {
     // ---- 플레이어 배치 ----
     G.player = createPlayer();
     G.player.position.set(age.start.x, terrainHeight(age.start.x, age.start.z), age.start.z);
+    G.player.visible = !G.isFirstPerson;
     G.scene.add(G.player);
 
     cameraTarget.set(G.player.position.x, 0.6, G.player.position.z);

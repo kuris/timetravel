@@ -91,7 +91,7 @@ export function addRiver() {
     addMapShape([
         pt(-along, nearPerp), pt(along, nearPerp),
         pt(along, farPerp), pt(-along, farPerp)
-    ], "#3e5257");
+    ], "#2d5e68");
 
     const g = new THREE.Group();
     g.position.set(RIVER.center.x, 0, RIVER.center.z);
@@ -99,18 +99,16 @@ export function addRiver() {
     g.userData.base = true; // 강은 시대가 바뀌어도 그 자리에 있다
     G.world.add(g);
 
-    // 수면
+    // 수면 (시원하고 맑은 청록빛)
     const water = new THREE.Mesh(
         new THREE.PlaneGeometry(160, 70),
         new THREE.MeshStandardMaterial({
             map: G.TEX.water,
-            color: 0x3c4c54,
+            color: 0x2b6472,
             transparent: true,
-            opacity: 0.96,
-            // 직교 카메라에서는 매끈한 수면이 화면 전체에 균일한
-            // 스펙큘러를 만들어 하얗게 타버린다. 일부러 거칠게 둔다.
-            roughness: 0.82,
-            metalness: 0.0,
+            opacity: 0.94,
+            roughness: 0.68,
+            metalness: 0.08,
             depthWrite: true
         })
     );
