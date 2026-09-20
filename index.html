@@ -44,6 +44,9 @@
                 <button class="qb" id="qbTut" title="안내 열고 닫기 (F1)">
                     <span class="ic">?</span><span class="tx">안내</span>
                 </button>
+                <button class="qb" id="qbFpv" title="1인칭으로 둘러보기 (V)">
+                    <span class="ic">👁</span><span class="tx">1인칭</span>
+                </button>
             </div>
             <div class="res" id="ageBadge">신석기 시대</div>
             <div class="res" id="clock">0:00</div>
@@ -66,6 +69,15 @@
             <div id="tutGoal"><i></i><span id="tutGoalText"></span></div>
             <button id="tutSkip">이 걸음 건너뛰기</button>
         </div>
+
+        <!-- 1인칭 -->
+        <div id="fpvBar">
+            <button class="fpvb" id="fpvBack">뒤로</button>
+            <div id="fpvHint"></div>
+            <button class="fpvb" id="fpvFwd">앞으로</button>
+            <button class="fpvb out" id="fpvOut">나가기 (V)</button>
+        </div>
+        <div id="crosshair"></div>
 
         <!-- 하단: 조작판 -->
         <div id="cmdBar">

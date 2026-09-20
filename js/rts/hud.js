@@ -130,6 +130,7 @@ function initQuickBar(handlers) {
     on("qbIdle", handlers.findIdle);
     on("qbEvent", handlers.goEvent);
     on("qbTut", handlers.toggleTutorial);
+    on("qbFpv", handlers.toggleFpv);
     on("zoomIn", () => handlers.zoom(1 / 1.18));
     on("zoomOut", () => handlers.zoom(1.18));
     if (el.selClear) el.selClear.addEventListener("click", handlers.clearSelection);

@@ -1122,3 +1122,88 @@
         width: 54vw;
     }
 }
+
+/* ================================================================
+   1인칭 — 등각 화면에서 내려와 그 땅에 선다
+   ================================================================ */
+#fpvBar {
+    position: absolute;
+    left: 50%;
+    bottom: 14px;
+    transform: translateX(-50%);
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    pointer-events: auto;
+    background: rgba(14, 9, 5, 0.82);
+    border: 1px solid var(--brass-lo);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5);
+}
+
+body.fpv #fpvBar {
+    display: flex;
+}
+
+/* 서 있는 동안에는 명령 칸이 없다 — 눈만 있다 */
+body.fpv #cmdBar,
+body.fpv #selRect {
+    display: none;
+}
+
+#fpvHint {
+    font-size: 11px;
+    color: var(--ink-dim);
+    padding: 0 4px;
+}
+
+.fpvb {
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 1px;
+    padding: 5px 12px;
+    color: var(--ink);
+    background: linear-gradient(170deg, #5a3f24, #2a1a0c);
+    border: 1px solid var(--brass-lo);
+    cursor: pointer;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.fpvb:hover {
+    border-color: var(--brass-hi);
+    color: var(--brass-hi);
+}
+
+.fpvb.out {
+    color: var(--brass-hi);
+    border-color: var(--brass);
+}
+
+/* 가운데 점 — 어디를 보고 있는지. (style.css 의 것을 작고 옅게 덮어쓴다) */
+#crosshair {
+    width: 4px;
+    height: 4px;
+    margin: 0;
+    display: none;
+    background: rgba(240, 225, 190, 0.7);
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.9);
+}
+
+body.fpv #crosshair {
+    display: block;
+}
+
+body.fpv #game canvas {
+    cursor: none;
+}
+
+@media (max-width: 620px) {
+    #fpvHint {
+        display: none;
+    }
+
+    .fpvb {
+        padding: 7px 12px;
+    }
+}

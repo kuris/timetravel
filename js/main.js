@@ -18,6 +18,7 @@ import { rtsAnimate, simulate } from "./rts/loop.js";
 import { startGame } from "./rts/map.js";
 import { applyCamera } from "./rts/rtscam.js";
 import { R } from "./rts/state.js";
+import * as rtsFpv from "./rts/fpv.js";
 import * as rtsTutorial from "./rts/tutorial.js";
 import { startTutorial } from "./rts/tutorial.js";
 import * as rtsBuildings from "./rts/buildings.js";
@@ -45,13 +46,15 @@ const INTRO_MOUSE =
   화면 가장자리 / 방향키  시점 이동 · 휠  확대
   아래 명령 칸을 눌러도 되고 Q W E R T Y / A S D F G H 로 눌러도 됩니다
   위쪽 [회관] [노는 주민] [사건] 단추, 왼쪽 아래 부대 칸 —
-  자판 없이 마우스만으로도 전부 할 수 있습니다`;
+  자판 없이 마우스만으로도 전부 할 수 있습니다
+  V  그 땅에 내려서서 1인칭으로 둘러봅니다 (언제든)`;
 
 const INTRO_TOUCH =
     `  톡  고르기 (고른 것이 있으면 그 자리가 명령이 됩니다)
   끌기  시점 이동 · 두 손가락  확대 · 축소
   길게 눌렀다 끌기  상자 선택
-  아래 명령 칸과 위쪽 [회관] [노는 주민] [사건] 단추로 나머지를 합니다`;
+  아래 명령 칸과 위쪽 [회관] [노는 주민] [사건] 단추로 나머지를 합니다
+  위쪽 [1인칭]  그 땅에 내려서서 둘러봅니다 (언제든)`;
 
 const INTRO =
     `강 하나를 사이에 두고 두 마을이 앉았습니다.
@@ -72,7 +75,8 @@ const INTRO =
 // 디버그용 손잡이 (콘솔에서 판을 들여다볼 때 쓴다)
 window.RTS = {
     R, G, simulate,
-    buildings: rtsBuildings, units: rtsUnits, control: rtsControl, tutorial: rtsTutorial
+    buildings: rtsBuildings, units: rtsUnits, control: rtsControl,
+    tutorial: rtsTutorial, fpv: rtsFpv
 };
 
 function begin(tutorial) {

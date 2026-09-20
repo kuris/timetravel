@@ -14,6 +14,7 @@ import { updateBuildings } from "./buildings.js";
 import { updateProjectiles } from "./combat.js";
 import { cancelPlacing, refreshCommands, updateGhost } from "./control.js";
 import { fogUpdate } from "./fog.js";
+import { FPV, exitFpv, updateFpv } from "./fpv.js";
 import { hideOverlay, showOverlay, updateHud } from "./hud.js";
 import { updateRtsCamera } from "./rtscam.js";
 import { R } from "./state.js";
@@ -119,6 +120,7 @@ function checkVictory() {
     if (R.over) {
         AudioSystem.playGate && AudioSystem.playGate();
         cancelPlacing();
+        exitFpv();          // 끝났으면 등각 화면으로 올라온다
     }
 }
 
@@ -140,7 +142,8 @@ export function rtsAnimate() {
         checkVictory();
     }
 
-    updateRtsCamera(dt, !!R.over);
+    if (FPV.on) updateFpv(dt);
+    else updateRtsCamera(dt, !!R.over);
     updateGhost();
     updateWeather(dt);
     updateAmbient(t, dt);

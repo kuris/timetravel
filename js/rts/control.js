@@ -22,6 +22,7 @@ import {
     setCommands, setSelRect, showBig
 } from "./hud.js";
 import { CAM, centerCamera, panCamera, setZoom, zoomBy } from "./rtscam.js";
+import { FPV, fpvLook, toggleFpv, exitFpv } from "./fpv.js";
 import { INPUT, pickRadius } from "./input.js";
 import { R } from "./state.js";
 import { toggleTutorial } from "./tutorial.js";
@@ -350,6 +351,12 @@ export function initControls() {
         if (e.pointerType !== "touch") return mouseDown(e);
 
         INPUT.touch = true;
+        if (FPV.on) {
+            // 1인칭에서는 화면을 끌어 고개를 돌린다
+            touches.set(e.pointerId, { id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t0: 0 });
+            cv.setPointerCapture && cv.setPointerCapture(e.pointerId);
+            return;
+        }
         CAM.mouseX = e.clientX;
         CAM.mouseY = e.clientY;
         cv.setPointerCapture && cv.setPointerCapture(e.pointerId);
@@ -384,6 +391,8 @@ export function initControls() {
 
         const px = t.x, py = t.y;
         t.x = e.clientX; t.y = e.clientY;
+
+        if (FPV.on) { fpvLook(t.x - px, t.y - py); return; }
 
         // 배치 중에는 손가락 자리가 곧 건물 자리다
         if (R.placing) { CAM.mouseX = t.x; CAM.mouseY = t.y; }
@@ -435,6 +444,17 @@ export function initControls() {
 
     function mouseDown(e) {
         INPUT.touch = false;
+
+        if (FPV.on) {
+            // 왼쪽을 누르고 있으면 앞으로, 오른쪽이면 뒤로 걷는다 (자판 없이도 된다)
+            if (e.button === 0) FPV.hold = 1;
+            else if (e.button === 2) FPV.hold = -1;
+            if (!document.pointerLockElement) {
+                try { cv.requestPointerLock && cv.requestPointerLock(); } catch { /* 방금 풀렸으면 막힌다 */ }
+            }
+            return;
+        }
+
         if (e.button === 2) {
             if (R.placing) { cancelPlacing(); return; }
             commandAt(e.clientX, e.clientY, e.shiftKey);
@@ -455,6 +475,16 @@ export function initControls() {
 
     window.addEventListener("pointermove", (e) => {
         if (e.pointerType === "touch") return;
+
+        if (FPV.on) {
+            // 포인터 락이면 움직인 양이, 아니면 끄는 양이 곧 시선이다
+            if (document.pointerLockElement) fpvLook(e.movementX || 0, e.movementY || 0);
+            else if (e.buttons & 1) fpvLook(e.clientX - CAM.mouseX, e.clientY - CAM.mouseY);
+            CAM.mouseX = e.clientX;
+            CAM.mouseY = e.clientY;
+            return;
+        }
+
         CAM.mouseX = e.clientX;
         CAM.mouseY = e.clientY;
         CAM.inWindow = true;
@@ -473,6 +503,7 @@ export function initControls() {
 
     window.addEventListener("pointerup", (e) => {
         if (e.pointerType === "touch") return;
+        if (FPV.on) { FPV.hold = 0; return; }
         miniDrag = false;
         if (!drag || e.button !== 0) { drag = null; return; }
         setSelRect(0, 0, 0, 0, false);
@@ -537,6 +568,7 @@ export const minimapHandlers = {
     findIdle: () => findIdle(),
     goEvent: () => goEvent(),
     toggleTutorial: () => toggleTutorial(),
+    toggleFpv: () => { if (R.placing) cancelPlacing(); toggleFpv(); },
     clearSelection: () => clearSelection(),
     bindGroup: (k) => bindGroup(k),
     useGroup: (k) => useGroup(k),
@@ -617,6 +649,18 @@ export function clearSelection() {
 
 function handleKey(e) {
     const code = e.code;
+
+    // 1인칭으로 내려서기 · 돌아오기
+    if (code === "KeyV") {
+        if (R.placing) cancelPlacing();
+        toggleFpv();
+        return;
+    }
+    if (FPV.on) {
+        // 서 있는 동안에는 걷기와 나가기만 듣는다
+        if (code === "Escape") exitFpv();
+        return;
+    }
 
     // 안내 열고 닫기
     if (code === "F1") {
