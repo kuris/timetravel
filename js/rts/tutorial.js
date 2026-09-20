@@ -13,6 +13,7 @@ import { makeBasicMat } from "../build.js";
 import { G, cameraTarget } from "../state.js";
 import { terrainHeight } from "../terrain.js";
 import { logMessage, showBig } from "./hud.js";
+import { INPUT } from "./input.js";
 import { centerCamera } from "./rtscam.js";
 import { R } from "./state.js";
 import { disposeObj, worldToScreen } from "./util.js";
@@ -24,6 +25,7 @@ let doneTimer = 0;          // ✓ 를 보여 주는 동안
 let camDist = 0;            // 시점을 얼마나 옮겼나 (첫 걸음을 재는 데 쓴다)
 let lastCam = { x: 0, z: 0 };
 let mark = { x: 0, z: 0, on: false };
+let paintedTouch = null;      // 어떤 입력으로 쓴 문구인가
 
 /* ------------------------------------------------------------ 상태 묻기 */
 
@@ -65,15 +67,20 @@ function nearResource(kind) {
 
 /**
  * 한 걸음.
- *   title  한 줄 제목      body  무엇을 어떻게
+ *   title  한 줄 제목      body  마우스로 하는 법
+ *   touch  손가락으로 하는 법 (없으면 body 를 그대로 쓴다)
  *   goal   해내야 하는 것   done  해냈는지 묻는 함수
  *   point  깜빡여 줄 명령 칸 이름들   mark  화살표를 세울 자리
  *   enter  이 걸음에 들어설 때 한 번
+ *
+ * 마우스만 쓰는 사람도 자판 없이 전부 할 수 있어야 한다.
+ * 그래서 Ctrl+숫자 대신 부대 칸을, Home 대신 위쪽 [회관] 단추를 함께 일러 준다.
  */
 const STEPS = [
     {
         title: "강가를 둘러본다",
-        body: "방향키나 화면 가장자리로 시점을 옮겨 보세요.\nShift 를 누르면 빠르게 갑니다. 미니맵을 눌러도 그 자리로 갑니다.",
+        body: "커서를 화면 가장자리로 가져가면 시점이 따라 옵니다.\n방향키도 같고, Shift 를 누르면 빠릅니다.\n오른쪽 아래 지도를 눌러도 그 자리로 갑니다. 휠로 당기고 물립니다.",
+        touch: "화면을 손가락으로 끌면 땅이 따라옵니다.\n두 손가락을 벌리면 가까이, 오므리면 넓게 봅니다.\n오른쪽 위 지도를 눌러도 그 자리로 갑니다.",
         goal: "시점 옮기기",
         enter: () => { camDist = 0; },
         done: () => camDist > 14
@@ -81,6 +88,7 @@ const STEPS = [
     {
         title: "주민을 고른다",
         body: "마을회관 곁의 주민(주) 하나를 왼쪽 클릭하세요.\n아래 왼쪽 칸에 그 주민의 초상과 체력이 뜹니다.",
+        touch: "화살표가 선 주민(주)을 한 번 톡 누르세요.\n아래 왼쪽 칸에 그 주민의 초상과 체력이 뜹니다.",
         goal: "주민 하나 고르기",
         mark: () => myUnits("villager")[0],
         done: () => R.selection.some((e) => e.owner === 0 && e.key === "villager")
@@ -88,26 +96,30 @@ const STEPS = [
     {
         title: "나무를 벤다",
         body: "주민을 고른 채로 나무를 오른쪽 클릭하세요.\n오른쪽 클릭은 무엇을 찍었느냐에 따라 뜻이 달라집니다 —\n땅이면 가고, 자원이면 캐고, 적이면 칩니다.",
+        touch: "주민을 고른 채로 나무를 톡 누르세요.\n고른 것이 있으면 누른 자리가 곧 명령이 됩니다 —\n땅이면 가고, 자원이면 캐고, 적이면 칩니다.",
         goal: "주민에게 나무를 캐게 하기",
         mark: () => nearResource("wood"),
         done: () => gathering("wood")
     },
     {
         title: "여럿을 한꺼번에",
-        body: "빈 땅에서 왼쪽 단추를 누른 채 끌면 상자가 생깁니다.\n상자 안의 내 유닛이 한꺼번에 골라집니다. 주민 둘 이상을 골라 보세요.",
-        goal: "상자로 둘 이상 고르기",
+        body: "빈 땅에서 왼쪽 단추를 누른 채 끌면 상자가 생깁니다.\n상자 안의 내 유닛이 한꺼번에 골라집니다. 주민 둘 이상을 골라 보세요.\n주민 하나를 두 번 클릭해도 화면 안의 주민을 전부 고릅니다.",
+        touch: "빈 땅을 잠깐 누르고 있으면 상자가 생깁니다.\n그대로 끌면 상자 안의 내 유닛이 한꺼번에 골라집니다.\n주민 하나를 두 번 톡 해도 화면 안의 주민을 전부 고릅니다.",
+        goal: "둘 이상 고르기",
         done: () => R.selection.filter((e) => e.owner === 0 && e.key).length >= 2
     },
     {
         title: "먹을 것을 모은다",
         body: "고른 주민들에게 덤불(식)을 오른쪽 클릭하세요.\n들판의 사슴도 식량입니다. 쓰러뜨리면 그 자리가 식량이 됩니다.",
+        touch: "고른 주민들로 덤불(식)을 톡 누르세요.\n들판의 사슴도 식량입니다. 쓰러뜨리면 그 자리가 식량이 됩니다.",
         goal: "식량 캐기",
         mark: () => nearResource("food"),
         done: () => gathering("food")
     },
     {
         title: "집을 짓는다",
-        body: "인구가 차면 아무도 못 뽑습니다. 집 한 채가 인구를 넷 늘립니다.\n주민을 고르고 [짓기] → [집] 을 누른 뒤, 빈 땅을 왼쪽 클릭해 자리를 잡으세요.\n초록이면 지을 수 있고 빨강이면 못 짓습니다. Esc 로 물립니다.",
+        body: "인구가 차면 아무도 못 뽑습니다. 집 한 채가 인구를 넷 늘립니다.\n주민을 고르고 [짓기] → [집] 을 누른 뒤, 빈 땅을 왼쪽 클릭해 자리를 잡으세요.\n초록이면 지을 수 있고 빨강이면 못 짓습니다. 오른쪽 클릭으로 물립니다.",
+        touch: "인구가 차면 아무도 못 뽑습니다. 집 한 채가 인구를 넷 늘립니다.\n주민을 고르고 [짓기] → [집] 을 누른 뒤, 빈 땅을 톡 눌러 자리를 잡으세요.\n초록이면 지을 수 있고 빨강이면 못 짓습니다. [취소] 로 물립니다.",
         goal: "집 자리 잡기",
         point: ["짓기", "집"],
         done: () => myBuildings("house").length > 0
@@ -121,7 +133,8 @@ const STEPS = [
     },
     {
         title: "주민을 더 뽑는다",
-        body: "Home 을 누르면 마을회관으로 갑니다.\n마을회관을 고르고 [주민] 을 누르세요. 주민이 많을수록 마을이 빨리 큽니다.\n`.` 을 누르면 놀고 있는 주민을 찾아 줍니다.",
+        body: "위쪽 [회관] 단추(또는 Home)를 누르면 마을회관으로 갑니다.\n마을회관을 고르고 [주민] 을 누르세요. 주민이 많을수록 마을이 빨리 큽니다.\n[노는 주민] 단추는 놀고 있는 주민을 찾아 줍니다.",
+        touch: "위쪽 [회관] 단추를 누르면 마을회관으로 갑니다.\n마을회관을 고르고 [주민] 을 누르세요. 주민이 많을수록 마을이 빨리 큽니다.\n[노는 주민] 단추는 놀고 있는 주민을 찾아 줍니다.",
         goal: "주민 뽑기",
         point: ["주민"],
         enter: (s) => { s.base = myUnits("villager").length; },
@@ -143,8 +156,9 @@ const STEPS = [
     },
     {
         title: "부대로 묶는다",
-        body: "병사를 고르고 Ctrl+1 을 누르면 1번 부대가 됩니다.\n나중에 1 만 눌러도 그들이 돌아옵니다. 두 번 누르면 그 자리로 시점이 갑니다.",
-        goal: "Ctrl+1 로 묶기",
+        body: "병사를 고르고, 왼쪽 아래 부대 칸의 [1] 을 누르세요 (Ctrl+1 도 같습니다).\n다음부터는 [1] 만 눌러도 그들이 돌아옵니다. 이어서 또 누르면 그 자리로 갑니다.\n다시 묶으려면 그 칸을 길게 누르거나 오른쪽 클릭하세요.",
+        touch: "병사를 고르고, 왼쪽 아래 부대 칸의 [1] 을 톡 누르세요.\n다음부터는 [1] 만 눌러도 그들이 돌아옵니다. 이어서 또 누르면 그 자리로 갑니다.\n다시 묶으려면 그 칸을 길게 누르세요.",
+        goal: "1번 부대로 묶기",
         done: () => (R.groups["1"] || []).some((e) => e.alive)
     },
     {
@@ -164,7 +178,12 @@ function grab() {
     Object.assign(el, {
         panel: id("tutPanel"), num: id("tutNum"), title: id("tutTitle"),
         body: id("tutBody"), goal: id("tutGoal"), goalText: id("tutGoalText"),
-        skip: id("tutSkip")
+        skip: id("tutSkip"), head: id("tutHead"), fold: id("tutFold")
+    });
+    // 제목 줄을 누르면 접힌다 (좁은 화면에서 땅을 더 보려고)
+    el.head.addEventListener("click", () => {
+        const mini = el.panel.classList.toggle("mini");
+        el.fold.textContent = mini ? "▸" : "▾";
     });
     el.skip.addEventListener("click", () => {
         if (R.tutorial.step >= STEPS.length) endTutorial(false);
@@ -177,7 +196,8 @@ function paint() {
     if (!s) return;
     el.num.textContent = `${R.tutorial.step + 1} / ${STEPS.length}`;
     el.title.textContent = s.title;
-    el.body.textContent = s.body;
+    el.body.textContent = (INPUT.touch && s.touch) ? s.touch : s.body;
+    paintedTouch = INPUT.touch;
     el.goalText.textContent = s.goal;
     el.goal.classList.remove("done");
     el.skip.textContent = "이 걸음 건너뛰기";
@@ -351,6 +371,9 @@ export function updateTutorial(dt) {
     lastCam = { x: cameraTarget.x, z: cameraTarget.z };
 
     if (R.tutorial.step >= STEPS.length) return;   // 끝난 화면을 띄워 둔 상태
+
+    // 마우스를 쥐었다 손가락으로 바꿔도 문구가 맞게 따라온다
+    if (paintedTouch !== INPUT.touch && doneTimer <= 0) paint();
 
     if (doneTimer > 0) {
         doneTimer -= dt;

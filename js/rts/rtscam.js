@@ -5,7 +5,9 @@
  * 화면 가장자리 · 방향키 · 미니맵으로 움직이고, 시점은 절대 돌지 않는다.
  */
 import { VIEW_SIZE } from "../config.js";
+import { resizeRenderer } from "../renderer.js";
 import { G, cameraOffset, cameraTarget, keys } from "../state.js";
+import { INPUT } from "./input.js";
 import { MAP_R } from "./units.js";
 import { clamp } from "./util.js";
 
@@ -21,6 +23,18 @@ export const CAM = {
 /** 등각 화면에서의 "오른쪽" 과 "위쪽" 을 월드 방향으로 */
 const RIGHT = new THREE.Vector3(1, 0, -1).normalize();
 const UP = new THREE.Vector3(-1, 0, -1).normalize();
+
+/** 확대 · 축소. 값이 작을수록 가까이 본다. */
+export const ZOOM = { min: 13, max: 40 };
+
+export function setZoom(view) {
+    G.viewSize = clamp(view, ZOOM.min, ZOOM.max);
+    resizeRenderer();
+}
+
+export function zoomBy(factor) {
+    setZoom((G.viewSize || VIEW_SIZE) * factor);
+}
 
 export function centerCamera(x, z) {
     cameraTarget.set(x, 0.6, z);
@@ -41,8 +55,8 @@ export function updateRtsCamera(dt, blockEdge = false) {
     if (keys.has("ArrowRight")) mx += 1;
     if (keys.has("ArrowLeft")) mx -= 1;
 
-    // 화면 가장자리 스크롤
-    if (!blockEdge && CAM.inWindow) {
+    // 화면 가장자리 스크롤 (마우스일 때만. 손가락은 화면을 끌어서 옮긴다)
+    if (!blockEdge && CAM.inWindow && !INPUT.touch) {
         if (CAM.mouseX < CAM.edge) mx -= 1;
         else if (CAM.mouseX > window.innerWidth - CAM.edge) mx += 1;
         if (CAM.mouseY < CAM.edge) my += 1;

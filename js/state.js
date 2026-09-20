@@ -11,6 +11,7 @@
 export const G = {
     // --- Three.js 핵심 ---
     renderer: null,
+    viewSize: 0,     // 등각 시야 크기 (확대/축소가 바꾼다. 0 이면 config 의 기본값)
     camera: null,
     isoCamera: null,
     fpvCamera: null,

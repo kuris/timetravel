@@ -7,7 +7,7 @@
  *
  * 명령 칸은 여섯 칸 두 줄이고, 단축키는 Q W E R T Y / A S D F G H 다.
  */
-import { VIEW_SIZE } from "../config.js";
+import { viewSize } from "../renderer.js";
 import { G, cameraTarget } from "../state.js";
 
 import { AGE_NAME, AGE_UP, BUILDINGS, RES_NAME, TEAM, UNITS } from "./defs.js";
@@ -39,6 +39,7 @@ export function initHud(handlers) {
         queueList: id("queueList"), progWrap: id("progWrap"),
         progFill: id("progFill"), progText: id("progText"),
         mini: id("rtsMinimap"), tip: id("hoverTip"), selRect: id("selRect"),
+        groupBar: id("groupBar"), selClear: id("selClear"),
         overlay: id("overOverlay"), overTitle: id("overTitle"), overSub: id("overSub"),
         overText: id("overText"), overBtn: id("overBtn"), overBtn2: id("overBtn2"),
         flash: id("flash")
@@ -61,7 +62,77 @@ export function initHud(handlers) {
     el.mini.addEventListener("pointermove", handlers.minimapMove);
     el.mini.addEventListener("contextmenu", (e) => e.preventDefault());
 
+    initGroupBar(handlers);
+    initQuickBar(handlers);
     bakeMinimapTerrain();
+}
+
+/* ------------------------------------------------------- 부대 칸 (1~4) */
+
+/**
+ * Ctrl+숫자 없이도 부대를 묶을 수 있어야 한다 (마우스만, 손가락만 쓰는 사람).
+ *   빈 칸을 누르면   고른 것을 그 번호로 묶는다
+ *   찬 칸을 누르면   그 부대를 부른다 (두 번 누르면 그 자리로 간다)
+ *   길게 누르거나 오른쪽 클릭하면  고른 것으로 다시 묶는다
+ */
+const GROUP_KEYS = ["1", "2", "3", "4"];
+let groupHold = 0;
+
+function initGroupBar(handlers) {
+    el.groupCells = [];
+    for (const k of GROUP_KEYS) {
+        const b = document.createElement("button");
+        b.className = "grp empty";
+        b.innerHTML = `<span class="gn">${k}</span><span class="gc"></span>`;
+
+        const bind = () => { handlers.bindGroup(k); R.dirty.sel = true; };
+        b.addEventListener("contextmenu", (e) => { e.preventDefault(); bind(); });
+        b.addEventListener("pointerdown", (e) => {
+            if (e.button === 2) return;
+            groupHold = setTimeout(bind, 550);     // 길게 누르면 다시 묶는다
+        });
+        const stop = () => clearTimeout(groupHold);
+        b.addEventListener("pointerup", stop);
+        b.addEventListener("pointerleave", stop);
+        b.addEventListener("pointercancel", stop);
+        b.addEventListener("click", () => {
+            clearTimeout(groupHold);
+            handlers.useGroup(k);
+        });
+
+        el.groupBar.appendChild(b);
+        el.groupCells.push(b);
+    }
+}
+
+/** 부대 칸의 겉모습을 지금 상태에 맞춘다 */
+function refreshGroupBar() {
+    if (!el.groupCells) return;
+    GROUP_KEYS.forEach((k, i) => {
+        const live = (R.groups[k] || []).filter((e) => e.alive);
+        const cell = el.groupCells[i];
+        cell.className = "grp" + (live.length ? "" : " empty");
+        cell.children[1].textContent = live.length || "";
+        cell.title = live.length
+            ? `${k}번 부대 (${live.length}) — 누르면 부른다. 길게 누르면 다시 묶는다`
+            : `${k}번 부대 — 고른 것을 여기 묶는다`;
+    });
+}
+
+/* --------------------------------------------------- 빠른 단추 (상단) */
+
+function initQuickBar(handlers) {
+    const on = (id, fn) => {
+        const b = document.getElementById(id);
+        if (b) b.addEventListener("click", fn);
+    };
+    on("qbHome", handlers.goHome);
+    on("qbIdle", handlers.findIdle);
+    on("qbEvent", handlers.goEvent);
+    on("qbTut", handlers.toggleTutorial);
+    on("zoomIn", () => handlers.zoom(1 / 1.18));
+    on("zoomOut", () => handlers.zoom(1.18));
+    if (el.selClear) el.selClear.addEventListener("click", handlers.clearSelection);
 }
 
 /* ------------------------------------------------------------------ 명령 */
@@ -222,7 +293,10 @@ function updateSelectionPanel() {
         }
     }
 
+    refreshGroupBar();
+
     const first = sel[0];
+    if (el.selClear) el.selClear.style.display = sel.length ? "block" : "none";
     if (!first) {
         el.portGlyph.textContent = "—";
         el.portName.textContent = "—";
@@ -435,10 +509,11 @@ export function drawMinimap(dt) {
 
     // 지금 보고 있는 자리
     const aspect = window.innerWidth / window.innerHeight;
+    const view = viewSize();
     const uc = (cameraTarget.x - cameraTarget.z) * Math.SQRT1_2;
     const vc = -(cameraTarget.x + cameraTarget.z) * Math.SQRT1_2;
-    const hw = (VIEW_SIZE * aspect * 0.5) * sx;
-    const hh = ((VIEW_SIZE * 0.5) / ISO_SQUASH) * sy;
+    const hw = (view * aspect * 0.5) * sx;
+    const hh = ((view * 0.5) / ISO_SQUASH) * sy;
     ctx.strokeStyle = "rgba(240,225,190,0.85)";
     ctx.lineWidth = 1;
     ctx.strokeRect(W / 2 + uc * sx - hw, H / 2 - vc * sy - hh, hw * 2, hh * 2);

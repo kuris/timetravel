@@ -3,7 +3,11 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#1a1008" />
     <title>시간유적 — 한국사 실시간 전략</title>
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="css/rts.css" />
@@ -27,6 +31,20 @@
             <div class="res" title="금"><span class="ico gold"></span><b id="vGold">0</b></div>
             <div class="res" title="인구"><span class="ico pop"></span><b id="vPop">0/0</b></div>
             <div class="res-gap"></div>
+            <div id="quickBar">
+                <button class="qb" id="qbHome" title="마을회관으로 (Home)">
+                    <span class="ic">⌂</span><span class="tx">회관</span>
+                </button>
+                <button class="qb" id="qbIdle" title="놀고 있는 주민 찾기 (.)">
+                    <span class="ic">주</span><span class="tx">노는 주민</span>
+                </button>
+                <button class="qb" id="qbEvent" title="마지막 사건이 일어난 자리로 (Space)">
+                    <span class="ic">!</span><span class="tx">사건</span>
+                </button>
+                <button class="qb" id="qbTut" title="안내 열고 닫기 (F1)">
+                    <span class="ic">?</span><span class="tx">안내</span>
+                </button>
+            </div>
             <div class="res" id="ageBadge">신석기 시대</div>
             <div class="res" id="clock">0:00</div>
         </div>
@@ -56,12 +74,14 @@
                     <div id="portrait"><span id="portGlyph">—</span></div>
                     <div id="portInfo">
                         <div id="portName">—</div>
+                        <button id="selClear" title="선택 해제 (Esc)">✕</button>
                         <div id="portOwner"></div>
                         <div id="portHp"><i id="portHpFill"></i></div>
                         <div id="portStats"></div>
                     </div>
                 </div>
                 <div id="selGrid"></div>
+                <div id="groupBar" title="부대 칸 — 비어 있으면 묶고, 차 있으면 부른다"></div>
             </div>
 
             <div id="panelMid">
@@ -74,7 +94,11 @@
 
             <div id="panelRight">
                 <canvas id="rtsMinimap" width="236" height="166"></canvas>
-                <div id="miniLabel">주 변 지 도</div>
+                <div id="miniRow">
+                    <button class="zb" id="zoomOut" title="넓게 보기 (휠 · 두 손가락)">－</button>
+                    <div id="miniLabel">주 변 지 도</div>
+                    <button class="zb" id="zoomIn" title="가까이 보기 (휠 · 두 손가락)">＋</button>
+                </div>
             </div>
         </div>
 

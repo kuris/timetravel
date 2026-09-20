@@ -88,7 +88,9 @@ function updatePings(dt) {
         e.life -= dt;
         const k = e.life / e.max;
         e.group.scale.setScalar(1 + (1 - k) * 1.6);
-        e.group.children[0].material.opacity = Math.max(0, k);
+        // 표시는 고리 하나(Mesh)일 수도, 묶음(Group)일 수도 있다
+        const mesh = e.group.isMesh ? e.group : e.group.children[0];
+        if (mesh && mesh.material) mesh.material.opacity = Math.max(0, k);
         if (e.life <= 0) {
             disposeObj(e.group);
             R.effects.splice(i, 1);

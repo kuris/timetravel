@@ -433,7 +433,13 @@
 }
 
 #overBox {
+    /* 세로가 짧은 화면(가로로 든 전화기)에서도 단추가 반드시 보여야 한다.
+       글만 스스로 밀리고, 단추는 상자 아래에 붙어 있는다. */
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
     width: min(560px, 86vw);
+    max-height: 92vh;
     padding: 26px 30px 24px;
     text-align: center;
     border: 2px solid var(--brass);
@@ -456,12 +462,19 @@
 }
 
 #overBox p {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
     white-space: pre-line;
     font-size: 13px;
     line-height: 1.9;
     text-align: left;
     margin: 18px 0 20px;
     color: var(--ink);
+}
+
+#overBtns {
+    flex: 0 0 auto;
 }
 
 #overBtn {
@@ -489,7 +502,9 @@
     flex-direction: column;
     gap: 6px;
     padding: 9px 11px 10px;
-    pointer-events: auto;
+    /* 글이 땅을 가리기만 하고 막지는 않는다 —
+       좁은 화면에서는 안내 칸 아래의 땅도 눌러야 하기 때문이다. */
+    pointer-events: none;
     background: linear-gradient(180deg, rgba(58, 38, 20, 0.93), rgba(18, 11, 6, 0.95));
     border: 1px solid var(--brass-lo);
     border-left: 3px solid var(--brass);
@@ -512,8 +527,40 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    padding: 2px 0;
+    font-family: inherit;
     font-size: 10px;
     color: var(--ink-dim);
+    background: none;
+    border: 0;
+    border-bottom: 1px solid rgba(109, 78, 36, 0.4);
+    cursor: pointer;
+    pointer-events: auto;
+    text-shadow: 1px 1px 0 #170d05;
+}
+
+#tutHead:hover {
+    color: var(--ink);
+}
+
+#tutFold {
+    color: var(--brass);
+}
+
+/* 접으면 제목 줄만 남는다 */
+#tutPanel.mini #tutTitle,
+#tutPanel.mini #tutBody,
+#tutPanel.mini #tutGoal,
+#tutPanel.mini #tutSkip {
+    display: none;
+}
+
+#tutPanel.mini {
+    width: auto;
+    gap: 0;
+    padding: 5px 9px;
 }
 
 #tutMark {
@@ -564,6 +611,7 @@
 
 #tutSkip {
     align-self: flex-end;
+    pointer-events: auto;
     font-family: inherit;
     font-size: 10px;
     letter-spacing: 1px;
@@ -625,4 +673,452 @@
 
 #overBtn2.hide {
     display: none;
+}
+
+/* ------------------------------------------- 상단 빠른 단추 (자판 없이) */
+#quickBar {
+    display: flex;
+    gap: 4px;
+    margin-right: 6px;
+}
+
+.qb {
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    color: var(--ink-dim);
+    background: rgba(0, 0, 0, 0.32);
+    border: 1px solid var(--brass-lo);
+    cursor: pointer;
+    text-shadow: 1px 1px 0 #170d05;
+    white-space: nowrap;
+}
+
+.qb:hover {
+    color: var(--brass-hi);
+    border-color: var(--brass);
+}
+
+.qb:active {
+    transform: translateY(1px);
+}
+
+/* 넓은 화면에서는 글자로, 좁은 화면에서는 글자 하나로 */
+.qb .ic {
+    display: none;
+}
+
+/* --------------------------------------------------------- 부대 칸 */
+#groupBar {
+    display: flex;
+    gap: 3px;
+    margin-top: 2px;
+}
+
+.grp {
+    position: relative;
+    flex: 1;
+    height: 22px;
+    font-family: inherit;
+    color: var(--ink);
+    background: linear-gradient(170deg, #5a3f24, #2a1a0c);
+    border: 1px solid var(--brass-lo);
+    cursor: pointer;
+    padding: 0;
+}
+
+.grp:hover {
+    border-color: var(--brass-hi);
+}
+
+.grp.empty {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(109, 78, 36, 0.45);
+}
+
+.grp .gn {
+    font-size: 11px;
+    color: var(--brass-hi);
+}
+
+.grp.empty .gn {
+    color: var(--ink-dim);
+}
+
+.grp .gc {
+    position: absolute;
+    right: 2px;
+    top: 1px;
+    font-size: 8px;
+    line-height: 1;
+    color: var(--ink-dim);
+}
+
+/* ------------------------------------------------------ 선택 해제 */
+#portInfo {
+    position: relative;
+}
+
+#selClear {
+    position: absolute;
+    top: -2px;
+    right: 0;
+    display: none;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    font-family: inherit;
+    font-size: 11px;
+    line-height: 1;
+    color: var(--ink-dim);
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--brass-lo);
+    cursor: pointer;
+}
+
+#selClear:hover {
+    color: var(--brass-hi);
+    border-color: var(--brass);
+}
+
+/* --------------------------------------------------- 확대 · 축소 */
+/* 확대 · 축소 단추는 지도의 아래 모서리에 겹쳐 둔다.
+   조작판 높이가 정해져 있어 지도 아래에는 한 줄도 더 들어가지 않는다. */
+#panelRight {
+    position: relative;
+}
+
+#miniRow {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    bottom: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    pointer-events: none;
+}
+
+.zb {
+    pointer-events: auto;
+}
+
+#miniLabel {
+    text-shadow: 1px 1px 2px #000, 0 0 4px #000;
+}
+
+.zb {
+    width: 24px;
+    height: 18px;
+    padding: 0;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1;
+    color: var(--ink);
+    background: linear-gradient(170deg, #5a3f24, #2a1a0c);
+    border: 1px solid var(--brass-lo);
+    cursor: pointer;
+}
+
+.zb:hover {
+    border-color: var(--brass-hi);
+    color: var(--brass-hi);
+}
+
+/* ================================================================
+   좁은 화면 · 손가락 조작
+   조작판을 줄이고, 지도를 화면 모서리로 띄운다.
+   ================================================================ */
+
+/* 손가락에는 hover 가 없다. 대신 누르는 곳을 키운다. */
+@media (pointer: coarse) {
+
+    .cmd,
+    .qb,
+    .grp,
+    .zb,
+    #tutSkip {
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+    }
+
+    .qb {
+        font-size: 12px;
+        padding: 4px 10px;
+    }
+
+    .zb {
+        width: 34px;
+        height: 26px;
+        font-size: 15px;
+    }
+
+    .grp {
+        height: 28px;
+    }
+}
+
+@media (max-width: 1080px) {
+    #panelLeft {
+        width: 200px;
+    }
+
+    #panelRight {
+        width: 190px;
+    }
+
+    #rtsMinimap {
+        width: 180px;
+        height: 126px;
+    }
+
+    #cmdGrid {
+        grid-template-columns: repeat(6, 64px);
+    }
+}
+
+/* 조작판이 더는 한 줄에 들어가지 않는다 — 지도를 화면 오른쪽 위로 올린다 */
+@media (max-width: 860px),
+(max-height: 520px) {
+    #rtsUi {
+        font-size: 12px;
+    }
+
+    /* 노치와 둥근 모서리를 피한다 (가로로 든 전화기) */
+    #resBar {
+        padding-left: max(8px, env(safe-area-inset-left));
+        padding-right: max(8px, env(safe-area-inset-right));
+    }
+
+    #cmdBar {
+        padding-left: max(3px, env(safe-area-inset-left));
+        padding-right: max(3px, env(safe-area-inset-right));
+    }
+
+    #tutPanel {
+        left: max(8px, env(safe-area-inset-left));
+    }
+
+    #panelRight {
+        right: max(6px, env(safe-area-inset-right));
+    }
+
+    #resBar {
+        height: 26px;
+        gap: 8px;
+        padding: 0 8px;
+        font-size: 12px;
+    }
+
+    #resBar .res {
+        font-size: 12px;
+        gap: 4px;
+    }
+
+    #clock,
+    #miniLabel {
+        display: none;
+    }
+
+    #cmdBar {
+        height: 112px;
+        gap: 3px;
+        padding: 3px;
+    }
+
+    #panelLeft {
+        width: 120px;
+        padding: 3px;
+    }
+
+    #portrait {
+        width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
+        font-size: 20px;
+    }
+
+    #portName {
+        font-size: 12px;
+    }
+
+    #portStats,
+    #portOwner {
+        font-size: 10px;
+        line-height: 1.35;
+    }
+
+    #selGrid {
+        display: none;
+    }
+
+    #panelLeft {
+        justify-content: space-between;
+    }
+
+    #groupBar {
+        flex: 0 0 auto;
+    }
+
+    #cmdGrid {
+        grid-template-columns: repeat(6, minmax(40px, 58px));
+        gap: 3px;
+    }
+
+    .cmd .g {
+        font-size: 15px;
+    }
+
+    .cmd .n {
+        font-size: 9px;
+    }
+
+    .cmd .k {
+        display: none;
+    }
+
+    /* 지도는 조작판에서 빠져나와 화면 오른쪽 위에 뜬다.
+       (#cmdBar 안에 있으니 absolute 가 아니라 fixed 여야 화면 기준이 된다) */
+    #panelRight {
+        position: fixed;
+        right: 6px;
+        top: 30px;
+        width: auto;
+        background: rgba(12, 8, 4, 0.72);
+        pointer-events: auto;
+    }
+
+    #rtsMinimap {
+        width: 132px;
+        height: 92px;
+    }
+
+    #eventLog {
+        width: 46vw;
+        bottom: 120px;
+        font-size: 11px;
+    }
+
+    #tutPanel {
+        width: min(300px, 52vw);
+        top: 30px;
+        padding: 7px 9px 8px;
+    }
+
+    #tutBody {
+        font-size: 11px;
+        line-height: 1.6;
+    }
+
+    #tutTitle {
+        font-size: 13px;
+    }
+
+    #bigMsg {
+        font-size: 18px;
+        letter-spacing: 1px;
+    }
+
+    #overBox {
+        width: min(560px, 94vw);
+        max-height: 94vh;
+        padding: 12px 16px;
+    }
+
+    #overBox h1 {
+        font-size: 22px;
+        letter-spacing: 4px;
+    }
+
+    #overBox p {
+        font-size: 12px;
+        line-height: 1.7;
+        margin: 12px 0 14px;
+    }
+}
+
+/* 세로가 짧은 화면 (가로로 든 전화기) — 능력치까지 넣을 자리는 없다 */
+@media (max-height: 470px) {
+    #portStats {
+        display: none;
+    }
+
+    #tutPanel {
+        max-height: 58vh;
+        overflow-y: auto;
+    }
+}
+
+/* 아주 좁은 화면 (세로로 든 전화기) */
+@media (max-width: 620px) {
+
+    /* 단추는 글자 하나로 줄인다. 자리가 없다. */
+    .qb .tx {
+        display: none;
+    }
+
+    .qb .ic {
+        display: inline;
+        font-size: 13px;
+        line-height: 1;
+    }
+
+    #quickBar .qb {
+        padding: 4px 7px;
+    }
+
+    #quickBar {
+        gap: 3px;
+        margin-right: 4px;
+    }
+
+    #resBar {
+        gap: 5px;
+        padding: 0 5px;
+    }
+
+    #resBar .res {
+        font-size: 11px;
+        gap: 3px;
+    }
+
+    #ageBadge {
+        padding: 1px 5px;
+        font-size: 11px;
+    }
+
+    #cmdBar {
+        height: 96px;
+    }
+
+    #panelLeft {
+        width: 86px;
+    }
+
+    #portInfo {
+        display: none;
+    }
+
+    #groupBar {
+        flex-wrap: wrap;
+    }
+
+    #cmdGrid {
+        grid-template-columns: repeat(6, minmax(34px, 1fr));
+    }
+
+    .cmd .n {
+        font-size: 8px;
+    }
+
+    #tutPanel {
+        width: min(280px, 62vw);
+    }
+
+    #eventLog {
+        bottom: 104px;
+        width: 54vw;
+    }
 }
