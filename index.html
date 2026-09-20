@@ -3,14 +3,9 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#1a1008" />
-    <title>시간유적 — 한국사 실시간 전략</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>시간유적 — 한국사 탐험 어드벤처</title>
     <link rel="stylesheet" href="css/style.css" />
-    <link rel="stylesheet" href="css/rts.css" />
 </head>
 
 <body>
@@ -22,118 +17,142 @@
     <div id="vignette"></div>
     <div id="bezel"></div>
 
-    <div id="rtsUi">
-        <!-- 상단: 자원 -->
-        <div id="resBar">
-            <div class="res" title="식량"><span class="ico food"></span><b id="vFood">0</b></div>
-            <div class="res" title="나무"><span class="ico wood"></span><b id="vWood">0</b></div>
-            <div class="res" title="돌"><span class="ico stone"></span><b id="vStone">0</b></div>
-            <div class="res" title="금"><span class="ico gold"></span><b id="vGold">0</b></div>
-            <div class="res" title="인구"><span class="ico pop"></span><b id="vPop">0/0</b></div>
-            <div class="res-gap"></div>
-            <div id="quickBar">
-                <button class="qb" id="qbHome" title="마을회관으로 (Home)">
-                    <span class="ic">⌂</span><span class="tx">회관</span>
-                </button>
-                <button class="qb" id="qbIdle" title="놀고 있는 주민 찾기 (.)">
-                    <span class="ic">주</span><span class="tx">노는 주민</span>
-                </button>
-                <button class="qb" id="qbEvent" title="마지막 사건이 일어난 자리로 (Space)">
-                    <span class="ic">!</span><span class="tx">사건</span>
-                </button>
-                <button class="qb" id="qbTut" title="안내 열고 닫기 (F1)">
-                    <span class="ic">?</span><span class="tx">안내</span>
-                </button>
-                <button class="qb" id="qbFpv" title="1인칭으로 둘러보기 (V)">
-                    <span class="ic">👁</span><span class="tx">1인칭</span>
-                </button>
+    <div id="ui">
+        <!-- 좌측 상단: 시대 / 목표 / 진행 -->
+        <div id="topLeft" class="panel">
+            <div id="title">시간유적</div>
+            <div id="titleRule"></div>
+            <div class="stat">현재 시대: <b id="eraText">-</b></div>
+            <div class="stat">현재 목표: <b id="objectiveText">-</b></div>
+            <div class="stat">유물 조사: <b id="countText">0 / 0</b></div>
+            <div class="stat">하늘: <b id="weatherText">-</b></div>
+            <div id="weatherControls">
+                <button id="timeBtn" class="mini-btn" title="시간대 변경 (T)">[T] 시간 변경</button>
+                <button id="weatherBtn" class="mini-btn" title="날씨 변경 (Y)">[Y] 날씨 변경</button>
             </div>
-            <div class="res" id="ageBadge">신석기 시대</div>
-            <div class="res" id="clock">0:00</div>
         </div>
 
-        <!-- 사건 기록 -->
-        <div id="eventLog"></div>
-
-        <!-- 가운데 큰 안내 -->
-        <div id="bigMsg"></div>
-
-        <!-- 튜토리얼 -->
-        <div id="tutPanel">
-            <div id="tutHead">
-                <span id="tutMark">안 내</span>
-                <span id="tutNum">1 / 12</span>
+        <!-- 상단 중앙: 가진 것. 무엇이 모자란지 한눈에 보여야 한다 -->
+        <div id="resourceBar" class="panel">
+            <div class="res">
+                <span class="res-icon people"></span>
+                <b class="res-num" id="popText">0</b>
+                <span class="res-name">주민</span>
             </div>
-            <div id="tutTitle"></div>
-            <div id="tutBody"></div>
-            <div id="tutGoal"><i></i><span id="tutGoalText"></span></div>
-            <button id="tutSkip">이 걸음 건너뛰기</button>
+            <div class="res-sep"></div>
+            <div class="res">
+                <span class="res-icon wood"></span>
+                <b class="res-num" id="woodText">0</b>
+                <span class="res-name">나무</span>
+            </div>
+            <div class="res-sep"></div>
+            <div class="res">
+                <span class="res-icon stone"></span>
+                <b class="res-num" id="stoneText">0</b>
+                <span class="res-name">돌</span>
+            </div>
+            <div class="res-sep"></div>
+            <div class="res">
+                <span class="res-icon village"></span>
+                <b class="res-num" id="progressText">0 / 30</b>
+                <span class="res-name">발전도</span>
+            </div>
         </div>
 
-        <!-- 1인칭 -->
-        <div id="fpvBar">
-            <button class="fpvb" id="fpvBack">뒤로</button>
-            <div id="fpvHint"></div>
-            <button class="fpvb" id="fpvFwd">앞으로</button>
-            <button class="fpvb out" id="fpvOut">나가기 (V)</button>
+        <!-- 우측 상단: 조작 안내 -->
+        <div id="controls" class="panel">
+            WASD / 방향키: 이동<br>
+            Shift: 달리기<br>
+            E: 조사 / 획득 / 사용<br>
+            V: 1인칭 / 3인칭 전환<br>
+            T / Y: 시간 / 날씨 조절<br>
+            H: 이정표 (방향 안내)<br>
+            J: 탐험 일지<br>
+            마우스 클릭: 이동 / 시선 고정
         </div>
-        <div id="crosshair"></div>
 
-        <!-- 하단: 조작판 -->
-        <div id="cmdBar">
-            <div id="panelLeft">
-                <div id="portWrap">
-                    <div id="portrait"><span id="portGlyph">—</span></div>
-                    <div id="portInfo">
-                        <div id="portName">—</div>
-                        <button id="selClear" title="선택 해제 (Esc)">✕</button>
-                        <div id="portOwner"></div>
-                        <div id="portHp"><i id="portHpFill"></i></div>
-                        <div id="portStats"></div>
-                    </div>
-                </div>
-                <div id="selGrid"></div>
-                <div id="groupBar" title="부대 칸 — 비어 있으면 묶고, 차 있으면 부른다"></div>
-            </div>
-
-            <div id="panelMid">
-                <div id="cmdGrid"></div>
-                <div id="queueBar">
-                    <div id="queueList"></div>
-                    <div id="progWrap"><i id="progFill"></i><span id="progText"></span></div>
-                </div>
-            </div>
-
-            <div id="panelRight">
-                <canvas id="rtsMinimap" width="236" height="166"></canvas>
-                <div id="miniRow">
-                    <button class="zb" id="zoomOut" title="넓게 보기 (휠 · 두 손가락)">－</button>
-                    <div id="miniLabel">주 변 지 도</div>
-                    <button class="zb" id="zoomIn" title="가까이 보기 (휠 · 두 손가락)">＋</button>
+        <!-- 스태미나 (전투는 없다. Shift 달리기에만 쓰인다) -->
+        <div id="statusBars">
+            <div class="status-row">
+                <span class="status-icon">⚡</span>
+                <div class="bar-wrap">
+                    <div id="staminaFill" class="bar-fill"></div>
                 </div>
             </div>
         </div>
 
-        <div id="hoverTip"></div>
+        <!-- 미니맵: 등각 화면과 같은 방향으로 회전해서 그린다 -->
+        <div id="minimapPanel" class="panel">
+            <canvas id="minimap" width="146" height="146"></canvas>
+            <div id="minimapLabel">주 변 지 도</div>
+        </div>
+
+        <!-- 힌트 버튼: 누르면 목표 방향 이정표가 나타난다 -->
+        <div id="hintBtn" class="panel">[H] 이정표</div>
+
+        <!-- 목표 방향 표시 -->
+        <div id="signpost" class="panel">
+            <div id="signArrow"></div>
+            <div>
+                <div id="signText">-</div>
+                <div id="signDist">-</div>
+            </div>
+        </div>
+
+        <div id="crosshair" class="hidden"></div>
+        <div id="prompt" class="hidden">[E] 조사</div>
+        <div id="message" class="panel">불러오는 중...</div>
+
+        <!-- 인벤토리: 유물 5칸 + 일지 버튼 -->
+        <div id="inventory">
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <button id="journalBtn" class="mini-btn" title="탐험 일지 (J)">
+                📜 일지 <span id="journalBadge"></span>
+            </button>
+        </div>
     </div>
 
-    <div id="selRect"></div>
     <div id="flash"></div>
     <div id="glitch"></div>
 
-    <!-- 시작 / 결과 화면 -->
-    <div id="overOverlay">
-        <div id="overBox">
-            <h1 id="overTitle">시간유적</h1>
-            <div class="sub" id="overSub">한국사 실시간 전략</div>
-            <p id="overText"></p>
-            <div id="overBtns">
-                <button id="overBtn">시작</button>
-                <button id="overBtn2">튜토리얼</button>
+    <!-- 탐험 일지 오버레이 -->
+    <div id="journalOverlay" tabindex="-1">
+        <div id="journalPanel" class="panel">
+            <div id="journalHeader">
+                <span>📜 탐험 일지</span>
+                <button id="journalClose" onclick="document.getElementById('journalOverlay').classList.remove('open')">✕</button>
             </div>
+            <div id="journalList"></div>
         </div>
     </div>
 
+    <!-- 선택지 대화 오버레이 -->
+    <div id="dialogueOverlay" tabindex="-1">
+        <div id="dialoguePanel" class="panel">
+            <div id="dialogueName"></div>
+            <p id="dialoguePrompt"></p>
+            <div id="dialogueChoices"></div>
+        </div>
+    </div>
+
+    <div id="completeOverlay">
+        <div id="completeBox" class="panel">
+            <h1>시간유적</h1>
+            <div class="sub">DEMO COMPLETE</div>
+            <p>신석기의 아이가 묻힌 자리를,
+여섯 시대의 사람들이 차례로 비껴갔습니다.
+
+성을 쌓을 때도, 길을 낼 때도,
+아무도 그 돌을 옮기지 않았습니다.
+
+아무도 기억하지 못했지만,
+아무도 잊지 않았습니다.</p>
+        </div>
+    </div>
     <!-- Three.js 는 전역 THREE 로 먼저 불러온다 (모듈보다 먼저 실행된다) -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 

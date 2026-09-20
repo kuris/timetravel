@@ -3,7 +3,7 @@
  */
 import { RENDER_SCALE, VIEW_SIZE } from "./config.js";
 import { initPost, postMaterial, renderTarget } from "./postprocess.js";
-import { INPUT } from "./rts/input.js";
+import { INPUT } from "./inputmode.js";
 import { G, cameraOffset } from "./state.js";
 import { dom } from "./ui.js";
 

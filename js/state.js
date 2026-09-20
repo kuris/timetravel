@@ -52,8 +52,12 @@ export const G = {
     maxStamina: 100,
 
     // --- 단서 / 일지 ---
+    // 시대를 자유로이 오가므로 셋 다 시대를 건너 누적된다.
+    // 삼국에서 주운 기와를 2000년 발굴 구덩이로 가져가는 것이 이 게임의 핵심이다.
     clues: new Set(),       // 획득한 단서 ID
     journal: [],            // { type, title, text, age } 기록
+    investigated: new Set(),// "시대index:유물이름" — 다시 찾아가도 이미 조사한 것은 그대로다
+    visitedAges: new Set(), // 한 번이라도 발 디딘 시대 (시대 고르기 화면이 쓴다)
 
     // --- 미니맵 ---
     mapShapes: [],

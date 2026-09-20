@@ -31,6 +31,20 @@ import { TEX_PALETTE, buildTextures } from "../palette.js";
 export { TEX_PALETTE, buildTextures };
 
 /**
+ * 그 시대에서 이미 조사해 둔 유물의 수.
+ *
+ * 시대를 다시 찾아가면 장면은 새로 짓지만 조사 기록은 G.investigated 에 남아 있다.
+ * 진행도는 그 기록에서 다시 세어야 한다 — 안 그러면 되돌아올 때마다 0 이 된다.
+ */
+function countInvestigated(index) {
+    let n = 0;
+    for (const key of G.investigated) {
+        if (key.startsWith(index + ":")) n++;
+    }
+    return n;
+}
+
+/**
  * 시대를 만든다.
  *
  * @param {object} opts
@@ -51,7 +65,6 @@ export function buildAge(index, opts = {}) {
     }
 
     G.currentAge = index;
-    G.ageProgress = 0;
     G.ageCompleteTriggered = false;
     G.transitioning = false;
     G.demoFinished = false;
@@ -60,9 +73,13 @@ export function buildAge(index, opts = {}) {
     G.interactables = [];
     G.npcs = [];
     G.exploredTiles = new Set();
-    G.inventory = [];
-    // fateChoice는 시대를 잇는 인과 기록이라 유지, 단서는 시대마다 초기화
-    G.clues = new Set();
+    G.visitedAges.add(index);
+
+    // 인벤토리와 단서는 시대를 건넌다. 시대를 자유로이 오가는 게임이라,
+    // 삼국에서 주운 목간을 2000년 발굴 구덩이에서 꺼내 보일 수 있어야 한다.
+    // 여기서 비우면 시간 여행이 "매번 처음부터"가 되어 버린다.
+    // (fateChoice 도 같은 이유로 유지한다)
+    G.ageProgress = countInvestigated(index);
     G.stamina = G.maxStamina;
     G.animated = [];
     G.mapShapes = [];

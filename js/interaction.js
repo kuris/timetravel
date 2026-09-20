@@ -53,8 +53,22 @@ export function registerInteractable({
         item.marker = addMapMarker(p.x, p.z, locked ? "#6090c0" : "#ffd071", 3, "artifact");
     }
 
+    // 시대를 다시 찾아왔다면, 전에 조사한 것은 조사된 채로 서 있어야 한다.
+    // 재료 노드는 시대마다 새로 돋는 것이라 제외한다.
+    if (!material && G.investigated.has(investigateKey(name))) {
+        item.done = true;
+        if (item.marker) item.marker.done = true;
+        item.glow.visible = false;
+        item.group.visible = !!item.pickup ? false : item.group.visible;
+    }
+
     G.interactables.push(item);
     return item;
+}
+
+/** 조사 기록의 열쇠. 시대와 이름을 함께 묶는다. */
+export function investigateKey(name, age = G.currentAge) {
+    return age + ":" + name;
 }
 
 export function createInteractionGlow(x, z, color) {
@@ -309,6 +323,7 @@ export function investigateObject(item) {
 
     item.done = true;
     G.ageProgress++;
+    G.investigated.add(investigateKey(item.name));
 
     if (item.marker) item.marker.done = true;
     if (item.glow) item.glow.visible = false;
