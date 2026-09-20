@@ -269,6 +269,8 @@ export function addPitHouse(x, z, rot, scale = 1) {
             depthWrite: false, roughness: 1
         })
     });
+
+    return g;
 }
 
 /** 장작더미 */
