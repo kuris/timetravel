@@ -228,7 +228,11 @@ export function addWorker(x, z, palette, opts = {}) {
         name: opts.name || "일하는 사람",
         group: g,
         lines,
-        range: 2.2
+        range: 2.2,
+        // 제자리에서 일하는 사람도 선택지 대화를 가질 수 있어야 한다.
+        // 순찰하는 사람(addVillager)만 말을 받을 이유가 없다.
+        choices: opts.choices || null,
+        greeting: opts.greeting || null
     });
 
     return g;

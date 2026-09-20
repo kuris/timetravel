@@ -5,6 +5,7 @@
  * 각 선택지는 { text, response, clue?, journal? } 형태.
  */
 import { G } from "./state.js";
+import { AGE_DATA, ERA_OPENED_BY } from "./config.js";
 import { addJournalEntry } from "./journal.js";
 import { AudioSystem } from "./audio.js";
 import { showMessage } from "./ui.js";
@@ -63,7 +64,19 @@ function selectChoice(choice) {
     // 단서 획득
     if (choice.clue && !G.clues.has(choice.clue)) {
         G.clues.add(choice.clue);
-        showMessage("🔍 새로운 단서를 얻었습니다!\n\n" + choice.response);
+
+        // 그 한마디가 시대를 열었는가.
+        // 열렸다면 바로 말해 줘야 한다 — 이 게임에서 제일 큰 보상이다.
+        let opened = "";
+        for (const idx in ERA_OPENED_BY) {
+            if (ERA_OPENED_BY[idx] !== choice.clue) continue;
+            if (G.visitedAges.has(+idx)) continue;
+            opened = "\n\n⌛ 시간의 문에 새로운 때가 비칩니다 — "
+                + AGE_DATA[+idx].name + "\n그 돌로 가면 그리로 갈 수 있습니다.";
+            addJournalEntry("system", "시간의 문", AGE_DATA[+idx].name + " 로 가는 길이 열렸습니다.");
+        }
+
+        showMessage("🔍 새로운 단서를 얻었습니다!\n\n" + choice.response + opened);
         addJournalEntry("clue", "단서: " + choice.text, choice.response);
     } else {
         showMessage("【 " + (currentNPC ? currentNPC.name : "NPC") + " 】\n\n\"" + choice.response + "\"");

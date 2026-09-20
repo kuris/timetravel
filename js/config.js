@@ -9,6 +9,20 @@ export const PLAYER_SPEED = 4.1;
 export const SPRINT_MULTIPLIER = 1.9;  // Shift 를 누르고 있을 때
 export const WORLD_LIMIT = 31;
 
+/**
+ * 단서가 여는 시대.
+ *
+ * 시간의 문은 가 본 시대와 바로 다음 시대만 보여 준다.
+ * 가 보지 않은 과거는 목록에 없다 — 누군가 그 시대를 입에 올려야 길이 생긴다.
+ * 그래서 "저 돌은 아주 옛날부터 있었대요" 같은 한마디가 실제로 문을 연다.
+ *
+ *   시대 index: 그 시대를 여는 단서 ID
+ */
+export const ERA_OPENED_BY = {
+    1: "samguk_child",  // 청동기 — 삼국의 아이가 "옛날에 저기서 밤에 모였다"고 말한다
+    0: "bronze_fate"    // 신석기 — 청동기의 제사장과 이야기하고 나면
+};
+
 export const AGE_DATA = [
     // ---------------------------------------------------------- 신석기
     {

@@ -2,18 +2,46 @@
  * advisor.js — 다음에 무엇을 할 것인가
  *
  * 빈 땅에 떨어뜨려 놓고 "알아서 하세요"라고 하면 대부분 아무것도 하지 않는다.
- * Age of Empires 의 기본 흐름을 그대로 따른다.
+ * 그리고 한 번 "뭘 해야 하지?" 하고 멈추면 대개 거기서 그만둔다.
  *
- *   재료를 모은다 → 집을 세운다 → 창고 · 망루 · 제단으로 마을을 갖춘다
- *   → 발전도가 차면 시간의 문이 열리고 다음 시대로 넘어간다
+ * 그래서 이 줄은 언제나 **지금 당장 할 수 있는 일 하나**를 가리킨다.
+ * 순서는 궁금한 것부터다.
  *
- * 여기서는 그 순서를 한 줄로 일러 주기만 한다. 강제하지는 않는다.
- * 무엇을 지을지는 여전히 플레이어가 고른다.
+ *   말을 걸 사람 → 아직 못 본 흔적 → 열린 시간의 문
+ *
+ * 마을 짓기는 맨 뒤다. 하고 싶으면 하는 것이지, 시대를 넘는 조건이 아니다.
+ * 나무를 베라는 말이 이 게임의 첫 문장이 되어서는 안 된다.
  */
+import { AGE_DATA } from "./config.js";
 import { isGuarded, raidActive } from "./raid.js";
 import { G, progressGoal } from "./state.js";
 import { josa } from "./ui.js";
 import { BUILDING_TYPES } from "./village.js";
+
+/** 플레이어에게서 그것까지의 거리 */
+function distTo(obj) {
+    if (!G.player || !obj) return Infinity;
+    const p = obj.position || (obj.group && obj.group.position);
+    if (!p) return Infinity;
+    return Math.hypot(p.x - G.player.position.x, p.z - G.player.position.z);
+}
+
+/** 어느 쪽인지 말로 일러 준다. 화살표가 없어도 걸어갈 수 있어야 한다. */
+function bearing(obj) {
+    if (!G.player || !obj) return "";
+    const p = obj.position || (obj.group && obj.group.position);
+    if (!p) return "";
+    const dx = p.x - G.player.position.x;
+    const dz = p.z - G.player.position.z;
+    // 등각 화면이라 월드 축을 45도 돌려야 "화면에서 오른쪽"이 된다
+    const u = (dx - dz) * Math.SQRT1_2;
+    const v = (dx + dz) * Math.SQRT1_2;
+    const ns = v > 0 ? "아래" : "위";
+    const ew = u > 0 ? "오른쪽" : "왼쪽";
+    if (Math.abs(u) > Math.abs(v) * 1.6) return ew;
+    if (Math.abs(v) > Math.abs(u) * 1.6) return "화면 " + ns;
+    return ew + " " + ns;
+}
 
 const LABEL = { wood: "나무", stone: "돌" };
 
@@ -78,7 +106,7 @@ export function advisorText() {
     if (G.currentAge < 0) return "길 한가운데 낯선 돌을 조사하세요";
 
     if (G.activeGate && G.activeGate.active) {
-        return "시간의 문이 열렸습니다 — 고인돌로 가서 [E]";
+        return "시간의 문이 열렸습니다 — 그 돌로 가서 [E] · 어느 때로든 갑니다";
     }
 
     if (raidActive()) {
@@ -89,6 +117,34 @@ export function advisorText() {
             : "들개가 불빛 밖에서 겉돌고 있습니다 — 곧 물러갑니다";
     }
 
+    // ---- 1. 아직 말을 걸어 보지 않은 사람 ----
+    // 사람이 제일 앞이다. 말을 걸면 무엇을 찾아야 하는지 그 사람이 알려 준다.
+    const unmet = G.npcs.filter((n) => !n.isAnimal && !n.met);
+    unmet.sort((a, b) => distTo(a) - distTo(b));
+
+    // ---- 2. 아직 보지 않은 흔적 ----
+    const unseen = G.interactables.filter((i) => !i.material && !i.done);
+    unseen.sort((a, b) => distTo(a) - distTo(b));
+
+    // 둘 다 남았으면 가까운 쪽을 권한다. 걸어가는 거리가 짧을수록 실제로 간다.
+    const person = unmet[0];
+    const trace = unseen[0];
+    const dp = distTo(person);
+    const dt = distTo(trace);
+
+    const callOut = (n) =>
+        n.name + josa(n.name, "이/가") + " " + bearing(n) + "에 있습니다 — 다가가 [E]로 말을 거세요";
+
+    if (person && dp <= dt) return callOut(person);
+    if (trace) {
+        const age = AGE_DATA[G.currentAge];
+        const left = (age.total || 3) - G.ageProgress;
+        return "아직 보지 않은 흔적이 " + left + "가지 — 가장 가까운 것은 " + bearing(trace)
+            + "입니다 ([H] 이정표)";
+    }
+    if (person) return callOut(person);
+
+    // ---- 3. 이 시대에서 볼 것을 다 봤다. 마을은 그다음이다 ----
     const type = recommendedType();
     if (!type) return "마을을 더 키우세요";
 

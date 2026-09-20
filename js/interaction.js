@@ -3,15 +3,15 @@
  */
 import { AudioSystem } from "./audio.js";
 import { addBlob, fadeGroup, makeBasicMat } from "./build.js";
-import { AGE_DATA } from "./config.js";
+import { AGE_DATA, ERA_OPENED_BY } from "./config.js";
 import { addMapMarker } from "./minimap.js";
 import { randRange } from "./rng.js";
-import { G , progressGoal } from "./state.js";
+import { G } from "./state.js";
 import { terrainHeight } from "./terrain.js";
 import { transitionToAge } from "./transition.js";
 import { addInventoryItem, dom, josa, showMessage, updateUI } from "./ui.js";
 import { addJournalEntry } from "./journal.js";
-import { openChoiceDialogue } from "./dialogue.js";
+import { closeDialogue, openChoiceDialogue } from "./dialogue.js";
 import { gatherLabel, isGathering, startGather } from "./gather.js";
 import { awakenGate } from "./gateaura.js";
 
@@ -230,21 +230,66 @@ export function tryInteract() {
         import("./village.js").then((m) => m.openBuildMenu());
     } else if (action.kind === "npc") {
         if (action.npc.choices && action.npc.choices.length > 0) {
+            action.npc.met = true;
             openChoiceDialogue(action.npc);
         } else {
             talkToNPC(action.npc);
         }
     } else if (action.kind === "gate") {
-        showMessage("고인돌 사이의 푸른빛이 화면을 삼킵니다.\n잊힌 시간의 결을 따라 다음 시대로 이동합니다.");
-        transitionToAge(G.currentAge + 1);
+        openGateChooser();
     } else if (action.kind === "inactiveGate") {
         AudioSystem.playInvestigate();
-        showMessage("돌 구조물은 아직 차갑게 잠들어 있습니다.\n마을이 더 자라야 시간의 문이 열릴 것 같습니다.\n\n발전도 " + G.progress + " / " + progressGoal());
+        const age = AGE_DATA[G.currentAge];
+        const left = Math.max(0, (age.total || 3) - G.ageProgress);
+        showMessage("돌 사이의 틈이 아직 차갑습니다.\n"
+            + "이 시대에서 아직 보지 못한 것이 " + left + "가지 남았습니다.\n"
+            + "다 보고 나면 길이 열립니다.");
     }
+}
+
+/**
+ * 시간의 문 — 어느 때로 갈 것인가.
+ *
+ * 다음 시대로 떠미는 문이 아니다. 앞으로도 뒤로도 간다.
+ * 한 번이라도 발 디딘 시대와, 바로 다음 시대만 고를 수 있다.
+ * (가 보지 않은 먼 미래가 목록에 죽 늘어서 있으면 고를 이유가 없다)
+ *
+ * 선택지 대화 UI 를 그대로 빌려 쓴다 — 문도 말을 거는 상대다.
+ */
+export function openGateChooser() {
+    const here = G.currentAge;
+    const reachable = [];
+    for (let i = 0; i < AGE_DATA.length; i++) {
+        if (i === here) continue;
+        const visited = G.visitedAges.has(i);
+        const isNext = i === here + 1;
+        const opener = ERA_OPENED_BY[i];
+        const unlocked = opener && G.clues.has(opener);
+        if (visited || isNext || unlocked) reachable.push({ i, visited });
+    }
+
+    const choices = reachable.map(({ i, visited }) => ({
+        text: AGE_DATA[i].name + (visited ? "  (가 본 적 있다)" : "  (처음이다)"),
+        response: "돌 사이의 푸른빛이 화면을 삼킵니다.",
+        followUp: "...",
+        onSelect: () => {
+            closeDialogue();
+            transitionToAge(i);
+        }
+    }));
+
+    AudioSystem.playGate();
+    openChoiceDialogue({
+        name: "시간의 문",
+        greeting: "돌 사이로 여러 때의 빛이 겹쳐 보입니다. 어느 때로 가시겠습니까?",
+        choices,
+        lines: ["..."]
+    });
 }
 
 export function talkToNPC(npc) {
     if (!G.player) return;
+    npc.met = true;
 
     // NPC가 플레이어를 바라보도록 회전
     const dx = G.player.position.x - npc.group.position.x;
@@ -363,15 +408,17 @@ export function handleAgeCompletion() {
     const age = AGE_DATA[G.currentAge];
     if (!age) return "";
 
-    // 진급 조건은 "유물 3개"가 아니라 "마을 발전도"다.
-    // 무엇을 지을지는 플레이어가 고르고, 유물은 그 재원이 된다.
-    const goal = progressGoal();
-    if (G.progress < goal || G.ageCompleteTriggered) return "";
+    // 문을 여는 것은 마을이 아니라 "본 것"이다.
+    // 이 게임에서 앞으로 나아가게 하는 힘은 집이 아니라 궁금증이어야 한다.
+    // 마을 짓기는 남겨 두되, 시대를 넘는 조건에서는 뺀다.
+    if (G.ageProgress < (age.total || 3) || G.ageCompleteTriggered) return "";
     G.ageCompleteTriggered = true;
 
     const isLast = G.currentAge >= AGE_DATA.length - 1;
 
-    if (!isLast) {
+    // 마지막 시대라도 아직 안 가 본 시대가 있으면 끝이 아니다.
+    // 시대를 자유로이 오가므로 "마지막"은 번호가 아니라 "다 봤는가"다.
+    if (!isLast || G.visitedAges.size < AGE_DATA.length) {
         activateGate();
         return (age.completeText || "흩어진 기록이 서로 맞물립니다.") +
             "\n시간의 문이 깨어났습니다.";
