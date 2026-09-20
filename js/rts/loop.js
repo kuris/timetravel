@@ -17,6 +17,7 @@ import { fogUpdate } from "./fog.js";
 import { hideOverlay, showOverlay, updateHud } from "./hud.js";
 import { updateRtsCamera } from "./rtscam.js";
 import { R } from "./state.js";
+import { updateTutorial } from "./tutorial.js";
 import { updateUnits } from "./units.js";
 import { disposeObj } from "./util.js";
 
@@ -133,6 +134,7 @@ export function rtsAnimate() {
         updateProjectiles(dt);
         updateAI(dt);
         fogUpdate(dt);
+        updateTutorial(dt);
         checkVictory();
     }
 

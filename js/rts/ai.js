@@ -170,6 +170,9 @@ export function updateAI(dt) {
 
     AI.timer -= dt;
     AI.attackTimer -= dt;
+
+    // 안내가 도는 동안에는 습격을 미룬다. 안내가 끝나도 한동안은 숨 돌릴 틈을 준다.
+    if (R.tutorial.active) AI.attackTimer = Math.max(AI.attackTimer, 45);
     if (AI.timer > 0) return;
     AI.timer = 1.0;
 

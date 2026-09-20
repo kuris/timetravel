@@ -23,6 +23,7 @@ import {
 } from "./hud.js";
 import { CAM, centerCamera, panCamera } from "./rtscam.js";
 import { R } from "./state.js";
+import { toggleTutorial } from "./tutorial.js";
 import {
     MAP_R, killUnit, orderAttack, orderBuild, orderGather, orderMove,
     orderRepair, orderStop, refreshRings
@@ -371,6 +372,13 @@ let idleIndex = 0;
 
 function handleKey(e) {
     const code = e.code;
+
+    // 안내 열고 닫기
+    if (code === "F1") {
+        toggleTutorial();
+        e.preventDefault();
+        return;
+    }
 
     if (code === "Escape") {
         if (R.placing) cancelPlacing();

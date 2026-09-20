@@ -478,3 +478,151 @@
 #overBtn:hover {
     border-color: var(--brass-hi);
 }
+
+/* ------------------------------------------------------- 튜토리얼 */
+#tutPanel {
+    position: absolute;
+    left: 10px;
+    top: 40px;
+    width: 316px;
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    padding: 9px 11px 10px;
+    pointer-events: auto;
+    background: linear-gradient(180deg, rgba(58, 38, 20, 0.93), rgba(18, 11, 6, 0.95));
+    border: 1px solid var(--brass-lo);
+    border-left: 3px solid var(--brass);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    animation: tutIn 0.3s ease-out;
+}
+
+#tutPanel.show {
+    display: flex;
+}
+
+@keyframes tutIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+}
+
+#tutHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--ink-dim);
+}
+
+#tutMark {
+    letter-spacing: 4px;
+    color: var(--brass);
+}
+
+#tutTitle {
+    font-size: 15px;
+    letter-spacing: 1px;
+    color: var(--brass-hi);
+}
+
+#tutBody {
+    white-space: pre-line;
+    font-size: 12px;
+    line-height: 1.75;
+    color: var(--ink);
+}
+
+#tutGoal {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 1px;
+    padding-top: 7px;
+    border-top: 1px solid rgba(109, 78, 36, 0.5);
+    font-size: 12px;
+    color: var(--brass-hi);
+}
+
+#tutGoal i {
+    width: 12px;
+    height: 12px;
+    flex: 0 0 12px;
+    border: 1px solid var(--brass);
+    background: rgba(0, 0, 0, 0.4);
+}
+
+#tutGoal.done i {
+    background: #5fbf5a;
+    border-color: #8fdc86;
+}
+
+#tutGoal.done {
+    color: #9fe08a;
+}
+
+#tutSkip {
+    align-self: flex-end;
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 2px 9px;
+    color: var(--ink-dim);
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--brass-lo);
+    cursor: pointer;
+}
+
+#tutSkip:hover {
+    color: var(--ink);
+    border-color: var(--brass);
+}
+
+#tutSkip:empty {
+    visibility: hidden;
+}
+
+/* 안내가 가리키는 명령 칸 */
+.cmd.point {
+    border-color: var(--brass-hi);
+    animation: cmdPoint 1.05s ease-in-out infinite;
+}
+
+@keyframes cmdPoint {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(232, 196, 137, 0.55);
+    }
+
+    50% {
+        box-shadow: 0 0 0 3px rgba(232, 196, 137, 0.12), 0 0 9px rgba(232, 196, 137, 0.5);
+    }
+}
+
+/* 시작 화면의 단추 둘 */
+#overBtns {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+#overBtn2 {
+    font-family: inherit;
+    font-size: 15px;
+    letter-spacing: 3px;
+    padding: 8px 28px;
+    color: var(--brass-hi);
+    background: linear-gradient(170deg, #4a3220, #1d1208);
+    border: 2px solid var(--brass-lo);
+    cursor: pointer;
+}
+
+#overBtn2:hover {
+    border-color: var(--brass);
+}
+
+#overBtn2.hide {
+    display: none;
+}

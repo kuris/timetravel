@@ -40,7 +40,7 @@ export function initHud(handlers) {
         progFill: id("progFill"), progText: id("progText"),
         mini: id("rtsMinimap"), tip: id("hoverTip"), selRect: id("selRect"),
         overlay: id("overOverlay"), overTitle: id("overTitle"), overSub: id("overSub"),
-        overText: id("overText"), overBtn: id("overBtn"),
+        overText: id("overText"), overBtn: id("overBtn"), overBtn2: id("overBtn2"),
         flash: id("flash")
     });
 
@@ -94,7 +94,8 @@ export function setCommands(list) {
             b.children[1].textContent = "";
             continue;
         }
-        b.className = "cmd" + (c.off ? " off" : "");
+        const pointed = R.tutorial.point && R.tutorial.point.includes(c.name);
+        b.className = "cmd" + (c.off ? " off" : "") + (pointed ? " point" : "");
         b.children[0].textContent = c.glyph;
         b.children[1].textContent = c.name;
     }
@@ -458,12 +459,24 @@ export function minimapToWorld(px, py) {
 
 /* ------------------------------------------------------------ 시작/결과 */
 
-export function showOverlay(title, sub, text, btn, onClick) {
+/**
+ * 시작 화면과 결과 화면.
+ * alt 를 주면 단추가 둘이 된다 ({ label, onClick }) — 시작 화면의 "튜토리얼".
+ */
+export function showOverlay(title, sub, text, btn, onClick, alt = null) {
     el.overTitle.textContent = title;
     el.overSub.textContent = sub;
     el.overText.textContent = text;
     el.overBtn.textContent = btn;
     el.overBtn.onclick = onClick;
+
+    if (alt) {
+        el.overBtn2.textContent = alt.label;
+        el.overBtn2.onclick = alt.onClick;
+        el.overBtn2.classList.remove("hide");
+    } else {
+        el.overBtn2.classList.add("hide");
+    }
     el.overlay.classList.remove("hide");
 }
 

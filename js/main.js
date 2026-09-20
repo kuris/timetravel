@@ -17,6 +17,8 @@ import { rtsAnimate, simulate } from "./rts/loop.js";
 import { startGame } from "./rts/map.js";
 import { applyCamera } from "./rts/rtscam.js";
 import { R } from "./rts/state.js";
+import * as rtsTutorial from "./rts/tutorial.js";
+import { startTutorial } from "./rts/tutorial.js";
 import * as rtsBuildings from "./rts/buildings.js";
 import * as rtsUnits from "./rts/units.js";
 import * as rtsControl from "./rts/control.js";
@@ -50,14 +52,27 @@ const INTRO =
   오른쪽 클릭  가기 · 캐기 · 치기 · 짓기
   방향키 / 화면 가장자리  시점 이동
   Q W E R T Y / A S D F G H  아래 명령 칸
-  Ctrl+숫자 부대 묶기 · 숫자 불러오기 · Home 마을회관 · . 노는 주민`;
+  Ctrl+숫자 부대 묶기 · 숫자 불러오기 · Home 마을회관 · . 노는 주민
+
+처음이라면 [튜토리얼] 로 시작하세요. 판 위에서 열두 걸음을 일러 줍니다.
+안내가 도는 동안에는 적이 쳐들어오지 않습니다. 언제든 F1 로 열고 닫습니다.`;
 
 // 디버그용 손잡이 (콘솔에서 판을 들여다볼 때 쓴다)
-window.RTS = { R, G, simulate, buildings: rtsBuildings, units: rtsUnits, control: rtsControl };
+window.RTS = {
+    R, G, simulate,
+    buildings: rtsBuildings, units: rtsUnits, control: rtsControl, tutorial: rtsTutorial
+};
 
-showOverlay("시간유적", "한국사 실시간 전략", INTRO, "시작", () => {
+function begin(tutorial) {
     hideOverlay();
     AudioSystem.start();
     R.started = true;
-    logMessage("주민을 골라 나무를 캐게 하세요.");
-});
+    if (tutorial) startTutorial();
+    else logMessage("주민을 골라 나무를 캐게 하세요. (F1 — 안내)");
+}
+
+showOverlay(
+    "시간유적", "한국사 실시간 전략", INTRO,
+    "바로 시작", () => begin(false),
+    { label: "튜토리얼", onClick: () => begin(true) }
+);

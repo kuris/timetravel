@@ -41,6 +41,9 @@ export const R = {
     // 전장의 안개
     fog: null,
 
+    // 안내 (tutorial.js 가 채운다. ai.js 는 active 만 본다)
+    tutorial: { active: false, shown: false, step: 0, point: null },
+
     // HUD 갱신 요청 플래그
     dirty: { res: true, sel: true, cmd: true }
 };
@@ -72,6 +75,10 @@ export function resetRts() {
     R.attackMove = false;
     R.nextId = 1;
     R.messages.length = 0;
+    R.tutorial.active = false;
+    R.tutorial.shown = false;
+    R.tutorial.step = 0;
+    R.tutorial.point = null;
     for (const p of R.players) {
         p.age = 0;
         p.res = { food: 200, wood: 200, stone: 150, gold: 100 };
