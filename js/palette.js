@@ -18,8 +18,8 @@ import { cssHex, cssRGBA } from "./world.js";
 export const TEX_PALETTE = [
     // 신석기: 강가의 마른 흙, 마른 갈대
     {
-        dirtBase: 0x9d7249,
-        dirtSpots: [0xc59a62, 0x7d6b42, 0xb5854f, 0x6d5637, 0xd8b784],
+        dirtBase: 0x6f8442,
+        dirtSpots: [0x8aa052, 0x56682f, 0xa8894e, 0x7d9147, 0xc0a663],
         stoneBase: 0x726e68,
         stoneSpots: [0x8a9287, 0x54584f, 0x5b724e], // 초록 이끼 낀 돌 포인트
         thatch: [0xb08a4c, 0x6b4f26, 0xd8b877],
@@ -29,8 +29,8 @@ export const TEX_PALETTE = [
     },
     // 청동기: 붉은 황토
     {
-        dirtBase: 0x8e6b43,
-        dirtSpots: [0xb08653, 0x6f5637, 0xa47c48, 0x5d4a30, 0xc7a06a],
+        dirtBase: 0x6d7d3c,
+        dirtSpots: [0x879349, 0x55632d, 0xa87f45, 0x76884a, 0xbb9a58],
         stoneBase: 0x6f665d,
         stoneSpots: [0x8e8378, 0x4f4941, 0x5c7250],
         thatch: [0xa87f45, 0x63481f, 0xd0ac6a],
@@ -40,8 +40,8 @@ export const TEX_PALETTE = [
     },
     // 삼국: 다져 올린 흙과 기와
     {
-        dirtBase: 0x8a7048,
-        dirtSpots: [0xa88a58, 0x6f5d3d, 0x9c7e4e, 0x5c5136, 0xbf9f66],
+        dirtBase: 0x63793a,
+        dirtSpots: [0x7f9448, 0x4c5f2c, 0x9c7e4e, 0x6d8442, 0xb09a5c],
         stoneBase: 0x736c63,
         stoneSpots: [0x8f887c, 0x524c45, 0x5e7552],
         thatch: [0xa88a4e, 0x63481f, 0xd0ac6a],
@@ -51,8 +51,8 @@ export const TEX_PALETTE = [
     },
     // 조선: 밤의 흙길
     {
-        dirtBase: 0x6b5a4a,
-        dirtSpots: [0x816c57, 0x4d4238, 0x77654c, 0x565045, 0x8d7a62],
+        dirtBase: 0x5f7038,
+        dirtSpots: [0x7b8c44, 0x49572a, 0x8d7a52, 0x697c3e, 0xa6924f],
         stoneBase: 0x545059,
         stoneSpots: [0x6b6772, 0x3a373f, 0x4a5246],
         thatch: [0x8b7449, 0x4d3c22, 0xb09566],
@@ -62,8 +62,8 @@ export const TEX_PALETTE = [
     },
     // 1970: 마른 흙과 시멘트
     {
-        dirtBase: 0x87724f,
-        dirtSpots: [0xa08a5e, 0x6b5b3e, 0x967f55, 0x5c5340, 0xb59a6a],
+        dirtBase: 0x6f7c45,
+        dirtSpots: [0x8a9550, 0x545f33, 0x9b8557, 0x77854a, 0xb09963],
         stoneBase: 0x8e8980,
         stoneSpots: [0xa8a49a, 0x6f6a62, 0x7a8470],
         thatch: [0xa88a4e, 0x63481f, 0xd0ac6a],

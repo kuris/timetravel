@@ -137,7 +137,7 @@ export function addFortressGate(x, z, rot) {
         addBox(body, bw, 0.4, bd, 0x6b3a28, bx, 3.2, bz, 0, { castShadow: false });
     }
 
-    addHanokRoof(body, 5.2, 2.8, 3.45, { tile: 0x3d4450, ridge: 0x272d38, h: 1.0, eave: 0.9 });
+    addHanokRoof(body, 5.2, 2.8, 3.45, { tile: 0x428780, ridge: 0x2a5b55, h: 1.5, eave: 0.5 });
 
     // 치미 (용마루 끝 장식) — 삼국시대 기와집의 표식
     for (const sx of [-1, 1]) {
@@ -192,7 +192,7 @@ export function addTowerTall(x, z, rot) {
         addBox(g, bw, 0.6, bd, 0x6d4a26, bx, H + 0.37, bz, 0, { castShadow: false });
     }
 
-    addHanokRoof(g, 2.5, 2.5, H + 0.7, { tile: 0x3d4450, ridge: 0x272d38, h: 0.7, eave: 0.55 });
+    addHanokRoof(g, 2.5, 2.5, H + 0.7, { tile: 0x428780, ridge: 0x2a5b55, h: 1.0, eave: 0.32 });
 
     // 사다리
     for (let i = 0; i < 9; i++) {
@@ -276,7 +276,7 @@ export function addForge(x, z, rot) {
     const roof = addCone(g, 2.5, 0.95, 4, 0xa88a4e, 0, 2.35, 0,
         { roughness: 1, map: G.TEX.thatch });
     roof.rotation.y = Math.PI / 4;
-    roof.scale.z = 0.8;
+    roof.scale.z *= 0.8;
 
     // 화덕
     addCylinder(g, 0.5, 0.62, 0.7, 8, 0x5b4a3e, -0.7, 0.35, 0.1,
@@ -333,7 +333,7 @@ export function addWaterMill(x, z, rot) {
     const roof = addCone(g, 2.0, 0.8, 4, 0xa88a4e, 0.9, 1.85, 0,
         { roughness: 1, map: G.TEX.thatch });
     roof.rotation.y = Math.PI / 4;
-    roof.scale.z = 0.85;
+    roof.scale.z *= 0.85;
 
     // 물레바퀴
     const wheel = new THREE.Group();
@@ -374,7 +374,7 @@ export function addWaterMill(x, z, rot) {
 
 /** 삼국시대 기와집: 조선보다 지붕이 무겁고 치미가 달렸다 */
 export function addSamgukHouse(x, z, rot, scale = 1, tiled = true) {
-    addMapMarker(x, z, tiled ? "#6c6470" : "#9c8350", 3, "building");
+    addMapMarker(x, z, tiled ? "#336b66" : "#9c8350", 3, "building");
 
     const g = new THREE.Group();
     g.position.set(x, terrainHeight(x, z), z);
@@ -389,10 +389,10 @@ export function addSamgukHouse(x, z, rot, scale = 1, tiled = true) {
     addHanokBody(g, w, d, wallH, { wall: tiled ? 0xc0a582 : 0xcbb08a, lit: rand() > 0.4 });
 
     if (tiled) {
-        addHanokRoof(g, w, d, 0.26 + wallH, { tile: 0x424956, ridge: 0x2b313d, h: 0.8, eave: 0.6 });
+        addHanokRoof(g, w, d, 0.26 + wallH, { tile: 0x458c84, ridge: 0x2c5f59, h: 1.15, eave: 0.34 });
         // 치미
         for (const sx of [-1, 1]) {
-            const chimi = addBox(g, 0.16, 0.36, 0.22, 0x2b313d,
+            const chimi = addBox(g, 0.16, 0.36, 0.22, 0x214c48,
                 sx * w * 0.46, 0.26 + wallH + 0.95, 0, 0, { roughness: 0.8 });
             chimi.rotation.z = -sx * 0.28;
         }

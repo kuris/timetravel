@@ -4,7 +4,7 @@
 import { grade } from "./postprocess.js";
 
 export const VIEW_SIZE = 27.5;  // 등각 시야 크기. 클수록 더 넓은 풍경이 보인다.
-export const RENDER_SCALE = 0.48; // 내부 렌더 해상도 배율. 낮출수록 픽셀이 굵어진다.
+export const RENDER_SCALE = 0.78; // 내부 렌더 해상도 배율. 낮출수록 픽셀이 굵어진다.
 export const PLAYER_SPEED = 4.1;
 export const SPRINT_MULTIPLIER = 1.9;  // Shift 를 누르고 있을 때
 export const WORLD_LIMIT = 31;
@@ -21,13 +21,13 @@ export const AGE_DATA = [
 
         // 한낮에서 이른 오후로. 하루의 시작 지점.
         weather: {
-            band: [0.58, 0.70],
+            band: [0.44, 0.56],
             speed: 0.0042,
             start: "clear",
             pool: ["haze", "clear", "haze", "overcast", "rain", "haze", "clear"]
         },
         fog: 0x5e706c,
-        fogDensity: 0.0115,
+        fogDensity: 0.0057,
 
         // 지평선 하늘 그라데이션 (맑은 푸른빛과 따뜻한 수평선)
         sky: { top: 0x364f66, mid: 0x688494, bottom: 0xb5cbd2 },
@@ -45,11 +45,11 @@ export const AGE_DATA = [
         light: {
             hemiSky: 0xdff0fa,
             hemiGround: 0x3e4a3c,
-            hemiIntensity: 0.58,
+            hemiIntensity: 0.84,
             ambient: 0x8ea89a,
-            ambientIntensity: 0.28,
+            ambientIntensity: 0.48,
             sun: 0xffedd2,
-            sunIntensity: 2.15,
+            sunIntensity: 2.58,
             sunPos: [-13, 14, -16],
             fillIntensity: 0.18
         },
@@ -58,10 +58,10 @@ export const AGE_DATA = [
         grade: {
             tint: [1.02, 1.00, 0.96],
             lift: [0.012, 0.012, 0.015],
-            sat: 0.88,
-            sepia: 0.08,
-            contrast: 1.15,
-            vignette: 0.95
+            sat: 1.10,
+            sepia: 0.02,
+            contrast: 1.10,
+            vignette: 0.40
         }
     },
 
@@ -75,15 +75,15 @@ export const AGE_DATA = [
 
         // 이른 오후에서 늦은 오후로. 해가 기울며 제의가 시작된다.
         weather: {
-            band: [0.70, 0.80],
+            band: [0.50, 0.62],
             speed: 0.0030,
             start: "clear",
             pool: ["clear", "clear", "haze", "overcast", "clear"]
         },
-        fog: 0x6d5334,
-        fogDensity: 0.0105,
+        fog: 0x8a8b74,
+        fogDensity: 0.0053,
 
-        sky: { top: 0x4e3320, mid: 0x9a6236, bottom: 0xd9a05c },
+        sky: { top: 0x3f5a72, mid: 0x8b9a92, bottom: 0xdcc79a },
 
         ridges: [
             { dist: 74, height: 36, color: 0xb08050, opacity: 0.52, base: -6 },
@@ -97,11 +97,11 @@ export const AGE_DATA = [
         light: {
             hemiSky: 0xffc78c,
             hemiGround: 0x482d1b,
-            hemiIntensity: 0.50,
+            hemiIntensity: 0.72,
             ambient: 0xc08a58,
-            ambientIntensity: 0.22,
+            ambientIntensity: 0.37,
             sun: 0xffbb76,
-            sunIntensity: 2.15,
+            sunIntensity: 2.58,
             sunPos: [-15, 13.5, -15],
             fillIntensity: 0.14
         },
@@ -109,10 +109,10 @@ export const AGE_DATA = [
         grade: {
             tint: [1.03, 1.00, 0.95],
             lift: [0.014, 0.012, 0.012],
-            sat: 0.86,
-            sepia: 0.10,
-            contrast: 1.18,
-            vignette: 1.0
+            sat: 1.07,
+            sepia: 0.03,
+            contrast: 1.13,
+            vignette: 0.42
         }
     },
 
@@ -127,14 +127,14 @@ export const AGE_DATA = [
 
         // 해질녘. 성벽과 고분이 긴 그림자를 끈다.
         weather: {
-            band: [0.80, 0.88],
+            band: [0.40, 0.54],
             speed: 0.0038,
             start: "clear",
             pool: ["clear", "haze", "rain", "haze", "overcast", "clear"]
         },
 
         fog: 0x687870,
-        fogDensity: 0.0115,
+        fogDensity: 0.0057,
 
         sky: { top: 0x3a4e60, mid: 0x6e8494, bottom: 0xc4d4db },
 
@@ -150,11 +150,11 @@ export const AGE_DATA = [
         light: {
             hemiSky: 0xe2f0fa,
             hemiGround: 0x3e4838,
-            hemiIntensity: 0.58,
+            hemiIntensity: 0.84,
             ambient: 0x90a89a,
-            ambientIntensity: 0.28,
+            ambientIntensity: 0.48,
             sun: 0xffedd2,
-            sunIntensity: 1.85,
+            sunIntensity: 2.22,
             // 해질녘 — 해가 낮게 걸린다
             sunPos: [-15, 11, -15],
             fillIntensity: 0.18
@@ -163,10 +163,10 @@ export const AGE_DATA = [
         grade: {
             tint: [1.01, 1.01, 0.98],
             lift: [0.012, 0.012, 0.014],
-            sat: 0.90,
-            sepia: 0.06,
-            contrast: 1.14,
-            vignette: 0.95
+            sat: 1.12,
+            sepia: 0.01,
+            contrast: 1.09,
+            vignette: 0.40
         }
     },
 
@@ -182,15 +182,15 @@ export const AGE_DATA = [
         // 저녁에서 밤으로. 고대에서 이어온 하루가 여기서 저문다.
         // 이야기에서도 가장 어두운 지점이다 — 금기와 두려움의 시대.
         weather: {
-            band: [0.88, 0.95],
+            band: [0.56, 0.68],
             speed: 0.0026,
             start: "clear",
             pool: ["clear", "haze", "overcast", "haze", "rain", "clear"]
         },
-        fog: 0x453f4e,
-        fogDensity: 0.0150,
+        fog: 0x7c8a86,
+        fogDensity: 0.0075,
 
-        sky: { top: 0x24283c, mid: 0x52465c, bottom: 0x9d7a63 },
+        sky: { top: 0x3c5876, mid: 0x7d94a2, bottom: 0xcbd3d0 },
 
         ridges: [
             { dist: 74, height: 32, color: 0x4b4557, opacity: 0.58, base: -6 },
@@ -204,11 +204,11 @@ export const AGE_DATA = [
         light: {
             hemiSky: 0x8189b8,
             hemiGround: 0x38302a,
-            hemiIntensity: 1.60,
+            hemiIntensity: 0.86,
             ambient: 0x796f92,
-            ambientIntensity: 1.05,
+            ambientIntensity: 0.46,
             sun: 0xdbe2f8,
-            sunIntensity: 2.05,
+            sunIntensity: 2.46,
             sunPos: [-11, 15, -15],
             fillIntensity: 0.22
         },
@@ -217,10 +217,10 @@ export const AGE_DATA = [
         grade: {
             tint: [0.98, 1.00, 1.04],
             lift: [0.045, 0.045, 0.060],
-            sat: 0.90,
-            sepia: 0.05,
-            contrast: 1.10,
-            vignette: 0.82
+            sat: 1.12,
+            sepia: 0.01,
+            contrast: 1.06,
+            vignette: 0.34
         }
     },
 
@@ -243,7 +243,7 @@ export const AGE_DATA = [
         },
 
         fog: 0x6e786b,
-        fogDensity: 0.0100,
+        fogDensity: 0.0050,
 
         sky: { top: 0x385268, mid: 0x768f9e, bottom: 0xccd8db },
 
@@ -259,11 +259,11 @@ export const AGE_DATA = [
         light: {
             hemiSky: 0xe6f2fa,
             hemiGround: 0x3e4834,
-            hemiIntensity: 0.62,
+            hemiIntensity: 0.90,
             ambient: 0xa4b89e,
-            ambientIntensity: 0.30,
+            ambientIntensity: 0.51,
             sun: 0xffedd6,
-            sunIntensity: 2.15,
+            sunIntensity: 2.58,
             // 아침 해 — 반대편에서 비친다
             sunPos: [15, 17, 13],
             fillIntensity: 0.20
@@ -272,10 +272,10 @@ export const AGE_DATA = [
         grade: {
             tint: [1.02, 1.01, 0.97],
             lift: [0.014, 0.014, 0.015],
-            sat: 0.90,
-            sepia: 0.06,
-            contrast: 1.15,
-            vignette: 0.95
+            sat: 1.12,
+            sepia: 0.01,
+            contrast: 1.10,
+            vignette: 0.40
         }
     },
 
@@ -291,16 +291,16 @@ export const AGE_DATA = [
 
         // 해질녘에서 저녁으로. 두 번째 하루가 저물며 답이 나온다.
         weather: {
-            band: [0.76, 0.90],
+            band: [0.46, 0.60],
             speed: 0.0028,
             start: "haze",
             pool: ["haze", "clear", "haze", "rain", "overcast", "haze"]
         },
 
-        fog: 0x4a4c56,
-        fogDensity: 0.0145,
+        fog: 0x83908c,
+        fogDensity: 0.0073,
 
-        sky: { top: 0x242e44, mid: 0x4e5468, bottom: 0x8c8490 },
+        sky: { top: 0x3a5478, mid: 0x7e93a6, bottom: 0xc3ccd4 },
 
         ridges: [
             { dist: 74, height: 32, color: 0x505668, opacity: 0.55, base: -6 },
@@ -314,11 +314,11 @@ export const AGE_DATA = [
         light: {
             hemiSky: 0x8d93bc,
             hemiGround: 0x3a3630,
-            hemiIntensity: 1.70,
+            hemiIntensity: 0.88,
             ambient: 0x827e9a,
-            ambientIntensity: 1.15,
+            ambientIntensity: 0.48,
             sun: 0xe2e6f8,
-            sunIntensity: 1.85,
+            sunIntensity: 2.22,
             sunPos: [-12, 15, -14],
             fillIntensity: 0.22
         },
@@ -326,10 +326,10 @@ export const AGE_DATA = [
         grade: {
             tint: [0.98, 1.00, 1.02],
             lift: [0.045, 0.045, 0.055],
-            sat: 0.94,
-            sepia: 0.04,
-            contrast: 1.10,
-            vignette: 0.82
+            sat: 1.15,
+            sepia: 0.01,
+            contrast: 1.06,
+            vignette: 0.34
         }
     }
 ];

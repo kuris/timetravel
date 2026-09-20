@@ -135,15 +135,15 @@ export function buildJoseon() {
 
 export function addHanokRoof(parent, w, d, y, opts = {}) {
     const tile = opts.tile ?? 0x39404e;      // 기와
-    const under = opts.under ?? 0x2a2019;    // 서까래 그늘
-    const eave = opts.eave ?? 0.55;          // 처마가 내밀린 길이
-    const h = opts.h ?? 0.72;
+    const under = opts.under ?? 0x3b2c20;    // 서까래 그늘
+    const eave = opts.eave ?? 0.34;          // 처마가 내밀린 길이
+    const h = opts.h ?? 1.05;
 
     const W = w + eave * 2;
     const D = d + eave * 2;
 
     // 처마 밑 그늘 (서까래가 보이는 부분)
-    addBox(parent, W * 0.98, 0.14, D * 0.98, under, 0, y - 0.05, 0, 0,
+    addBox(parent, W * 0.90, 0.13, D * 0.90, under, 0, y - 0.06, 0, 0,
         { roughness: 1, castShadow: false });
 
     // 서까래
@@ -154,11 +154,16 @@ export function addHanokRoof(parent, w, d, y, opts = {}) {
             { castShadow: false });
     }
 
-    // 지붕면: 사각뿔을 눌러서 만든다
-    const roof = addCone(parent, Math.max(W, D) * 0.72, h, 4, tile, 0, y + h * 0.5 + 0.02, 0,
+    // 지붕면: 사각뿔을 눌러서 만든다.
+    // addCone 이 이미 scale 에 반지름을 넣어 두었으므로 z 만 눌러야 한다.
+    // (set 으로 덮어쓰면 지붕이 반지름 1 짜리로 쪼그라들어 처마 밑 그늘판만 보인다)
+    // 45° 돌린 사각뿔은 모서리가 대각선에 놓인다. 변까지의 거리는 반지름 × cos45°,
+    // 그래서 폭 W 를 덮으려면 반지름이 0.707W 여야 한다. 처마만큼 조금 더 준다.
+    const rad = W * 0.72;
+    const roof = addCone(parent, rad, h, 4, tile, 0, y + h * 0.5 + 0.02, 0,
         { roughness: 0.85, map: opts.map });
     roof.rotation.y = Math.PI / 4;
-    roof.scale.set(1, 1, (D / W) * 0.98);
+    roof.scale.z = rad * (D / W);
 
     // 용마루
     addBox(parent, w * 0.92, 0.16, 0.22, opts.ridge ?? 0x232936, 0, y + h + 0.02, 0, 0,
@@ -307,7 +312,7 @@ export function addChoga(x, z, rot, scale = 1) {
  * 어두운 청회색 기와가 밤 화면에서 무게를 잡아 준다.
  */
 export function addGiwa(x, z, rot, scale = 1) {
-    addMapMarker(x, z, "#6c6470", 3.5, "building");
+    addMapMarker(x, z, "#2f6360", 3.5, "building");
 
     const g = new THREE.Group();
     g.position.set(x, terrainHeight(x, z), z);
@@ -326,7 +331,7 @@ export function addGiwa(x, z, rot, scale = 1) {
     g.add(inner);
 
     addHanokBody(inner, w, d, wallH, { wall: 0xcbb290, lit: true });
-    addHanokRoof(inner, w, d, 0.26 + wallH, { tile: 0x39404e, ridge: 0x232936, h: 0.78, eave: 0.62 });
+    addHanokRoof(inner, w, d, 0.26 + wallH, { tile: 0x3f8079, ridge: 0x275650, h: 1.15, eave: 0.36 });
 
     // 댓돌 (마루 앞 디딤돌)
     addBox(g, 0.7, 0.14, 0.4, 0x6f6960, 0, 0.29, d * 0.5 + 0.95, 0,
@@ -378,7 +383,7 @@ export function addGovernmentGate(x, z, rot) {
     // 단청 느낌의 띠
     addBox(body, 5.65, 0.1, 2.55, 0x2f5a5e, 0, 2.72, 0, 0, { castShadow: false });
 
-    addHanokRoof(body, 5.6, 2.5, 2.9, { tile: 0x333a47, ridge: 0x1f242f, h: 0.95, eave: 0.85 });
+    addHanokRoof(body, 5.6, 2.5, 2.9, { tile: 0x397a73, ridge: 0x234e49, h: 1.45, eave: 0.48 });
 
     // 문 앞 등불
     for (const px of [-2.7, 2.7]) {

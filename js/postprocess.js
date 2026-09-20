@@ -5,12 +5,12 @@ export let renderTarget, postScene, postCamera, postMaterial;
 
 // 시대별 그레이딩 값. buildAge()에서 갱신된다.
 export const grade = {
-    tint: new THREE.Color(1.02, 1.00, 0.96), // 맑은 전체 색조 밸런스
-    lift: new THREE.Color(0.012, 0.012, 0.015), // 자연스러운 암부
-    sat: 0.88,   // 풍부한 채도 복원
-    sepia: 0.08, // 세피아를 은은하게만 유지하여 흙탕물 톤 제거
-    contrast: 1.12,
-    vignette: 0.95
+    tint: new THREE.Color(1.02, 1.01, 0.98), // 맑은 전체 색조 밸런스
+    lift: new THREE.Color(0.010, 0.010, 0.012), // 자연스러운 암부
+    sat: 1.08,   // 한낮의 색을 살린다
+    sepia: 0.02, // 세피아는 흔적만
+    contrast: 1.10,
+    vignette: 0.40
 };
 
 export const POST_VERT = [
@@ -98,21 +98,21 @@ export const POST_FRAG = [
 
     // --- 수채화 종이 질감: 물감이 번진 듯 밝기가 고르지 않다 ---
     "  float paper = vnoise(uv * vec2(9.0, 6.0)) * 0.6 + vnoise(uv * vec2(29.0, 21.0)) * 0.4;",
-    "  col *= 0.93 + paper * 0.14;",
+    "  col *= 0.975 + paper * 0.05;",
 
     // --- 비네팅 (오래된 CRT 의 어두운 모서리) ---
-    "  float vig = 1.0 - dot(dir, dir) * 1.55 * uVignette;",
-    "  col *= mix(0.26, 1.0, clamp(pow(clamp(vig, 0.0, 1.0), 1.30), 0.0, 1.0));",
+    "  float vig = 1.0 - dot(dir, dir) * 1.15 * uVignette;",
+    "  col *= mix(0.58, 1.0, clamp(pow(clamp(vig, 0.0, 1.0), 1.10), 0.0, 1.0));",
 
     // --- 필름 그레인 (저해상도 픽셀 단위라 알갱이가 굵다) ---
     "  float grain = hash(floor(px) + vec2(floor(uTime * 24.0) * 13.7, 0.0));",
-    "  col += (grain - 0.5) * 0.055;",
+    "  col += (grain - 0.5) * 0.022;",
 
     // --- 아주 약한 수평 주사선 (저해상도 단계) ---
-    "  col *= 1.0 - 0.045 * mod(floor(px.y), 2.0);",
+    "  col *= 1.0 - 0.016 * mod(floor(px.y), 2.0);",
 
     // --- Bayer 디더링 + 색 단계 축소 (256색 시절 그라데이션) ---
-    "  float levels = 28.0;",
+    "  float levels = 52.0;",
     "  float d = bayer4(px) - 0.5;",
     "  col = floor(clamp(col, 0.0, 1.0) * levels + 0.5 + d) / levels;",
 

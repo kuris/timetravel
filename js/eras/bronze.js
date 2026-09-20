@@ -390,7 +390,7 @@ export function addRaisedGranary(x, z, rot) {
     const roof = addCone(g, 1.6, 0.8, 4, 0xa88a4e, 0, H + 1.45, 0,
         { roughness: 1, map: G.TEX.thatch });
     roof.rotation.y = Math.PI / 4;
-    roof.scale.z = 0.82;
+    roof.scale.z *= 0.82;
 
     // 사다리
     const ladder = new THREE.Group();
