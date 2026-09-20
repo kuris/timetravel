@@ -63,19 +63,116 @@ export function makeSelectRing(radius, owner) {
     return ring;
 }
 
-/** 진영 표시 점 — 발밑의 작은 원판 (AoE 의 플레이어 색) */
-export function makeTeamDisc(radius, owner) {
+/**
+ * 진영 표시 — 발밑의 작은 원판 (AoE 의 플레이어 색).
+ *
+ * 병사는 원판 바깥에 테를 하나 더 두른다. 주민은 옅은 원판뿐이다.
+ * 같은 편 안에서도 "일하는 사람"과 "싸우는 사람"이 발밑에서 갈린다.
+ */
+export function makeTeamDisc(radius, owner, soldier = false) {
+    const g = new THREE.Group();
+    const col = TEAM[owner].color;
+
     const disc = new THREE.Mesh(
-        new THREE.CircleGeometry(radius, 14),
-        makeBasicMat(TEAM[owner].color, {
-            transparent: true, opacity: 0.55, side: THREE.DoubleSide,
+        new THREE.CircleGeometry(soldier ? radius * 0.82 : radius, 14),
+        makeBasicMat(col, {
+            transparent: true, opacity: soldier ? 0.85 : 0.45, side: THREE.DoubleSide,
             depthWrite: false, fog: false
         })
     );
     disc.rotation.x = -Math.PI / 2;
-    disc.position.y = 0.03;
     disc.renderOrder = 2;
-    return disc;
+    g.add(disc);
+
+    if (soldier) {
+        const rim = new THREE.Mesh(
+            new THREE.RingGeometry(radius * 1.06, radius * 1.42, 18),
+            makeBasicMat(col, {
+                transparent: true, opacity: 0.95, side: THREE.DoubleSide,
+                depthWrite: false, fog: false
+            })
+        );
+        rim.rotation.x = -Math.PI / 2;
+        rim.renderOrder = 2;
+        g.add(rim);
+    }
+
+    g.position.y = 0.03;
+    return g;
+}
+
+/**
+ * 건물 이름표 — 지붕 위에 뜨는 글자 한 자 (집 · 병 · 곡 · 저 ...).
+ *
+ * 시대마다 건물 모양이 통째로 바뀌는 게임이다. 움집 셋이 나란히 서면
+ * 어느 것이 곡식창고이고 어느 것이 병영인지 모양만으로는 알기 어렵다.
+ * 글자 한 자가 그 자리를 대신한다. 카메라가 돌지 않으니 판 한 장이면 된다.
+ */
+const GLYPH_TEX = new Map();
+
+function glyphTexture(ch, css) {
+    const key = ch + css;
+    if (GLYPH_TEX.has(key)) return GLYPH_TEX.get(key);
+
+    const N = 96;
+    const c = document.createElement("canvas");
+    c.width = c.height = N;
+    const g = c.getContext("2d");
+
+    // 어두운 판 위에 진영색 글자 — 낮에도 밤에도 같은 밝기로 읽힌다
+    g.fillStyle = "rgba(12, 8, 4, 0.88)";
+    g.fillRect(0, 0, N, N);
+    g.strokeStyle = css;
+    g.lineWidth = 6;
+    g.strokeRect(3, 3, N - 6, N - 6);
+    g.font = "bold 66px 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif";
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    // 글자를 한 번 더 굵게 — 저해상도로 줄어들어도 획이 남아야 한다
+    g.strokeStyle = "rgba(10, 6, 3, 0.95)";
+    g.lineWidth = 8;
+    g.strokeText(ch, N / 2, N * 0.54);
+    // 테두리는 제 색, 글자는 그 색을 밝게 — 세피아를 거쳐도 읽힌다
+    g.fillStyle = "#" + new THREE.Color(css).lerp(new THREE.Color(0xffffff), 0.45)
+        .getHexString();
+    g.fillText(ch, N / 2, N * 0.54);
+
+    const t = new THREE.CanvasTexture(c);
+    t.magFilter = THREE.NearestFilter;
+    t.minFilter = THREE.LinearMipmapLinearFilter;
+    GLYPH_TEX.set(key, t);
+    return t;
+}
+
+export function makeNameTag(glyph, owner, y, size = 0.9, css = null) {
+    const mesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(size, size),
+        new THREE.MeshBasicMaterial({
+            map: glyphTexture(glyph, css || TEAM[owner].css),
+            transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide
+        })
+    );
+    mesh.position.y = y;
+    mesh.renderOrder = 9;
+    return mesh;
+}
+
+/**
+ * 자원 표시 — 땅 위에 뜨는 작은 마름모.
+ *
+ * 건물에는 글자를 붙였지만 자원에는 붙이지 않는다. 덤불 하나가 화면에서
+ * 열 몇 픽셀이라 글자는 뭉개진다. 색깔 있는 도형 하나가 훨씬 멀리서 읽힌다.
+ * 빛을 받지 않는 재질이라 해가 기울어도, 시대가 바뀌어도 같은 색으로 남는다.
+ */
+export function makeNodePin(hex, y = 1.5, size = 0.17) {
+    const pin = new THREE.Mesh(
+        new THREE.OctahedronGeometry(size, 0),
+        makeBasicMat(hex, { fog: false })
+    );
+    pin.position.y = y;
+    pin.scale.y = 1.45;
+    pin.renderOrder = 4;
+    return pin;
 }
 
 /** 체력 막대 — 카메라가 돌지 않으므로 고정 방향 판 두 장이면 된다 */
@@ -120,10 +217,21 @@ const SKIN = [0xd8a877, 0xc99a68, 0xe0b184];
  * 유닛 한 사람.
  * userData 에 팔다리를 담아 두어 걷기/일하기 동작을 붙일 수 있게 한다.
  */
+const STRAW = new THREE.Color(0xb08a52);
+
 export function makePerson(def, owner) {
     const g = new THREE.Group();
     const team = TEAM[owner];
-    const cloth = def.animal ? 0x7a6444 : team.color;
+    const villager = def.key === "villager";
+
+    /*
+     * 옷 색으로 일하는 사람과 싸우는 사람을 가른다.
+     *   주민  — 짚빛에 진영색을 조금 섞은 헐한 옷. 가슴에 진영색 띠 하나.
+     *   병사  — 진영색 그대로. 멀리서 보면 "색이 찬 사람"이 병사다.
+     * 편은 발밑 원판과 띠가 계속 알려 준다.
+     */
+    const cloth = def.animal ? 0x7a6444
+        : (villager ? new THREE.Color(team.color).lerp(STRAW, 0.62).getHex() : team.color);
 
     const body = new THREE.Group();
     body.position.y = 0.30;
@@ -131,14 +239,49 @@ export function makePerson(def, owner) {
 
     const skin = pick(SKIN);
 
-    // 몸통 — 진영 색 옷
+    // 몸통
     addCylinder(body, 0.17, 0.23, 0.42, 6, cloth, 0, 0.21, 0, { map: G.TEX.cloth });
-    // 어깨 아래로 진영색을 한 번 더 (멀리서도 편이 구분되게)
-    addCylinder(body, 0.185, 0.195, 0.10, 6, team.dark, 0, 0.40, 0, { map: G.TEX.cloth });
+    // 어깨 — 주민은 진영색 띠 하나, 병사는 어두운 갑옷
+    if (villager) {
+        addCylinder(body, 0.20, 0.21, 0.085, 6, team.color, 0, 0.30, 0, { map: G.TEX.cloth });
+    } else if (!def.animal) {
+        addCylinder(body, 0.20, 0.21, 0.13, 6, team.dark, 0, 0.40, 0, { map: G.TEX.cloth });
+    }
     addCylinder(body, 0.055, 0.065, 0.06, 5, skin, 0, 0.46, 0);
     addBlob(body, 0.14, skin, 0, 0.56, 0, { sy: 1.1, sx: 0.94, sz: 0.94 });
     // 머리카락
     addBlob(body, 0.135, 0x2b1d12, 0, 0.60, -0.015, { sy: 0.72, sx: 0.98, sz: 0.98 });
+
+    /*
+     * 머리에 쓴 것.
+     *
+     * 이 화면은 위에서 비스듬히 내려다본다. 그래서 어깨와 머리 위가 거의 전부다.
+     * 주민은 챙이 넓고 밝은 밀짚모자, 병사는 좁고 어두운 투구에 진영색 깃을 세운다.
+     * 멀리서 점처럼 보여도 "밝고 넓은 동그라미"와 "어둡고 좁은 것"은 갈린다.
+     */
+    if (!def.animal) {
+        if (def.key === "villager") {
+            const brim = addCylinder(body, 0.30, 0.30, 0.025, 10, 0xd9b877, 0, 0.665, 0,
+                { castShadow: false });
+            brim.userData.shared = false;
+            addCone(body, 0.16, 0.16, 8, 0xc9a55f, 0, 0.74, 0, { castShadow: false });
+        } else if (def.atk > 0) {
+            // 투구
+            addBlob(body, 0.155, 0x4b4740, 0, 0.60, 0, { sy: 0.92, sx: 1.02, sz: 1.02 });
+            addCylinder(body, 0.165, 0.175, 0.045, 8, 0x3a3730, 0, 0.53, 0, { castShadow: false });
+            /*
+             * 진영색 깃.
+             *
+             * 판 한 장으로 세우면 유닛이 돌아설 때 옆날이 되어 사라진다.
+             * 어느 쪽에서 봐도 보이도록 뿔로 세운다 — 위에서 내려다보면
+             * 투구 한가운데 진영색 점이 찍힌다.
+             */
+            addCone(body, 0.075, 0.30, 6, team.color, 0, 0.82, 0,
+                { castShadow: false, material: makeBasicMat(team.color, { fog: false }) });
+            addCylinder(body, 0.085, 0.085, 0.05, 6, team.color, 0, 0.68, 0,
+                { castShadow: false, material: makeBasicMat(team.color, { fog: false }) });
+        }
+    }
 
     const arm = (side) => {
         const a = new THREE.Group();
@@ -314,20 +457,28 @@ export function makeStump(x, z) {
 }
 
 /** 산딸기 덤불 (식량) */
+/**
+ * 덤불 — 이 게임에서 가장 못 찾겠는 것이었다.
+ *
+ * 잎이 땅과 같은 풀빛이고 열매가 좁쌀만 해서, 나무 사이에 섞이면 보이지 않는다.
+ * 잎을 어둡게 깔고 열매를 크고 붉게 키운다. 열매는 빛을 받지 않는 재질이라
+ * 해가 기울어도 같은 밝기로 남는다.
+ */
 export function makeBerryBush(x, z) {
     const g = new THREE.Group();
     g.position.set(x, terrainHeight(x, z), z);
 
     for (let i = 0; i < 4; i++) {
-        addBlob(g, randRange(0.3, 0.44), 0x4a5e34,
+        addBlob(g, randRange(0.32, 0.46), 0x3b4f2a,
             randRange(-0.3, 0.3), randRange(0.24, 0.4), randRange(-0.3, 0.3),
             { sy: 0.8, ry: rand() * 3, roughness: 1, receiveShadow: false });
     }
-    // 붉은 열매
-    for (let i = 0; i < 9; i++) {
-        addBlob(g, 0.055, 0xa83a3a,
-            randRange(-0.42, 0.42), randRange(0.3, 0.62), randRange(-0.42, 0.42),
-            { castShadow: false, receiveShadow: false });
+
+    const berryMat = makeBasicMat(0xd8452f, { fog: false });
+    for (let i = 0; i < 14; i++) {
+        addBlob(g, 0.085, 0xd8452f,
+            randRange(-0.46, 0.46), randRange(0.34, 0.72), randRange(-0.46, 0.46),
+            { castShadow: false, receiveShadow: false, material: berryMat });
     }
     return g;
 }

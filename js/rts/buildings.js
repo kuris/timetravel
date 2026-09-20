@@ -9,7 +9,9 @@ import { G } from "../state.js";
 import { terrainHeight } from "../terrain.js";
 import { AGE_UP, AGE_UP_TIME, BUILDINGS, POP_MAX, TEAM, UNITS, buildingMesh } from "./defs.js";
 import { fogAt } from "./fog.js";
-import { addTeamFlag, makeHpBar, makeRubble, makeSelectRing, makeTeamDisc, setHpBar } from "./models.js";
+import {
+    addTeamFlag, makeHpBar, makeNameTag, makeRubble, makeSelectRing, makeTeamDisc, setHpBar
+} from "./models.js";
 import { addNode, removeNode } from "./nodes.js";
 import { R, nextId } from "./state.js";
 import { spawnUnit, applyHit, findEnemy, MAP_R } from "./units.js";
@@ -106,22 +108,36 @@ export function buildMeshFor(b) {
     const g = buildingMesh(b.type, age, b.x, b.z, b.rot);
     b.group = g;
 
-    // 진영 색: 발밑 원판 + 깃발
+    // 농장은 납작해서 더 안 보인다 — 깃발 없이 이름표만 세운다
+    if (b.type === "farm") {
+        b.tag = makeNameTag(b.def.glyph, b.owner, 1.15, 0.72);
+        b.tag.userData.baseY = b.tag.position.y;
+        g.add(b.tag);
+    }
+
+    // 진영 색: 발밑 원판 + 깃발 + 지붕 위 이름표
     if (b.type !== "wall" && b.type !== "farm") {
         const disc = makeTeamDisc(b.def.radius * 0.95, b.owner);
         disc.position.y = 0.035;
         g.add(disc);
         addTeamFlag(g, b.owner, b.def.radius * 0.72, 0, -b.def.radius * 0.5,
             b.type === "towncenter" ? 3.0 : 2.1);
+
+        b.tag = makeNameTag(b.def.glyph, b.owner,
+            b.def.radius * 1.6 + 0.7, b.type === "towncenter" ? 1.15 : 0.9);
+        b.tag.userData.baseY = b.tag.position.y;
+        g.add(b.tag);
     }
 
     b.ring = makeSelectRing(b.def.radius + 0.25, b.owner);
     g.add(b.ring);
 
     b.bar = makeHpBar(b.def.radius * 1.4, b.def.radius * 1.6 + 1.2);
+    b.bar.userData.baseY = b.bar.position.y;
     g.add(b.bar);
 
     g.scale.y = b.built ? 1 : 0.08 + 0.92 * Math.min(1, b.work / b.def.time);
+    unsquash(b);
     return g;
 }
 
@@ -131,6 +147,7 @@ export function completeBuilding(b, silent = false) {
     b.work = b.def.time;
     b.hp = b.maxHp;
     b.group.scale.y = 1;
+    unsquash(b);
 
     if (b.def.farm) {
         b.node = addNode("food", b.x, b.z, b.def.farm, null,
@@ -288,6 +305,19 @@ export function startAgeUp(b) {
 
 /* ------------------------------------------------------------------ 갱신 */
 
+/**
+ * 짓는 동안 건물은 y 로 눌린 채 자란다.
+ * 그 안에 든 이름표와 체력 막대까지 같이 눌리면 납작한 글자가 된다 — 되돌려 준다.
+ */
+function unsquash(b) {
+    const k = b.group ? b.group.scale.y || 1 : 1;
+    for (const o of [b.tag, b.bar]) {
+        if (!o || o.userData.baseY === undefined) continue;
+        o.scale.y = 1 / k;
+        o.position.y = o.userData.baseY / k;
+    }
+}
+
 export function updateBuildings(dt) {
     for (let i = R.buildings.length - 1; i >= 0; i--) {
         const b = R.buildings[i];
@@ -297,6 +327,7 @@ export function updateBuildings(dt) {
         if (!b.built) {
             const k = Math.min(1, b.work / b.def.time);
             b.group.scale.y = 0.08 + 0.92 * k;
+            unsquash(b);
             b.hp = Math.max(1, Math.floor(b.maxHp * (0.15 + 0.85 * k)));
             b.bar.visible = true;
             setHpBar(b.bar, k);

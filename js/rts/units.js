@@ -13,7 +13,7 @@ import { terrainHeight } from "../terrain.js";
 import { accepts, TEAM, UNITS } from "./defs.js";
 import { fogAt } from "./fog.js";
 import { makeAnimal, makeHpBar, makePerson, makeSelectRing, makeTeamDisc, setHpBar } from "./models.js";
-import { addNode, nearestNode, removeNode } from "./nodes.js";
+import { addNode, nearestNode, removeNode, tagNode } from "./nodes.js";
 import { R, nextId } from "./state.js";
 import { damageBuilding, completeBuilding, popRecount } from "./buildings.js";
 import { spawnArrow } from "./combat.js";
@@ -54,13 +54,15 @@ export function attachUnitMesh(u) {
     const g = new THREE.Group();
     const mesh = def.animal ? makeAnimal(def) : makePerson(def, u.owner);
     // 등각 화면에서 사람이 너무 작으면 무엇을 고른 건지 눈이 못 따라간다.
-    mesh.scale.setScalar(def.animal ? 1.15 : 1.3);
+    // 병사는 주민보다 한 뼘 크게 세운다 — 떼로 섞여 있어도 키로 갈린다.
+    const soldier = !def.animal && def.atk > 0 && def.key !== "villager";
+    mesh.scale.setScalar(def.animal ? 1.15 : (soldier ? 1.42 : 1.24));
     g.add(mesh);
     u.mesh = mesh;
     u.load = null;
 
     if (!def.animal) {
-        u.disc = makeTeamDisc(0.4, u.owner);
+        u.disc = makeTeamDisc(soldier ? 0.46 : 0.38, u.owner, soldier);
         g.add(u.disc);
     }
     u.ring = makeSelectRing(0.55, def.animal ? 2 : u.owner);
@@ -92,7 +94,8 @@ export function killUnit(u) {
     if (u.def.animal) {
         u.group.rotation.z = Math.PI / 2.2;
         u.group.position.y = terrainHeight(u.x, u.z) + 0.15;
-        addNode("food", u.x, u.z, u.def.food, u.group, { radius: 0.8, carcass: true });
+        const meat = addNode("food", u.x, u.z, u.def.food, u.group, { radius: 0.8, carcass: true });
+        tagNode(meat, { rotZ: -Math.PI / 2.2, y: 1.1 });
     } else {
         R.effects.push({ t: "corpse", group: u.group, life: 1.6, max: 1.6 });
         u.group.rotation.x = -Math.PI / 2.4;

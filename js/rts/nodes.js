@@ -5,7 +5,9 @@
  * 다 거두면 사라지고, 주민은 가까운 같은 자원을 스스로 찾아간다.
  */
 import { G } from "../state.js";
-import { makeBerryBush, makeCarcass, makeGoldMine, makeStoneMine, makeStump, makeTree } from "./models.js";
+import {
+    makeBerryBush, makeCarcass, makeGoldMine, makeNodePin, makeStoneMine, makeStump, makeTree
+} from "./models.js";
 import { R, nextId } from "./state.js";
 import { disposeObj } from "./util.js";
 
@@ -16,6 +18,33 @@ const NODE_DEF = {
     stone: { name: "돌", glyph: "석" },
     gold: { name: "금", glyph: "금" }
 };
+
+/**
+ * 자원 이름표 색.
+ *
+ * 숲은 빽빽해서 이름표를 달면 글자 숲이 된다 — 나무에는 달지 않는다.
+ * 덤불 · 돌 · 금은 드문드문 있고, 그래서 찾기 어렵다. 그것만 달아 준다.
+ */
+const NODE_TAG = {
+    food: 0xe2542f,
+    stone: 0xd4cec4,
+    gold: 0xf2c430
+};
+
+export function tagNode(node, opts = {}) {
+    const hex = NODE_TAG[node.kind];
+    if (!hex || !node.group) return null;
+    const tag = makeNodePin(hex, opts.y ?? 1.5);
+    // 쓰러진 짐승처럼 모형이 기울어 있으면 표시만 되세운다
+    if (opts.rotZ) tag.rotation.z = opts.rotZ;
+    node.group.add(tag);
+    node.tag = tag;
+    return tag;
+}
+
+function addNodeTag(node) {
+    return tagNode(node);
+}
 
 export function addNode(kind, x, z, amount, group, opts = {}) {
     const node = {
@@ -70,7 +99,9 @@ export function spawnResource(kind, x, z, amount) {
     else group = makeGoldMine(x, z);
 
     G.world.add(group);
-    return addNode(kind, x, z, amount, group, { radius: kind === "wood" ? 0.8 : 1.0 });
+    const node = addNode(kind, x, z, amount, group, { radius: kind === "wood" ? 0.8 : 1.0 });
+    addNodeTag(node);
+    return node;
 }
 
 /** 장면을 다시 지었을 때 자원 모형을 되살린다 */
@@ -85,4 +116,5 @@ export function remakeNodeMesh(n) {
 
     G.world.add(group);
     n.group = group;
+    addNodeTag(n);
 }
