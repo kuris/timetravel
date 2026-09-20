@@ -10,7 +10,7 @@
 import { viewSize } from "../renderer.js";
 import { G, cameraTarget } from "../state.js";
 
-import { AGE_NAME, AGE_UP, BUILDINGS, RES_NAME, TEAM, UNITS } from "./defs.js";
+import { AGE_NAME, AGE_SHORT, AGE_UP, BUILDINGS, RES_NAME, TEAM, UNITS } from "./defs.js";
 import { FOG, fogAt } from "./fog.js";
 import { GROUND } from "./map.js";
 import { ISO_SQUASH } from "./rtscam.js";
@@ -247,7 +247,8 @@ export function updateHud(dt) {
         el.gold.textContent = Math.floor(p.res.gold);
         el.pop.textContent = `${p.pop}/${p.popCap}`;
         el.pop.style.color = p.pop >= p.popCap ? "#e0a05a" : "";
-        el.age.textContent = AGE_NAME[p.age];
+        // 좁은 화면에서는 시대 이름을 줄인다 (위 막대에 단추까지 들어가야 한다)
+        el.age.textContent = (window.innerWidth < 620 ? AGE_SHORT : AGE_NAME)[p.age];
     }
 
     const m = Math.floor(R.time / 60), s = Math.floor(R.time % 60);

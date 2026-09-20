@@ -53,6 +53,13 @@
     border: 1px solid var(--brass-lo);
     padding: 1px 10px;
     background: rgba(0, 0, 0, 0.3);
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+#resBar .res {
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 #clock {
@@ -495,6 +502,7 @@
 /* ------------------------------------------------------- 튜토리얼 */
 #tutPanel {
     position: absolute;
+    box-sizing: border-box;
     left: 10px;
     top: 40px;
     width: 316px;
@@ -1066,27 +1074,33 @@
     }
 
     #quickBar .qb {
-        padding: 4px 7px;
+        padding: 4px 6px;
     }
 
     #quickBar {
-        gap: 3px;
-        margin-right: 4px;
+        gap: 2px;
+        margin-right: 3px;
     }
 
     #resBar {
-        gap: 5px;
-        padding: 0 5px;
+        gap: 4px;
+        padding: 0 4px;
     }
 
     #resBar .res {
         font-size: 11px;
-        gap: 3px;
+        gap: 2px;
+    }
+
+    .ico {
+        width: 11px;
+        height: 11px;
     }
 
     #ageBadge {
-        padding: 1px 5px;
-        font-size: 11px;
+        padding: 1px 4px;
+        font-size: 10px;
+        letter-spacing: 0;
     }
 
     #cmdBar {
@@ -1120,6 +1134,60 @@
     #eventLog {
         bottom: 104px;
         width: 54vw;
+    }
+}
+
+/* 한 줄에 다 못 넣는 전화기 — 빠른 단추를 둘째 줄로 내린다.
+   좁다고 단추를 잘라 버리면 1인칭도 안내도 누를 수가 없다. */
+@media (max-width: 440px) {
+    #resBar {
+        height: auto;
+        min-height: 26px;
+        flex-wrap: wrap;
+        row-gap: 2px;
+        padding-bottom: 3px;
+    }
+
+    #resBar .res-gap {
+        display: none;
+    }
+
+    #ageBadge {
+        margin-left: auto;
+    }
+
+    #quickBar {
+        order: 3;
+        width: 100%;
+        margin: 0;
+        gap: 4px;
+        justify-content: space-between;
+    }
+
+    #quickBar .qb {
+        flex: 1;
+        padding: 6px 0;
+        font-size: 11px;
+    }
+
+    /* 한 줄을 통째로 쓰니 글자를 되살린다 — 아이콘만으로는 무슨 단추인지 모른다 */
+    #quickBar .qb .tx {
+        display: inline;
+    }
+
+    #quickBar .qb .ic {
+        display: none;
+    }
+
+    /* 두 줄이 된 만큼 아래 것들을 내린다.
+       안내 칸은 오른쪽 위 지도와 부딪히지 않을 만큼만 넓힌다. */
+    #tutPanel {
+        top: 62px;
+        width: min(280px, calc(100vw - 166px));
+    }
+
+    #panelRight {
+        top: 60px;
     }
 }
 
@@ -1160,6 +1228,7 @@ body.fpv #selRect {
 .fpvb {
     font-family: inherit;
     font-size: 12px;
+    white-space: nowrap;
     letter-spacing: 1px;
     padding: 5px 12px;
     color: var(--ink);
@@ -1203,7 +1272,19 @@ body.fpv #game canvas {
         display: none;
     }
 
+    /* 전화기에서는 막대를 화면 폭으로 벌리고 단추를 엄지에 맞춘다 */
+    #fpvBar {
+        left: 8px;
+        right: 8px;
+        bottom: 10px;
+        transform: none;
+        justify-content: space-between;
+        padding: 6px;
+    }
+
     .fpvb {
-        padding: 7px 12px;
+        flex: 1;
+        padding: 10px 6px;
+        font-size: 13px;
     }
 }
