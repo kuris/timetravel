@@ -293,14 +293,24 @@ export function closeDialogue() {
     document.body.classList.remove("dialogue-open");
 }
 
-/** 숫자키 1-3으로 선택지 선택 */
+/** 숫자키 1-3으로 선택지 선택 — 화면에 보이는 순서와 같게 */
 export function handleDialogueKey(key) {
     if (!dialogueOpen || !currentNPC) return;
     if (key === "Escape") { stopTyping(); lineQueue = []; closeDialogue(); return; }
     if (advanceTyping()) return;
 
     const idx = parseInt(key) - 1;
-    if (!isNaN(idx) && currentNPC.choices && idx >= 0 && idx < currentNPC.choices.length) {
-        selectChoice(currentNPC.choices[idx]);
+    if (isNaN(idx) || idx < 0 || idx > 2) return;
+    const asked = currentNPC.asked || (currentNPC.asked = new Set());
+    const list = (currentNPC.choices || []).filter((c) => {
+        if (asked.has(c.text)) return false;
+        if (c.clue && G.clues.has(c.clue) && c.hideAfter) return false;
+        return true;
+    });
+    const shown = list.slice(0, 2);
+    if (idx < shown.length) {
+        selectChoice(shown[idx]);
+    } else {
+        closeDialogue();
     }
 }
