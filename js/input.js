@@ -160,8 +160,21 @@ export function setupInput() {
     if (verbMap) {
         verbMap.addEventListener("click", () => {
             AudioSystem.start();
-            const p = document.getElementById("minimapPanel");
-            if (p) p.style.display = (p.style.display === "none") ? "" : "none";
+            if (window.innerWidth <= 760) {
+                document.body.classList.toggle("ui-open");
+            } else {
+                const p = document.getElementById("minimapPanel");
+                if (p) p.style.display = (p.style.display === "none") ? "" : "none";
+            }
+        });
+    }
+
+    // 모바일 UI 토글 (☰): 지도·이정표 여닫기
+    const uiToggle = document.getElementById("uiToggle");
+    if (uiToggle) {
+        uiToggle.addEventListener("click", () => {
+            AudioSystem.start();
+            document.body.classList.toggle("ui-open");
         });
     }
 

@@ -109,20 +109,20 @@ export function openChoiceDialogue(npc) {
 
     if (!overlay) return;
 
-    nameEl.textContent = "【 " + npc.name + " 】";
-    const portraitName = document.getElementById("portraitName");
-    if (portraitName) portraitName.textContent = npc.name;
+    nameEl.textContent = npc.name;
     const portraitFace = document.getElementById("portraitFace");
-    if (portraitFace) {
-        const faces = {
-            "포도청 나졸": "najol", "밭 가는 노인": "old_farmer", "행상": "peddler",
-            "관아 서생": "clerk", "장터 아이": "kid", "우물가 아낙": "well_woman",
-            "가판 상인": "merchant", "빨래하는 아낙": "laundry_woman", "볏가리 노인": "straw_elder"
-        };
-        const key = faces[npc.name];
-        portraitFace.src = key ? ("assets/portraits/" + key + ".png") : "assets/portraits/eosa.png";
-        portraitFace.alt = npc.name;
-    }
+    const portraitName = document.getElementById("portraitName");
+    const dlgPortrait = document.getElementById("dialoguePortrait");
+    const faces = {
+        "포도청 나졸": "najol", "밭 가는 노인": "old_farmer", "행상": "peddler",
+        "관아 서생": "clerk", "장터 아이": "kid", "우물가 아낙": "well_woman",
+        "가판 상인": "merchant", "빨래하는 아낙": "laundry_woman", "볏가리 노인": "straw_elder"
+    };
+    const key = faces[npc.name];
+    const src = key ? ("assets/portraits/" + key + ".png") : "assets/portraits/eosa.png";
+    if (portraitName) portraitName.textContent = npc.name;
+    if (portraitFace) { portraitFace.src = src; portraitFace.alt = npc.name; }
+    if (dlgPortrait) { dlgPortrait.src = src; dlgPortrait.alt = npc.name; }
     const greeting = npc.greeting || "무슨 일로 왔소?";
     promptEl.dataset.full = greeting;
     typeText(promptEl, greeting);
@@ -148,7 +148,9 @@ export function openChoiceDialogue(npc) {
     document.body.classList.add("dialogue-open");
     overlay.focus();
 
-    // 대화창 클릭도 타자기 넘기기로
+    // 대화창 클릭도 타자기 넘기기로 (왼쪽 말풍선 전체)
+    const dlgMain = document.getElementById("dialogueMain");
+    if (dlgMain) dlgMain.onclick = () => { advanceTyping(); };
     promptEl.onclick = () => { advanceTyping(); };
 }
 
@@ -165,11 +167,22 @@ function renderChoices(choicesEl) {
         if (c.clue && G.clues.has(c.clue) && c.hideAfter) return false;
         return true;
     });
-    list.forEach((choice, i) => {
+    // 첨부처럼 항상 3칸: 남은 선택지 + "그냥 간다."
+    const shown = list.slice(0, 2);
+    const items = [...shown.map((c) => ({ choice: c })), { leave: true }];
+    items.forEach((item, i) => {
         const btn = document.createElement("button");
         btn.className = "dialogue-choice";
-        btn.textContent = (i + 1) + ". " + choice.text;
-        btn.addEventListener("click", () => selectChoice(choice));
+        if (item.leave) {
+            btn.textContent = (i + 1) + ". 그냥 간다.";
+            btn.addEventListener("click", () => {
+                if (advanceTyping()) return;
+                closeDialogue();
+            });
+        } else {
+            btn.textContent = (i + 1) + ". " + item.choice.text;
+            btn.addEventListener("click", () => selectChoice(item.choice));
+        }
         choicesEl.appendChild(btn);
     });
     return list.length;

@@ -7,6 +7,8 @@ import { registerInteractable } from "../interaction.js";
 import { addMapMarker } from "../minimap.js";
 import { pick, rand, randRange } from "../rng.js";
 import { addBanner, addBridge, addCart, addCropField, addHayStack, addJarPlatform, addLaundryLine, addMarketStall, addStoneWallRun } from "../props.js";
+import { addRicePaddy, addRaisedGranary } from "./bronze.js";
+import { addPavilion, addJumak, addShrine, addSeodang, addSmithy, addMillHouse, addStream, addPaddyCluster } from "./joseon_buildings.js";
 import { addCow, addDog, addVillager, addWorker } from "../npc.js";
 import { S } from "../landmarks.js";
 import { G } from "../state.js";
@@ -117,6 +119,29 @@ export function buildJoseon() {
     l1 = P(16, 4); l2 = P(20, 2);
     addLaundryLine(l1[0], l1[1], l2[0], l2[1]);
 
+    // ---- 양반 / 일반 / 공공 — 역할이 읽히는 건물들 ----
+    q = P(-3, 17); addGiwa(q[0], q[1], 0.1, 1.18, { w: 4.6, wing: true });
+    q = P(-9, 13); addChoga(q[0], q[1], 0.5, 0.95, { wall: 0xc4a87e });
+    q = P(10, 10); addSeodang(q[0], q[1], -0.3);
+    q = P(-13, -5); addJumak(q[0], q[1], 0.45);
+    q = P(13, -5); addSmithy(q[0], q[1], -0.5);
+    q = P(18, -13); addMillHouse(q[0], q[1], 0.9);
+    q = P(21, 3); addPavilion(q[0], q[1], -0.4);
+    q = P(-22, -13); addShrine(q[0], q[1], 0.6);
+    q = P(6, -9); addRaisedGranary(q[0], q[1], 0.3);
+    q = P(-7, -5); addRaisedGranary(q[0], q[1], -0.4);
+
+    // ---- 논 (서쪽 들판) + 개울 (논에서 연못으로) ----
+    q = P(-26, 6); addPaddyCluster(q[0], q[1], 0.2, 2, 2);
+    q = P(-27, -3); addPaddyCluster(q[0], q[1], -0.15, 2, 1);
+    addStream([P(-24, 4), P(-16, -2), P(-6, -6), P(6, -10), P(14, -11)], 1.5);
+    addStream([P(2, 14), P(6, 8), P(8, 2)], 1.1);
+    // 개울을 건너는 작은 다리 둘
+    let s1 = P(-11, -4), s2 = P(-8, -5);
+    addBridge(s1[0], s1[1], s2[0], s2[1], 1.3);
+    s1 = P(3, 11); s2 = P(6, 10);
+    addBridge(s1[0], s1[1], s2[0], s2[1], 1.3);
+
     // ---- 텃밭 (왼쪽) ----
     q = P(-21, 2); addCropField(q[0], q[1], 0.25, 6, 5);
     q = P(-22, -6); addCropField(q[0], q[1], -0.4, 5, 4);
@@ -163,13 +188,13 @@ export function buildJoseon() {
         greeting: "이 마을은 조용합니다. ...너무 조용하지 않습니까?",
         choices: [
             {
-                text: "관아에서 무슨 일이 있습니까?",
+                text: "마을에 대해 묻는다.",
                 response: "사또께서 환곡을 거두신답니다. 흉년에도 창고는 비지 않는데, 백성의 곳간만 빕니다.",
                 clue: "eosa_tax", journal: true, hideAfter: true,
                 followUp: "(나졸이 관아 쪽을 힐끗 본다)"
             },
             {
-                text: "전임 어사 이야기를 들었습니까?",
+                text: "특별한 것을 보았는지 묻는다.",
                 response: "작년 이맘때, 홀연히 오셨다 사라지셨지요. 마패 조각 하나만 남기고요.",
                 journal: true,
                 followUp: "(나졸이 목소리를 낮춘다)"
@@ -181,13 +206,13 @@ export function buildJoseon() {
         greeting: "이 논은 내 논이 아니여. 문서로는 벌써 관아 땅이여.",
         choices: [
             {
-                text: "논을 빼앗기셨습니까?",
+                text: "마을에 대해 묻는다.",
                 response: "도장 하나 찍혔다고 벼를 거둬갑니다. 항의하던 아들은 지금 관아에 갇혀 있소.",
                 clue: "eosa_land", journal: true, hideAfter: true,
                 followUp: "(노인이 괭이질을 멈춘다)"
             },
             {
-                text: "장승에 뭘 빌었습니까?",
+                text: "특별한 것을 보았는지 묻는다.",
                 response: "장승님께 탄원서를 묻었지. 글 못 읽는 늙은이의 마음이여. 장승 밑을 살펴보소.",
                 journal: true,
                 followUp: "(노인이 마을 어귀를 가리킨다)"
@@ -199,7 +224,7 @@ export function buildJoseon() {
         greeting: "물건은 없소. 관아에 다 뜯겼소.",
         choices: [
             {
-                text: "장터에서 뭘 보셨습니까?",
+                text: "마을에 대해 묻는다.",
                 response: "관아 곳간으로 들어가는 쌀가마를 보았소. 장부에는 없는 쌀이여. 우물가 탁자 밑 장부를 찾아보시오.",
                 clue: "eosa_rice", journal: true, hideAfter: true,
                 followUp: "(행상이 보따리를 고쳐 맨다)"
@@ -208,10 +233,10 @@ export function buildJoseon() {
     });
     addVillager([P(6, 13), P(12, 14), P(14, 10), P(8, 9)], "joseon", {
         name: "관아 서생", hat: "gat", speed: 0.9,
-        greeting: "신분高的 분 같으신데... 관아 일에 참견 마시지요.",
+        greeting: "어이, 나그네.\n요즘 이 마을이 좀 조용해졌지 않소?\n예전엔 장사꾼도 많고, 사람들도 북적였는데...\n혹시 다른 마을에서 오셨소?",
         choices: [
             {
-                text: "수탈 장부에 대해 아는 게 있습니까?",
+                text: "특별한 것을 보았는지 묻는다.",
                 response: "...그 장부를 찾으시오? 목숨 걸고 말하리다. 밤마다 사또가 불태우는 문서가 있소. 재가 되기 전에 잡으시오.",
                 clue: "eosa_ledger", journal: true, hideAfter: true,
                 followUp: "(서생이 황급히 자리를 뜬다)"
@@ -223,7 +248,7 @@ export function buildJoseon() {
         greeting: "나으리! 술래잡기 하러 왔어요?",
         choices: [
             {
-                text: "마을에서 이상한 걸 본 적 있니?",
+                text: "마을에 대해 묻는다.",
                 response: "응! 밤에 관아 뒤에서 불이 났는데, 아저씨들이 종이를 엄청 태웠어요! 그리고 장승님이 울었어요.",
                 journal: true,
                 followUp: "(아이가 장승 쪽으로 달려간다)"
@@ -237,7 +262,7 @@ export function buildJoseon() {
         greeting: "물을 길어도 목이 마릅니다. 눈물이 먼저 고이니께요.",
         choices: [
             {
-                text: "무슨 사연이 있으십니까?",
+                text: "마을에 대해 묻는다.",
                 response: "남편이 환곡을 못 갚아 옥에 갇혔소. 없는 쌀을 갚으라 하니, 사람 잡는 셈이지요.",
                 clue: "eosa_well", journal: true, hideAfter: true,
                 followUp: "(아낙이 치마폭으로 눈물을 닦는다)"
@@ -250,7 +275,7 @@ export function buildJoseon() {
         greeting: "어서 오시오. ...아, 손님이 아니시오?",
         choices: [
             {
-                text: "관아의 세금이 과하다던데?",
+                text: "마을에 대해 묻는다.",
                 response: "정가는 세 배를 매기고, 나머지는 사또 창고로 들어간다오. 증거는 우물가 장부에 있소.",
                 clue: "eosa_market", journal: true, hideAfter: true,
                 followUp: "(상인이 좌판을 두드린다)"
@@ -263,7 +288,7 @@ export function buildJoseon() {
         greeting: "이 물로 관아의 더러운 것도 씻겨 냈으면 좋겠소.",
         choices: [
             {
-                text: "관아에서 빨래를 시킵니까?",
+                text: "특별한 것을 보았는지 묻는다.",
                 response: "피 묻은 관복을 빨았소. 맞고 들어간 농사짓는 사람들 피요. 장승님이 다 보셨을 거요.",
                 journal: true,
                 followUp: "(아낙이 빨랫감을 세게 문지른다)"
@@ -276,7 +301,7 @@ export function buildJoseon() {
         greeting: "볏짚은 남는데 쌀이 없네. 웃기지 않소?",
         choices: [
             {
-                text: "올해 농사는 어땠습니까?",
+                text: "마을에 대해 묻는다.",
                 response: "풍년이었소. 그런데도 모두가 굶소. 쌀이 다 어디로 갔겠소?",
                 clue: "eosa_harvest", journal: true, hideAfter: true,
                 followUp: "(노인이 볏짚을 내리친다)"
@@ -463,9 +488,10 @@ export function addHanokBody(g, w, d, wallH, opts = {}) {
 
 /**
  * 초가집. 마을에서 가장 흔한 집.
+ * 똑같아 보이지 않게 집마다 몸집·벽색·지붕색·부속을 달리한다.
  * @param {number} scale 집마다 크기를 달리해서 줄 세운 느낌을 없앤다
  */
-export function addChoga(x, z, rot, scale = 1) {
+export function addChoga(x, z, rot, scale = 1, opts = {}) {
     addMapMarker(x, z, "#9c8350", 3, "building");
 
     const g = new THREE.Group();
@@ -474,19 +500,46 @@ export function addChoga(x, z, rot, scale = 1) {
     g.scale.setScalar(scale);
     G.world.add(g);
 
-    const w = 2.5, d = 1.8, wallH = 1.0;
-    addHanokBody(g, w, d, wallH, { wall: 0xd2b287, lit: rand() > 0.3 });
-    addThatchRoof(g, w, d, 0.26 + wallH, {});
+    const w = opts.w ?? 2.5 * randRange(0.82, 1.28);
+    const d = opts.d ?? 1.8 * randRange(0.85, 1.2);
+    const wallH = opts.wallH ?? randRange(0.88, 1.22);
+    const wall = opts.wall ?? pick([0xd2b287, 0xc4a87e, 0xe0cb9e, 0xbfa07a, 0xcbb08a]);
+    const straw = opts.straw ?? pick([0xc4a463, 0xb5975a, 0xd2b06a, 0xa8894e]);
+    const strawTop = opts.strawTop ?? pick([0xa88c4e, 0x96793f, 0xb59655]);
+    addHanokBody(g, w, d, wallH, { wall, lit: opts.lit ?? (rand() > 0.3), porch: opts.porch ?? (rand() > 0.25) });
+    addThatchRoof(g, w, d, 0.26 + wallH, { straw, strawTop });
 
-    // 굴뚝
-    if (rand() > 0.5) {
-        addCylinder(g, 0.13, 0.16, 0.7, 6, 0x6b5a48, w * 0.42, 0.26 + wallH + 0.3, -d * 0.42,
+    // 굴뚝 — 위치와 유무가 집마다 다르다
+    if (opts.chimney ?? (rand() > 0.45)) {
+        const sx = pick([-1, 1]) * w * randRange(0.3, 0.44);
+        addCylinder(g, 0.13, 0.16, randRange(0.55, 0.9), 6, 0x6b5a48, sx, 0.26 + wallH + 0.3, -d * 0.42,
             { roughness: 1, map: G.TEX.stone });
     }
 
-    // 문
-    addBox(g, 0.62, 0.78, 0.07, 0x3a281a, 0, 0.26 + 0.39, d * 0.5 + 0.03, 0,
+    // 문 — 가운데/왼쪽/오른쪽 중 하나
+    const doorX = opts.doorX ?? pick([-w * 0.28, 0, w * 0.28]);
+    addBox(g, 0.62, 0.78, 0.07, pick([0x3a281a, 0x4a3320, 0x2e2015]), doorX, 0.26 + 0.39, d * 0.5 + 0.03, 0,
         { map: G.TEX.wood });
+
+    // 부속 — 헛간 붙임 (작은 박스 + 납작 지붕)
+    if (opts.shed ?? (rand() < 0.35)) {
+        const sw = randRange(0.9, 1.4);
+        addBox(g, sw, 0.7, 0.9, wall, -w * 0.5 - sw * 0.4, 0.35, -0.2, 0,
+            { roughness: 1, map: G.TEX.dirtObj });
+        const shedRoof = addCone(g, sw * 0.85, 0.35, 4, straw, -w * 0.5 - sw * 0.4, 0.85, -0.2,
+            { roughness: 1, map: G.TEX.thatch });
+        shedRoof.rotation.y = Math.PI / 4;
+    }
+
+    // 땔감 더미 — 어떤 집 앞에 쌓여 있다
+    if (rand() < 0.45) {
+        const px = w * 0.5 + randRange(0.3, 0.7);
+        for (let i = 0; i < 4; i++) {
+            addCylinder(g, 0.07, 0.07, randRange(0.7, 1.1), 5, 0x6b4a28,
+                px, 0.08 + (i % 2) * 0.13, randRange(-0.5, 0.5), { map: G.TEX.wood })
+                .rotation.z = Math.PI / 2;
+        }
+    }
 
     return g;
 }
@@ -495,7 +548,7 @@ export function addChoga(x, z, rot, scale = 1) {
  * 기와집. 초가집보다 크고 기단이 높다.
  * 어두운 청회색 기와가 밤 화면에서 무게를 잡아 준다.
  */
-export function addGiwa(x, z, rot, scale = 1) {
+export function addGiwa(x, z, rot, scale = 1, opts = {}) {
     addMapMarker(x, z, "#6c6470", 3.5, "building");
 
     const g = new THREE.Group();
@@ -504,7 +557,11 @@ export function addGiwa(x, z, rot, scale = 1) {
     g.scale.setScalar(scale);
     G.world.add(g);
 
-    const w = 3.3, d = 2.1, wallH = 1.25;
+    const w = opts.w ?? 3.3 * randRange(0.85, 1.2);
+    const d = opts.d ?? 2.1 * randRange(0.85, 1.15);
+    const wallH = opts.wallH ?? randRange(1.1, 1.45);
+    const wall = opts.wall ?? pick([0xcbb290, 0xc0a582, 0xd6bd98]);
+    const tile = opts.tile ?? pick([0x39404e, 0x424a55, 0x333a47, 0x4a4a52]);
 
     // 기와집은 기단을 한 단 더 올린다
     addBox(g, w + 0.9, 0.22, d + 0.9, 0x635d55, 0, 0.11, 0, 0,
@@ -514,8 +571,16 @@ export function addGiwa(x, z, rot, scale = 1) {
     inner.position.y = 0.22;
     g.add(inner);
 
-    addHanokBody(inner, w, d, wallH, { wall: 0xcbb290, lit: true });
-    addHanokRoof(inner, w, d, 0.26 + wallH, { tile: 0x39404e, ridge: 0x232936, h: 0.78, eave: 0.62 });
+    addHanokBody(inner, w, d, wallH, { wall, lit: opts.lit ?? true });
+    addHanokRoof(inner, w, d, 0.26 + wallH, { tile, ridge: opts.ridge ?? 0x232936, h: opts.roofH ?? randRange(0.7, 1.0), eave: opts.eave ?? randRange(0.5, 0.7) });
+
+    // ㄱ자/ㄷ자 집 — 어떤 기와집은 옆채가 붙어 있다
+    if (opts.wing ?? (rand() < 0.5)) {
+        const ww = w * randRange(0.35, 0.55);
+        addBox(inner, ww, wallH * 0.9, d * 0.9, wall, w * 0.5 + ww * 0.4, wallH * 0.45 + 0.26, 0, 0,
+            { roughness: 1, map: G.TEX.dirtObj });
+        addHanokRoof(inner, ww, d * 0.9, 0.26 + wallH * 0.9, { tile, ridge: 0x232936, h: 0.55, eave: 0.4 });
+    }
 
     // 댓돌 (마루 앞 디딤돌)
     addBox(g, 0.7, 0.14, 0.4, 0x6f6960, 0, 0.29, d * 0.5 + 0.95, 0,

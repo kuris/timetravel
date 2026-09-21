@@ -18,6 +18,7 @@
     <div id="bezel"></div>
 
     <div id="ui">
+        <button id="uiToggle" title="메뉴 여닫기">☰</button>
         <!-- 좌측 상단: 시대 / 목표 / 진행 -->
         <div id="topLeft" class="panel">
             <div id="title">시간유적</div>
@@ -108,12 +109,18 @@
         </div>
     </div>
 
-    <!-- 선택지 대화 오버레이 -->
+    <!-- 선택지 대화: 하단 좌우 분할 (초상+대사 | 선택지) -->
     <div id="dialogueOverlay" tabindex="-1">
-        <div id="dialoguePanel" class="panel">
-            <div id="dialogueName"></div>
-            <p id="dialoguePrompt"></p>
-            <div id="dialogueChoices"></div>
+        <div id="dialoguePanel">
+            <div id="dialogueMain" class="panel">
+                <img id="dialoguePortrait" src="assets/portraits/eosa.png" alt="대화 상대" />
+                <div id="dialogueTextWrap">
+                    <div id="dialogueName"></div>
+                    <p id="dialoguePrompt"></p>
+                </div>
+                <div id="dialogueNext">▼</div>
+            </div>
+            <div id="dialogueChoices" class="panel"></div>
         </div>
     </div>
 
