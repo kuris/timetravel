@@ -66,7 +66,7 @@ export function advisor() {
     G.justDone = null;
 
     if (G.activeGate && G.activeGate.active) {
-        return { text: "증거를 다 모았습니다 — 관아로 가서 사또를 대면하세요", done: false };
+        return { text: "증거를 다 모았습니다 — 마패를 보이고 진범을 압송하라", done: false };
     }
 
     const pinKey = "objective:" + G.currentAge;
@@ -116,10 +116,10 @@ function pickObjective() {
     const age = AGE_DATA[G.currentAge];
     const left = Math.max(0, (age.total || 3) - G.ageProgress);
     if (left > 0) {
-        return { text: "마을 안의 유물 " + left + "개를 조사하고 회수하세요" };
+        return { text: "아랑의 한을 풀어라 — 증거 " + left + "개 남음 (월영루·대숲·문서고)" };
     }
 
-    return { text: "증거를 다 모았습니다 — 관아로 가서 사또를 대면하세요", done: true };
+    return { text: "증거를 다 모았습니다 — 마패를 보이고 진범을 압송하라", done: true };
 }
 
 /** 그 건물이 무엇에 쓸모가 있는지 (메뉴에 같이 보여 준다) */

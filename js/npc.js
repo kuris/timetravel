@@ -433,3 +433,31 @@ export function addBirdFlock(x, y, z, count = 14) {
     G.animated.push({ type: "birds", points, geo, offsets, center: { x, y, z } });
     return points;
 }
+
+/** 붉은 나비떼: 월영루 위를 맴도는 원혼의 나비 */
+export function addButterflyFlock(x, y, z, count = 9) {
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(count * 3);
+    const offsets = [];
+
+    for (let i = 0; i < count; i++) {
+        offsets.push({
+            r: randRange(1.5, 4.5),
+            a: randRange(0, Math.PI * 2),
+            speed: randRange(0.35, 0.7),
+            yOff: randRange(-0.6, 0.8)
+        });
+        pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
+    }
+
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+
+    const points = new THREE.Points(geo, new THREE.PointsMaterial({
+        color: 0xc0392b, size: 0.20, sizeAttenuation: true,
+        transparent: true, opacity: 0.9, depthWrite: false, fog: true
+    }));
+
+    G.world.add(points);
+    G.animated.push({ type: "birds", points, geo, offsets, center: { x, y, z } });
+    return points;
+}

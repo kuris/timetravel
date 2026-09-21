@@ -1,5 +1,5 @@
 /**
- * 3시대 — 조선 한양 외곽 마을
+ * 밀양 월영루 — 아랑 설화
  */
 import { addBlob, addBox, addCone, addCylinder, addCylinderBetween, addFlatCircle, makeBasicMat, makeMat } from "../build.js";
 import { addFence } from "./neolithic.js";
@@ -9,14 +9,14 @@ import { pick, rand, randRange } from "../rng.js";
 import { addBanner, addBridge, addCart, addCropField, addHayStack, addJarPlatform, addLaundryLine, addMarketStall, addStoneWallRun } from "../props.js";
 import { addRicePaddy, addRaisedGranary } from "./bronze.js";
 import { addPavilion, addJumak, addShrine, addSeodang, addSmithy, addMillHouse, addStream, addPaddyCluster } from "./joseon_buildings.js";
-import { addCow, addDog, addVillager, addWorker } from "../npc.js";
+import { addCow, addDog, addVillager, addWorker, addButterflyFlock } from "../npc.js";
 import { S } from "../landmarks.js";
 import { G } from "../state.js";
 import { terrainHeight } from "../terrain.js";
 import { addGround, addPond, addStonePath, addTreeLine, scatterGrass, scatterStones } from "../world.js";
 
 /**
- * 3시대 — 조선 한양 외곽 마을 (늦은 저녁)
+ * 밀양 월영루 — 아랑 설화 (늦은 저녁)
  *
  * 마을의 뼈대:
  *   화면 위-오른쪽   관아 문루와 담장
@@ -27,7 +27,7 @@ import { addGround, addPond, addStonePath, addTreeLine, scatterGrass, scatterSto
  * 등각 화면에서 오른쪽 = 월드 (1,0,-1), 위쪽 = 월드 -(1,0,1) 이다.
  */
 /**
- * 3시대 — 조선 한양 외곽 마을 (늦은 저녁)
+ * 밀양 월영루 — 아랑 설화 (늦은 저녁)
  *
  * 배치는 전부 화면 좌표 S(u, v) 로 잡는다.
  *   u = 화면 오른쪽, v = 화면 위쪽
@@ -180,131 +180,160 @@ export function buildJoseon() {
         addLantern(c[0], c[1]);
     }
 
+    // ---- 월영루(정자) 위 붉은 나비 + 아랑각(사당) 앞 등불 ----
+    {
+        const pav = P(21, 3);
+        addButterflyFlock(pav[0], terrainHeight(pav[0], pav[1]) + 3.2, pav[1], 9);
+        const shr = P(-22, -13);
+        addLantern(shr[0] + 1.6, shr[1] + 1.2);
+    }
+
     // ---- 사람과 짐승 ----
-    // 암행어사 편: 마을 사람들은 각자 숨긴 이야기를 하나씩 들고 있다.
-    // 낮게 깔린 해질녘, 흰옷과 갓이 눈에 띈다.
+    // 월영루 편: 아랑의 죽음을 아는 자와 모르는 척하는 자가 섞여 있다.
+    // 낮에는 입을 닫고, 밤에는 문을 걸어잠근다.
     addVillager([P(-2, 4), P(4, 2), P(8, 6), P(2, 9), P(-4, 7)], "joseon", {
-        name: "포도청 나졸", hat: "gat",
-        greeting: "이 마을은 조용합니다. ...너무 조용하지 않습니까?",
+        name: "마을 주모", hat: "gat",
+        greeting: "어허, 나그네. 요즘 이 마을이 좀 조용해졌지 않소?",
         choices: [
             {
-                text: "마을에 대해 묻는다.",
-                response: "사또께서 환곡을 거두신답니다. 흉년에도 창고는 비지 않는데, 백성의 곳간만 빕니다.",
-                clue: "eosa_tax", journal: true, hideAfter: true,
-                followUp: "(나졸이 관아 쪽을 힐끗 본다)"
+                text: "월영루에 대해 묻는다.",
+                response: "묻지 마시오. 산 사람도 죽은 사람 곁에 오래 머물면, 끝내 제 이름을 잊는다 하였소.",
+                clue: "arang_pavilion", journal: true, hideAfter: true,
+                followUp: "(주모가 술잔을 닦으며 눈을 피한다)"
             },
             {
-                text: "특별한 것을 보았는지 묻는다.",
-                response: "작년 이맘때, 홀연히 오셨다 사라지셨지요. 마패 조각 하나만 남기고요.",
+                text: "죽은 부사들에 대해 묻는다.",
+                response: "셋이요, 셋. 새로 오신 분마다 첫날밤 월영루에 묵고는 새벽에 얼어 죽은 낯으로 발견됐지요.",
                 journal: true,
-                followUp: "(나졸이 목소리를 낮춘다)"
+                followUp: "(주모가 목소리를 낮춘다)"
             }
         ]
     });
     addVillager([P(-14, 4), P(-18, 6), P(-20, 0), P(-15, -2)], "joseon", {
-        name: "밭 가는 노인", hat: "straw", speed: 0.8,
-        greeting: "이 논은 내 논이 아니여. 문서로는 벌써 관아 땅이여.",
+        name: "늙은 유모", hat: "straw", speed: 0.8,
+        greeting: "아랑 아가씨... 아가씨가... 불렀어...",
         choices: [
             {
-                text: "마을에 대해 묻는다.",
-                response: "도장 하나 찍혔다고 벼를 거둬갑니다. 항의하던 아들은 지금 관아에 갇혀 있소.",
-                clue: "eosa_land", journal: true, hideAfter: true,
-                followUp: "(노인이 괭이질을 멈춘다)"
+                text: "월영루에 대해 묻는다.",
+                response: "그날 밤... 내가 아가씨를 루로 모셨지... 통인 나으리가 기다린다 하여... 용서하소서...",
+                clue: "arang_lured", journal: true, hideAfter: true,
+                followUp: "(유모가 덜덜 떤다)"
             },
             {
-                text: "특별한 것을 보았는지 묻는다.",
-                response: "장승님께 탄원서를 묻었지. 글 못 읽는 늙은이의 마음이여. 장승 밑을 살펴보소.",
+                text: "죽은 부사들에 대해 묻는다.",
+                response: "부사 나으리들은 아가씨가 불렀던 게여. 억울하다, 억울하다... 나도 들었어...",
                 journal: true,
-                followUp: "(노인이 마을 어귀를 가리킨다)"
+                followUp: "(유모가 귀를 막는다)"
             }
         ]
     });
     addVillager([P(10, -2), P(16, -4), P(18, 2), P(12, 4)], "joseon", {
-        name: "행상", speed: 1.0,
-        greeting: "물건은 없소. 관아에 다 뜯겼소.",
+        name: "객주 장석", speed: 1.0,
+        greeting: "물건은 없소. 관아에 다 뜯겼소... 아니, 난 객주요, 객주!",
         choices: [
             {
-                text: "마을에 대해 묻는다.",
-                response: "관아 곳간으로 들어가는 쌀가마를 보았소. 장부에는 없는 쌀이여. 우물가 탁자 밑 장부를 찾아보시오.",
-                clue: "eosa_rice", journal: true, hideAfter: true,
-                followUp: "(행상이 보따리를 고쳐 맨다)"
+                text: "월영루에 대해 묻는다.",
+                response: "난 그날 루에 간 적 없소! ...왜 날 그런 눈으로 보시오. 난 장석이 아니오!",
+                clue: "arang_jangseok", journal: true, hideAfter: true,
+                followUp: "(장석이 보따리를 움켜쥔다)"
             }
         ]
     });
     addVillager([P(6, 13), P(12, 14), P(14, 10), P(8, 9)], "joseon", {
-        name: "관아 서생", hat: "gat", speed: 0.9,
-        greeting: "어이, 나그네.\n요즘 이 마을이 좀 조용해졌지 않소?\n예전엔 장사꾼도 많고, 사람들도 북적였는데...\n혹시 다른 마을에서 오셨소?",
+        name: "이방", hat: "gat", speed: 0.9,
+        greeting: "신분高的 분 같으신데... 관아 일에 참견 마시지요.",
         choices: [
             {
-                text: "특별한 것을 보았는지 묻는다.",
-                response: "...그 장부를 찾으시오? 목숨 걸고 말하리다. 밤마다 사또가 불태우는 문서가 있소. 재가 되기 전에 잡으시오.",
-                clue: "eosa_ledger", journal: true, hideAfter: true,
-                followUp: "(서생이 황급히 자리를 뜬다)"
+                text: "죽은 부사들에 대해 묻는다.",
+                response: "귀신의 소행이지요. 아랑 귀신이 새 부사를 잡아간다는 소문... 자네도 밤에 루 근처엔 가지 마시게.",
+                clue: "arang_rumor", journal: true, hideAfter: true,
+                followUp: "(이방이 씨익 웃는다 — 귀신은 무섭지만, 산 사람의 입은 더 무섭지요)"
             }
         ]
     });
     addVillager([P(-8, -10), P(-2, -12), P(2, -8), P(-5, -6)], "joseon", {
-        name: "장터 아이", hat: "straw",
-        greeting: "나으리! 술래잡기 하러 왔어요?",
+        name: "나루터 사공", hat: "straw",
+        greeting: "나으리! 배 타러 왔어요?",
         choices: [
             {
-                text: "마을에 대해 묻는다.",
-                response: "응! 밤에 관아 뒤에서 불이 났는데, 아저씨들이 종이를 엄청 태웠어요! 그리고 장승님이 울었어요.",
+                text: "월영루에 대해 묻는다.",
+                response: "그날 밤 루에서 비명 같은 게 났다니까! 그리고 붉은 나비가 강 쪽으로 날아갔어요. 대숲 쪽으로!",
                 journal: true,
-                followUp: "(아이가 장승 쪽으로 달려간다)"
+                followUp: "(사공이 대숲 쪽을 가리킨다)"
             }
         ]
     });
 
-    // 우물가에서 물 긷는 아낙
+    // 우물가에서 물 긷는 아낙 — 붉은 나비를 보았다
     q = P(-1, 4); addWorker(q[0], q[1], "joseon", {
         name: "우물가 아낙", rot: 0.8, hat: "straw",
-        greeting: "물을 길어도 목이 마릅니다. 눈물이 먼저 고이니께요.",
+        greeting: "밤에 붉은 나비를 보거든 뒤돌아보지 마십시오.",
         choices: [
             {
-                text: "마을에 대해 묻는다.",
-                response: "남편이 환곡을 못 갚아 옥에 갇혔소. 없는 쌀을 갚으라 하니, 사람 잡는 셈이지요.",
-                clue: "eosa_well", journal: true, hideAfter: true,
+                text: "월영루에 대해 묻는다.",
+                response: "그 나비를 따라간 사내들은 하나같이 새벽에 얼어 죽은 낯으로 발견됐지요. 월영루, 그곳입니다.",
+                clue: "arang_butterfly", journal: true, hideAfter: true,
                 followUp: "(아낙이 치마폭으로 눈물을 닦는다)"
             }
         ]
     });
-    // 가판 지키는 상인
+    // 가판 지키는 상인 — 죽은 부사들의 공통점을 안다
     q = P(4, 6); addWorker(q[0], q[1], "joseon", {
         name: "가판 상인", rot: 0.1, hat: "gat",
         greeting: "어서 오시오. ...아, 손님이 아니시오?",
         choices: [
             {
-                text: "마을에 대해 묻는다.",
-                response: "정가는 세 배를 매기고, 나머지는 사또 창고로 들어간다오. 증거는 우물가 장부에 있소.",
-                clue: "eosa_market", journal: true, hideAfter: true,
+                text: "죽은 부사들에 대해 묻는다.",
+                response: "셋 다 첫날밤 월영루에 묵었소. 향을 피우고... 그 향, 객주 장석이 팔았지. 증거는 문서고 장부에 있소.",
+                clue: "arang_incense", journal: true, hideAfter: true,
                 followUp: "(상인이 좌판을 두드린다)"
             }
         ]
     });
-    // 빨래하는 아낙
+    // 빨래하는 아낙 — 피 묻은 관복을 빨았다
     q = P(-11, 0); addWorker(q[0], q[1], "joseon", {
         name: "빨래하는 아낙", rot: -0.6,
         greeting: "이 물로 관아의 더러운 것도 씻겨 냈으면 좋겠소.",
         choices: [
             {
                 text: "특별한 것을 보았는지 묻는다.",
-                response: "피 묻은 관복을 빨았소. 맞고 들어간 농사짓는 사람들 피요. 장승님이 다 보셨을 거요.",
+                response: "피 묻은 관복을 빨았소. 아랑 아가씨의 피인지, 부사 나으리들의 피인지는 모르겠소.",
                 journal: true,
                 followUp: "(아낙이 빨랫감을 세게 문지른다)"
             }
         ]
     });
-    // 볏가리 옆 늙은이
+    // 대숲지기 늙은이 — 대숲을 본 목격자
     q = P(-12, -14); addWorker(q[0], q[1], "joseon", {
-        name: "볏가리 노인", rot: 1.2, hat: "straw",
-        greeting: "볏짚은 남는데 쌀이 없네. 웃기지 않소?",
+        name: "대숲지기 노인", rot: 1.2, hat: "straw",
+        greeting: "대숲에는 가지 마시오. 밤이면 여인의 울음소리가 난다오.",
         choices: [
             {
-                text: "마을에 대해 묻는다.",
-                response: "풍년이었소. 그런데도 모두가 굶소. 쌀이 다 어디로 갔겠소?",
-                clue: "eosa_harvest", journal: true, hideAfter: true,
-                followUp: "(노인이 볏짚을 내리친다)"
+                text: "월영루에 대해 묻는다.",
+                response: "아랑 아가씨가 마지막으로 향한 곳이 루요. 그 뒤로는 대숲에서만 냄새가 났지... 비녀가 있을 거요.",
+                clue: "arang_thicket", journal: true, hideAfter: true,
+                followUp: "(노인이 대숲 쪽을 가리킨다)"
+            }
+        ]
+    });
+
+    // ---- 아랑의 원혼 — 월영루(정자)에 서 있다 ----
+    q = P(21, 3);
+    addWorker(q[0], q[1], "joseon", {
+        name: "아랑", rot: -0.6,
+        greeting: "나으리…… 제 이름을…… 찾아 주십시오.",
+        choices: [
+            {
+                text: "그대가 누구인지 묻는다.",
+                response: "저는 밀양 부사의 딸, 아랑입니다. 월영루에 나갔다가 돌아오지 못했습니다.",
+                clue: "arang_who", journal: true, hideAfter: true,
+                followUp: "(목에 박힌 은장도에서 피가 흐른다)"
+            },
+            {
+                text: "누가 죽였는지 묻는다.",
+                response: "입이... 열리지 않습니다. 은장도가 막습니다. 증거를... 대숲과 객주와 문서고에서 찾아 주십시오.",
+                journal: true,
+                followUp: "(아랑이 붉은 나비 쪽을 바라본다)"
             }
         ]
     });
@@ -314,36 +343,41 @@ export function buildJoseon() {
     q = P(-6, -15); addCow(q[0], q[1], 1.4);
     addDog([P(0, 0), P(6, -2), P(2, -8), P(-4, -2)]);
 
-    // ---- 조사 대상 3개: 암행어사 증거 3종 ----
+    // ---- 조사 대상 3개: 아랑 사건 증거 3종 ----
+    // 1) 찢긴 순찰 기록 — 관아 문서고 자리(관아 문루 앞)
     q = P(11, 14);
     const badge = createBadgeArtifact(q[0], q[1]);
     registerInteractable({
-        name: "부러진 마패",
+        name: "찢긴 순찰 기록",
         group: badge,
         pickup: true,
         range: 1.8,
         glowColor: 0xffd36d,
-        description: "부러진 마패\n\n관아 앞 흙 속에 반쯤 묻혀 있던 전임 어사의 마패입니다.\n끝이 부러져 있습니다. 이 마을에서 무슨 일이 있었던 겁니다."
+        description: "찢긴 순찰 기록\n\n관아 문서고에 봉인된 채 버려져 있던 순찰 기록입니다.\n아랑이 사라진 밤의 기록이 찢겨 있습니다.\n세곡 장부의 날짜와 일치합니다."
     });
 
-    q = P(1, 1);
+    // 2) 강가 대숲의 비녀 — 대숲 자리(개울 아래 대숲)
+    q = P(-14, -13);
     const documentItem = createOldDocument(q[0], q[1]);
     registerInteractable({
-        name: "수탈 장부",
+        name: "대숲의 비녀",
         group: documentItem,
         pickup: true,
         range: 1.8,
         glowColor: 0xffe0a0,
-        description: "수탈 장부\n\n우물 옆 탁자 밑에 숨겨져 있던 관아의 진짜 장부입니다.\n겉장부와 숫자가 다릅니다. 쌀이 사라진 경로가 적혀 있습니다."
+        description: "대숲의 비녀\n\n강가 대숲 땅속에서 나온 아랑의 비녀입니다.\n찢어진 저고리 조각과 함께 묻혀 있었습니다.\n아랑은 혼자 월영루에 간 것이 아니었습니다."
     });
 
+    // 3) 같은 문양의 칼집 — 객주 장석의 방 자리(주막 뒤)
+    q = P(-13, -7);
+    const sheath = createBadgeArtifact(q[0], q[1]);
     registerInteractable({
-        name: "장승 밑 탄원서",
-        group: jangPattern,
-        pickup: false,
-        range: 2.0,
+        name: "문양이 같은 칼집",
+        group: sheath,
+        pickup: true,
+        range: 1.8,
         glowColor: 0x9fe0ff,
-        description: "장승 밑 탄원서\n\n마을 어귀 장승 밑에 묻혀 있던 탄원서입니다.\n글을 모르는 노인들의 손도장이 빼곡합니다. \"사또의 탐학을 고발합니다.\""
+        description: "문양이 같은 칼집\n\n객주 장석의 방에서 나온 칼집입니다.\n아랑의 목에 박힌 은장도와 같은 문양입니다.\n통인 장석 — 이름을 바꾸고 객주 일을 하고 있습니다."
     });
 }
 
@@ -493,6 +527,7 @@ export function addHanokBody(g, w, d, wallH, opts = {}) {
  */
 export function addChoga(x, z, rot, scale = 1, opts = {}) {
     addMapMarker(x, z, "#9c8350", 3, "building");
+    G.colliders.push({ x, z, r: 2.1 * scale });
 
     const g = new THREE.Group();
     g.position.set(x, terrainHeight(x, z), z);
@@ -550,6 +585,7 @@ export function addChoga(x, z, rot, scale = 1, opts = {}) {
  */
 export function addGiwa(x, z, rot, scale = 1, opts = {}) {
     addMapMarker(x, z, "#6c6470", 3.5, "building");
+    G.colliders.push({ x, z, r: 2.6 * scale });
 
     const g = new THREE.Group();
     g.position.set(x, terrainHeight(x, z), z);
@@ -595,6 +631,7 @@ export function addGiwa(x, z, rot, scale = 1, opts = {}) {
  */
 export function addGovernmentGate(x, z, rot) {
     addMapMarker(x, z, "#b0553a", 5, "building");
+    G.colliders.push({ x, z, r: 3.4 });
 
     const g = new THREE.Group();
     g.position.set(x, terrainHeight(x, z), z);
@@ -668,6 +705,7 @@ export function addStoneWall(x1, z1, x2, z2) {
 
 export function addWell(x, z) {
     addMapMarker(x, z, "#5b6b74", 2.5, "prop");
+    G.colliders.push({ x, z, r: 1.1 });
     const g = new THREE.Group();
     g.position.set(x, 0, z);
     G.world.add(g);

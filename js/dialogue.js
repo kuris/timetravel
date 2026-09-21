@@ -45,6 +45,18 @@ function typeText(el, text) {
     }, 28);
 }
 
+/** 말하는 사람 표시 — 이름 + 초상화 함께 바꾼다 */
+function setSpeaker(name, src) {
+    const nameEl = document.getElementById("dialogueName");
+    if (nameEl) nameEl.textContent = name;
+    const dlgPortrait = document.getElementById("dialoguePortrait");
+    if (dlgPortrait && src) { dlgPortrait.src = src; dlgPortrait.alt = name; }
+    const portraitFace = document.getElementById("portraitFace");
+    if (portraitFace && src) { portraitFace.src = src; portraitFace.alt = name; }
+    const portraitName = document.getElementById("portraitName");
+    if (portraitName) portraitName.textContent = name;
+}
+
 /** 타자기 진행 중이면 남은 글자를 한 번에 보여 주고 true.
  *  그 줄이 다 나왔는데 다음 줄이 있으면 다음 줄을 시작하고 true. */
 function advanceTyping() {
@@ -57,8 +69,14 @@ function advanceTyping() {
     }
     if (lineQueue.length && el) {
         const next = lineQueue.shift();
-        el.dataset.full = next;
-        typeText(el, next);
+        if (typeof next === "string") {
+            el.dataset.full = next;
+            typeText(el, next);
+        } else {
+            setSpeaker(next.name, next.src);
+            el.dataset.full = next.text;
+            typeText(el, next.text);
+        }
         return true;
     }
     return false;
@@ -89,8 +107,15 @@ let lineQueue = [];
 function playLines(el, lines) {
     stopTyping();
     lineQueue = lines.slice(1);
-    el.dataset.full = lines[0];
-    typeText(el, lines[0]);
+    const first = lines[0];
+    if (typeof first === "string") {
+        el.dataset.full = first;
+        typeText(el, first);
+    } else {
+        setSpeaker(first.name, first.src);
+        el.dataset.full = first.text;
+        typeText(el, first.text);
+    }
     el.dataset.more = lineQueue.length ? "1" : "";
 }
 
@@ -114,9 +139,10 @@ export function openChoiceDialogue(npc) {
     const portraitName = document.getElementById("portraitName");
     const dlgPortrait = document.getElementById("dialoguePortrait");
     const faces = {
-        "포도청 나졸": "najol", "밭 가는 노인": "old_farmer", "행상": "peddler",
-        "관아 서생": "clerk", "장터 아이": "kid", "우물가 아낙": "well_woman",
-        "가판 상인": "merchant", "빨래하는 아낙": "laundry_woman", "볏가리 노인": "straw_elder"
+        "마을 주모": "merchant", "늙은 유모": "straw_elder", "객주 장석": "peddler",
+        "이방": "clerk", "나루터 사공": "old_farmer", "우물가 아낙": "well_woman",
+        "가판 상인": "merchant", "빨래하는 아낙": "laundry_woman", "대숲지기 노인": "old_farmer",
+        "아랑": "well_woman"
     };
     const key = faces[npc.name];
     const src = key ? ("assets/portraits/" + key + ".png") : "assets/portraits/eosa.png";
@@ -129,16 +155,6 @@ export function openChoiceDialogue(npc) {
 
     choicesEl.innerHTML = "";
     renderChoices(choicesEl);
-
-    // 닫기 버튼
-    const closeBtn = document.createElement("button");
-    closeBtn.className = "dialogue-choice dialogue-close";
-    closeBtn.textContent = "✕  대화를 끝내다";
-    closeBtn.addEventListener("click", () => {
-        if (advanceTyping()) return;
-        closeDialogue();
-    });
-    choicesEl.appendChild(closeBtn);
 
     overlay.onclick = (e) => {
         if (e.target === overlay && advanceTyping()) return;
@@ -200,13 +216,27 @@ function selectChoice(choice) {
     }
 
     // 응답을 대화창에 차례대로 보여 준다.
-    // 답변 → (단서면 알림) → 행동 순. 대화창을 닫지 않고 안에서 다 본다.
+    // 내가 먼저 묻고 → 상대가 답하고 → (단서면 알림) → 행동 순.
     // 답한 질문은 목록에서 뺀다 — 닫았다 열어도 같은 목록이 유지되게.
     if (currentNPC) {
         if (!currentNPC.asked) currentNPC.asked = new Set();
         currentNPC.asked.add(choice.text);
     }
-    const lines = ['"' + choice.response + '"'];
+    const eosaSrc = "assets/portraits/eosa.png";
+    const npcSrc = (() => {
+        const faces = {
+            "마을 주모": "merchant", "늙은 유모": "straw_elder", "객주 장석": "peddler",
+            "이방": "clerk", "나루터 사공": "old_farmer", "우물가 아낙": "well_woman",
+            "가판 상인": "merchant", "빨래하는 아낙": "laundry_woman", "대숲지기 노인": "old_farmer",
+            "아랑": "well_woman"
+        };
+        const key = currentNPC && faces[currentNPC.name];
+        return key ? ("assets/portraits/" + key + ".png") : eosaSrc;
+    })();
+    const lines = [
+        { name: "암행어사", src: eosaSrc, text: choice.text },
+        { name: currentNPC ? currentNPC.name : "NPC", src: npcSrc, text: '"' + choice.response + '"' }
+    ];
     if (choice.clue && !G.clues.has(choice.clue)) {
         lines.push("🔍 새로운 단서를 얻었습니다!");
     }
@@ -233,6 +263,7 @@ function selectChoice(choice) {
 
     // 응답 후 선택지 갱신.
     // 끝난 단서 선택지는 목록에서 걷어낸다 — 필요한 것만 보이게.
+    // "그냥 간다"를 고르면 창이 바로 닫힌다. 끝내기 버튼은 따로 두지 않는다.
     const promptEl = document.getElementById("dialoguePrompt");
     if (promptEl) {
         playLines(promptEl, lines);
@@ -240,15 +271,7 @@ function selectChoice(choice) {
     const choicesEl = document.getElementById("dialogueChoices");
     if (choicesEl) {
         choicesEl.innerHTML = "";
-        const n = renderChoices(choicesEl);
-        const closeBtn = document.createElement("button");
-        closeBtn.className = "dialogue-choice dialogue-close";
-        closeBtn.textContent = n ? "✕  대화를 끝내다" : "✕  닫기";
-        closeBtn.addEventListener("click", () => {
-            if (advanceTyping()) return;
-            closeDialogue();
-        });
-        choicesEl.appendChild(closeBtn);
+        renderChoices(choicesEl);
     }
 }
 

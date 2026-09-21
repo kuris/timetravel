@@ -62,6 +62,17 @@ export function josa(word, pair = "을/를") {
 
 export function showMessage(text) {
     dom.message.textContent = text;
+    dom.message.classList.remove("fade-out");
+    dom.message.classList.add("show");
+    clearTimeout(showMessage._t);
+    showMessage._t = setTimeout(() => {
+        dom.message.classList.add("fade-out");
+    }, 5000);
+}
+
+export function hideMessage() {
+    clearTimeout(showMessage._t);
+    dom.message.classList.add("fade-out");
 }
 
 export function addInventoryItem(name) {
@@ -86,7 +97,7 @@ export function updateUI() {
     updateResourceUI();
     dom.weatherText.textContent = weatherLabel();
 
-    const icons = { "부러진 마패": "🎖️", "수탈 장부": "📜", "장승 밑 탄원서": "🗿" };
+    const icons = { "찢긴 순찰 기록": "📜", "대숲의 비녀": "💠", "문양이 같은 칼집": "🗡️" };
     const visibleItems = G.inventory.slice(-3);
     for (let i = 0; i < dom.slots.length; i++) {
         const item = visibleItems[i];

@@ -43,6 +43,7 @@ export const G = {
     clickTarget: null,
     interactables: [],
     npcs: [],
+    colliders: [],   // 건물 충돌 원 [{ x, z, r }]
     animated: [],
     inventory: [],
 

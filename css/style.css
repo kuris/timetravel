@@ -551,7 +551,14 @@ body.fpv-mode #prompt {
     line-height: 1.58;
     color: #f3d9a4;
     white-space: pre-line;
+    pointer-events: auto;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 300ms ease;
 }
+
+#message.show { opacity: 1; }
+#message.fade-out { opacity: 0; pointer-events: none; }
 
 /* ================= 하단 어드벤처 바 (첨부 이미지 구성) ================= */
 #adventureBar {
@@ -633,13 +640,15 @@ body.fpv-mode #prompt {
 .verb-btn:active { transform: translateY(1px); }
 
 /* 조작 안내 — 아이콘 키캡 스타일 */
-#controls { min-width: 172px; }
+#controls { min-width: 196px; }
 .ctl { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.ctl-text { display: inline-block; min-width: 138px; text-align: left; }
 .ctl-key {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 22px;
+    width: 26px;
+    min-width: 26px;
     height: 22px;
     padding: 0 4px;
     font-size: 12px;
@@ -909,6 +918,67 @@ body.fpv-mode #prompt {
         opacity: 0;
         transform: translate(0, 0) scaleY(1);
     }
+}
+
+/* ================= 오프닝 인트로 ================= */
+#introOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.82));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 400ms ease;
+}
+
+#introOverlay.show { opacity: 1; pointer-events: auto; }
+
+#introBox {
+    width: min(560px, calc(100vw - 48px));
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 30px 32px 26px;
+    text-align: center;
+    color: #f3d9a4;
+}
+
+#introBox .sub {
+    font-size: 12px;
+    letter-spacing: 6px;
+    color: #b8934f;
+    margin-bottom: 10px;
+}
+
+#introBox h1 {
+    margin: 0 0 14px;
+    font-size: 30px;
+    font-weight: 900;
+    color: #ffdf9e;
+    letter-spacing: 4px;
+}
+
+#introBox p {
+    margin: 0 0 16px;
+    font-size: 15px;
+    line-height: 1.85;
+    white-space: pre-line;
+}
+
+#introControls {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+#introStart {
+    font-size: 16px;
+    padding: 12px 28px;
+    min-height: 48px;
 }
 
 /* ================= 데모 완료 ================= */

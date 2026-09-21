@@ -282,12 +282,25 @@ export function updateMovement(delta) {
 
 
     // 물속으로는 들어가지 못한다 (전투도 수영도 없는 게임)
+    // 건물 안으로도 들어가지 못한다 — 1인칭에서 벽을 뚫고 보는 것을 막는다
     const h = terrainHeight(G.player.position.x, G.player.position.z);
-    if (h < -0.42) {
+    if (h < -0.42 || hitsBuilding(G.player.position.x, G.player.position.z)) {
         G.player.position.copy(prevPos);
     } else {
         G.player.position.y = h;
     }
 
     return Boolean(usedDir);
+}
+
+/** 건물 충돌 — 등록된 건물 원 안에 들어서면 막는다 */
+const _bdx = { x: 0, z: 0 };
+function hitsBuilding(x, z) {
+    const list = G.colliders;
+    if (!list) return false;
+    for (const c of list) {
+        const dx = x - c.x, dz = z - c.z;
+        if (dx * dx + dz * dz < c.r * c.r) return true;
+    }
+    return false;
 }

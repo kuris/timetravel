@@ -9,7 +9,7 @@ import { tryInteract } from "./interaction.js";
 import { toggleJournal, isJournalOpen } from "./journal.js";
 import { handleDialogueKey, isDialogueOpen, closeDialogue } from "./dialogue.js";
 import { G, groundPlane, keys, mouse, raycaster } from "./state.js";
-import { dom, showMessage } from "./ui.js";
+import { dom, hideMessage, showMessage } from "./ui.js";
 import { cycleTime, cycleWeather, weatherLabel } from "./weather.js";
 
 export function setupInput() {
@@ -175,6 +175,20 @@ export function setupInput() {
         uiToggle.addEventListener("click", () => {
             AudioSystem.start();
             document.body.classList.toggle("ui-open");
+        });
+    }
+
+    // 메시지창 클릭하면 바로 닫기
+    if (dom.message) {
+        dom.message.addEventListener("click", () => hideMessage());
+    }
+
+    // 인트로 시작 버튼 — 오버레이 닫기
+    const introStart = document.getElementById("introStart");
+    if (introStart) {
+        introStart.addEventListener("click", () => {
+            AudioSystem.start();
+            document.getElementById("introOverlay")?.classList.remove("show");
         });
     }
 

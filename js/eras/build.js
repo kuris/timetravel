@@ -67,6 +67,7 @@ export function buildAge(index, opts = {}) {
     G.clickTarget = null;
     G.interactables = [];
     G.npcs = [];
+    G.colliders = [];
     G.exploredTiles = new Set();
     G.visitedAges.add(index);
 
