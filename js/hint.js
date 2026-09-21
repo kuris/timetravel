@@ -103,10 +103,9 @@ export function showHint() {
     }
 
     // 무제한이면 걸어다닐 이유가 없어진다. 시대마다 세 번.
-    // 제단을 세우면 다시 채워진다 — 그것이 제단의 쓸모다.
     if (G.hintCharges <= 0) {
         AudioSystem.playInvestigate();
-        showMessage("이정표를 더 세울 나뭇가지가 없습니다.\n제단을 지으면 다시 길을 일러 줍니다.");
+        showMessage("이정표를 다 썼습니다. (시대마다 3회)");
         return;
     }
     G.hintCharges--;

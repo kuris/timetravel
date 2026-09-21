@@ -1,19 +1,14 @@
 /**
  * 애니메이션 갱신과 게임 루프
  */
-import { advisorText } from "./advisor.js";
+import { advisor } from "./advisor.js";
 import { AudioSystem } from "./audio.js";
 import { updateCamera } from "./camera.js";
-import { updateConstruction } from "./construct.js";
-import { updateGather } from "./gather.js";
 import { updateGateAura } from "./gateaura.js";
-import { updateRaid } from "./raid.js";
-import { updateSettlers } from "./settlers.js";
 import { updateHint } from "./hint.js";
 import { updatePrompt } from "./interaction.js";
 import { drawMinimap, updateExploration } from "./minimap.js";
 import { updateMorph } from "./morph.js";
-import { canBuildHere, canBuildNow, updateBuildGhost } from "./village.js";
 import { updateMovement, updatePlayerAnimation, updatePlayerOcclusion } from "./player.js";
 import { postCamera, postMaterial, postScene, renderTarget } from "./postprocess.js";
 import { randRange } from "./rng.js";
@@ -200,12 +195,6 @@ export function updateAnimated(t, delta) {
         if (a.type === "gateAura") {
             updateGateAura(a, delta);
         }
-
-        // 한 채가 솟아오르는 중 (건설 연출)
-        if (a.type === "construct" && !a.done) {
-            updateConstruction(a, delta, AudioSystem);
-            if (a.done) prune = true;
-        }
     }
 
     // 한 번 쓰고 끝나는 연출은 목록에서 걷어낸다
@@ -259,13 +248,7 @@ export function animate() {
     updateWeather(delta);
     updateMorph(delta);
     updateAnimated(t, delta);
-    updateGather(delta);
-    updateSettlers(delta);
-    updateRaid(delta);
     updateExploration();
-    updateBuildGhost();
-    G.buildReady = canBuildNow()
-        && canBuildHere(G.player.position.x, G.player.position.z).ok;
     updatePrompt();
     updateHint();
     drawMinimap();
@@ -275,7 +258,11 @@ export function animate() {
     if (t - lastWeatherLabel > 0.5) {
         lastWeatherLabel = t;
         dom.weatherText.textContent = weatherLabel();
-        if (G.currentAge >= 0 && !G.prologue) dom.objectiveText.textContent = advisorText();
+        if (G.currentAge >= 0 && !G.prologue) {
+            const goal = advisor();
+            dom.objectiveText.textContent = goal.text;
+            dom.objectiveText.classList.toggle("done", !!goal.done);
+        }
     }
 
     // 후처리 유니폼 갱신

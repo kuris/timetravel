@@ -137,7 +137,7 @@ export function addFortressGate(x, z, rot) {
         addBox(body, bw, 0.4, bd, 0x6b3a28, bx, 3.2, bz, 0, { castShadow: false });
     }
 
-    addHanokRoof(body, 5.2, 2.8, 3.45, { tile: 0x428780, ridge: 0x2a5b55, h: 1.5, eave: 0.5 });
+    addHanokRoof(body, 5.2, 2.8, 3.45, { tile: 0x4a4a52, ridge: 0x2e2e36, h: 1.5, eave: 0.5 });
 
     // 치미 (용마루 끝 장식) — 삼국시대 기와집의 표식
     for (const sx of [-1, 1]) {
@@ -192,7 +192,7 @@ export function addTowerTall(x, z, rot) {
         addBox(g, bw, 0.6, bd, 0x6d4a26, bx, H + 0.37, bz, 0, { castShadow: false });
     }
 
-    addHanokRoof(g, 2.5, 2.5, H + 0.7, { tile: 0x428780, ridge: 0x2a5b55, h: 1.0, eave: 0.32 });
+    addHanokRoof(g, 2.5, 2.5, H + 0.7, { tile: 0x4a4a52, ridge: 0x2e2e36, h: 1.0, eave: 0.32 });
 
     // 사다리
     for (let i = 0; i < 9; i++) {
@@ -389,7 +389,7 @@ export function addSamgukHouse(x, z, rot, scale = 1, tiled = true) {
     addHanokBody(g, w, d, wallH, { wall: tiled ? 0xc0a582 : 0xcbb08a, lit: rand() > 0.4 });
 
     if (tiled) {
-        addHanokRoof(g, w, d, 0.26 + wallH, { tile: 0x458c84, ridge: 0x2c5f59, h: 1.15, eave: 0.34 });
+        addHanokRoof(g, w, d, 0.26 + wallH, { tile: 0x4a4a52, ridge: 0x2e2e36, h: 1.15, eave: 0.34 });
         // 치미
         for (const sx of [-1, 1]) {
             const chimi = addBox(g, 0.16, 0.36, 0.22, 0x214c48,
@@ -500,14 +500,14 @@ export function buildSamguk() {
     // 신석기와 같은 강. 같은 자리에서 시간만 흘렀다.
     G.terrainCarve = carveRiver;
 
-    addGround(0x8a7048, [0xa88a58, 0x736040, 0x9c7e4e, 0x5f5238, 0xc0a068]);
+    addGround(0x9c8a5e, [0xb89a68, 0x8a7648, 0xc4a878, 0x6b7a4a, 0xd0b088]);
 
     // 신석기와 같은 돌, 같은 자리. 색만 이 시대의 것이다.
     // 성을 쌓고 논을 열면서 나무가 눈에 띄게 줄었다.
     paintBaseMap({
-        stone: [0x786d62, 0x635b55, 0x8b8072],
-        grass: [0x757a3c, 0x5f6531, 0x878c4a, 0x4e5329],
-        tree: [0x5d6338, 0x4c512c, 0x6b7141],
+        stone: [0x8a8078, 0x6f6860, 0x9a9284],
+        grass: [0x6b9a4a, 0x55803a, 0x7fae58, 0x48702e],
+        tree: [0x4a7a3a, 0x3a6830, 0x5a8a44],
         treeSurvival: 0.7,
         grassDensity: 0.85
     });
@@ -579,6 +579,7 @@ export function buildSamguk() {
                     + "제 손이 닿은 돌마다 이름을 눌러 둡디다. 자랑이지.",
                 clue: "samguk_name",
                 journal: true,
+                hideAfter: true,
                 followUp: "(문지기가 성벽 동쪽을 흘끗 본다)"
             },
             {
@@ -611,6 +612,7 @@ export function buildSamguk() {
                     + "\"동쪽 끝은 돌아서 쌓으라.\" 누가 밤에 다녀간 게지.",
                 clue: "samguk_order",
                 journal: true,
+                hideAfter: true,
                 followUp: "(대장장이가 목소리를 낮춘다)"
             },
             {
@@ -643,6 +645,7 @@ export function buildSamguk() {
                     + "허나 저 돌은 덮을 수 없었소. 저건 우리가 놓은 게 아니오.",
                 clue: "samguk_bend",
                 journal: true,
+                hideAfter: true,
                 followUp: "(노인이 처음으로 플레이어를 본다)"
             },
             {
@@ -651,6 +654,7 @@ export function buildSamguk() {
                     + "누가 세웠는지는 아무도 모르오. 다만 덮지 말라는 말만 남았소.",
                 clue: "samguk_oldstone",
                 journal: true,
+                hideAfter: true,
                 followUp: "(노인이 다시 돌 쪽으로 고개를 돌린다)"
             }
         ]
@@ -670,6 +674,7 @@ export function buildSamguk() {
                     + "그때는 성도 없고 아무것도 없었대요.",
                 clue: "samguk_child",
                 journal: true,
+                hideAfter: true,
                 followUp: "(아이가 돌 쪽을 가리킨다)"
             },
             {

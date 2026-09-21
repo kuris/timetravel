@@ -11,10 +11,7 @@ import { buildSamguk } from "./samguk.js";
 import { build1970 } from "./modern1970.js";
 import { build2000 } from "./modern2000.js";
 import { buildNeolithic } from "./neolithic.js";
-import { resetGather } from "../gather.js";
 import { resetHint } from "../hint.js";
-import { resetRaid } from "../raid.js";
-import { resetSettlers } from "../settlers.js";
 import { createPlayer } from "../player.js";
 import { seedRandom } from "../rng.js";
 import { G, cameraTarget } from "../state.js";
@@ -23,8 +20,6 @@ import { makeMistTexture, makeStoneTexture, makeTerrainTexture, makeThatchTextur
 import { dom, showMessage, updateUI } from "../ui.js";
 import { addBackdrop, addDustMotes, addLights, addMistLayers, cssHex, cssRGBA } from "../world.js";
 import { disposeGroup, disposeTextures } from "../morph.js";
-import { renderVillage, resetBuildGhost, updateVillageUI, applyVillageEffects } from "../village.js";
-import { scatterMaterials } from "../materials.js";
 import { initWeather } from "../weather.js";
 import { TEX_PALETTE, buildTextures } from "../palette.js";
 
@@ -85,9 +80,6 @@ export function buildAge(index, opts = {}) {
     G.mapShapes = [];
     G.mapMarkers = [];
     resetHint();   // 이전 scene 에 붙어 있던 이정표를 버린다
-    resetGather();   // 캐던 것과 튀어 있던 파편을 버린다
-    resetSettlers(); // 주민은 집과 함께 이 시대의 모습으로 다시 들어온다
-    resetRaid();     // 들개는 시대마다 처음부터 센다
     G.backdrop = null;
     G.sunLight = null;
     G.terrainCarve = null;
@@ -140,21 +132,13 @@ export function buildAge(index, opts = {}) {
     if (AudioSystem.started) AudioSystem.setEra(index);
 
     // ---- 지금까지 지은 마을을 이 시대의 모습으로 다시 세운다 ----
-    // 같은 자리에 다음 시대의 건물이 선다. 이것이 "내 마을이 시간을 통과한다"의 실체다.
-    // 프롤로그는 2000년 맵을 밤 골목으로 빌려 쓸 뿐이라 마을도 재료도 놓지 않는다.
+    // 원숭이섬식 어드벤처에서는 마을을 짓지 않는다. 시대는 사람과 이야기로 채운다.
     const isPrologue = !!opts.prologue2000;
 
-    resetBuildGhost();
     if (!isPrologue) {
-        renderVillage(index);
-
-        // 이정표는 시대마다 세 번. 망루 시야는 지은 만큼 이어진다.
+        // 이정표는 시대마다 세 번.
         G.hintCharges = 3;
-        applyVillageEffects();
         import("../hint.js").then((m) => m.updateHintBadge());
-
-        // ---- 재료 노드 ----
-        scatterMaterials(index);
     }
 
     // ---- 플레이어 배치 ----
@@ -166,7 +150,6 @@ export function buildAge(index, opts = {}) {
     cameraTarget.set(G.player.position.x, 0.6, G.player.position.z);
     updateCamera(0, true);
     updateUI();
-    updateVillageUI();
     showMessage(age.intro + "\n\n▶ " + advisorText()
         + "\n첫 키 입력 또는 클릭 후 소리가 켜집니다.");
 }

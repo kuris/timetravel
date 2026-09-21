@@ -12,7 +12,6 @@ import { transitionToAge } from "./transition.js";
 import { addInventoryItem, dom, josa, showMessage, updateUI } from "./ui.js";
 import { addJournalEntry } from "./journal.js";
 import { closeDialogue, openChoiceDialogue } from "./dialogue.js";
-import { gatherLabel, isGathering, startGather } from "./gather.js";
 import { awakenGate } from "./gateaura.js";
 
 export function registerInteractable({
@@ -153,10 +152,8 @@ export function getNearestAction() {
         }
     }
 
-    // 아무 대상도 없고 지을 수 있는 자리라면 "짓기"
-    if (!best && G.buildReady) {
-        best = { kind: "build", distance: 0 };
-    }
+    // 아무 대상도 없으면 끝. 건설 루프는 끊었다.
+    // 원숭이섬처럼 돌아다니며 보고 말 거는 것만 남긴다.
 
     if (G.activeGate) {
         const dx = G.activeGate.position.x - G.player.position.x;
@@ -181,28 +178,17 @@ export function updatePrompt() {
         return;
     }
 
-    // 캐는 중에는 그 사실만 보여 준다
-    if (isGathering()) {
-        dom.prompt.textContent = gatherLabel();
-        dom.prompt.classList.remove("hidden");
-        return;
-    }
-
     const action = getNearestAction();
     if (!action) {
         dom.prompt.classList.add("hidden");
         return;
     }
 
-    if (action.kind === "build") {
-        dom.prompt.textContent = "[E] 이 자리에 짓기";
-    } else if (action.kind === "object") {
+    if (action.kind === "object") {
         const isLocked = action.item.locked && action.item.unlockClue && !G.clues.has(action.item.unlockClue);
         dom.prompt.textContent = isLocked
             ? "🔒 " + action.item.name + " (단서 필요)"
-            : (action.item.material
-                ? (action.item.material === "wood" ? "[E] 베기 · " : "[E] 캐기 · ")
-                : "[E] 조사 · ") + action.item.name;
+            : "[E] 조사 · " + action.item.name;
     } else if (action.kind === "npc") {
         dom.prompt.textContent = "[E] " + (action.npc.isAnimal ? "교감 · " : "대화 · ") + action.npc.name;
     } else if (action.kind === "gate") {
@@ -226,8 +212,6 @@ export function tryInteract() {
 
     if (action.kind === "object") {
         investigateObject(action.item);
-    } else if (action.kind === "build") {
-        import("./village.js").then((m) => m.openBuildMenu());
     } else if (action.kind === "npc") {
         if (action.npc.choices && action.npc.choices.length > 0) {
             action.npc.met = true;
@@ -320,34 +304,11 @@ export function talkToNPC(npc) {
     }
 }
 
-/** 다 캐냈을 때 — 실제로 재료가 들어온다 */
-export function collectMaterial(item) {
-    if (item.done) return;
-
-    item.done = true;
-    if (item.glow) item.glow.visible = false;
-    fadeGroup(item.group);
-
-    G.materials[item.material] = (G.materials[item.material] || 0) + (item.amount || 1);
-    AudioSystem.playPickup();
-
-    const label = { wood: "나무", stone: "돌" }[item.material] || item.material;
-    showMessage(label + josa(label) + " " + (item.amount || 1) + "개 얻었습니다.\n"
-        + "가진 것 — 나무 " + G.materials.wood + ", 돌 " + G.materials.stone);
-
-    import("./village.js").then((m) => m.updateVillageUI());
-}
-
 export function investigateObject(item) {
     if (item.done) return;
 
-    // 재료 채집 — 조사가 아니라 몸으로 하는 일이다. 발전도와 무관하다.
-    // 나무는 몇 번 내리쳐야 넘어가고, 돌은 몇 번 쪼아야 떨어진다.
-    if (item.material) {
-        if (isGathering(item)) return;
-        startGather(item, collectMaterial);
-        return;
-    }
+    // 재료 노드는 이제 없다. 어드벤처에서는 보고 줍는 것만 남긴다.
+    if (item.material) return;
 
     // 프롤로그 낯선 돌 — 전용 플로우 (카운트/게이트와 무관)
     if (item.prologueGate) {
@@ -382,27 +343,19 @@ export function investigateObject(item) {
 
     addInventoryItem(item.name);
 
-    // 유물은 단서이자 재원이다. 조사하면 마을에 쓸 것이 생긴다.
-    // 탐험을 해야 마을이 자라고, 마을이 자라야 다음 시대가 열린다.
-    G.materials.wood += 3;
-    G.materials.stone += 2;
-    G.progress += 4;
-    const reward = "\n\n(나무 +3, 돌 +2, 발전도 +4)";
-
     // 일지 기록
     addJournalEntry("artifact", item.name, item.description);
 
     const extra = handleAgeCompletion();
-    showMessage(item.description + reward + (extra ? "\n\n" + extra : ""));
-    import("./village.js").then((m) => m.updateVillageUI());
+    showMessage(item.description + (extra ? "\n\n" + extra : ""));
     updateUI();
 }
 
 /**
  * 한 시대의 조사를 모두 마쳤을 때.
  *
- * 마지막 시대가 아니면 시간의 문이 깨어나고,
- * 마지막 시대라면 여기서 이야기가 끝난다.
+ * 조선 단일 시대: 유물 3개를 다 모으면 에피소드 클리어다.
+ * 시간의 문은 쓰지 않는다.
  */
 export function handleAgeCompletion() {
     const age = AGE_DATA[G.currentAge];
@@ -414,17 +367,7 @@ export function handleAgeCompletion() {
     if (G.ageProgress < (age.total || 3) || G.ageCompleteTriggered) return "";
     G.ageCompleteTriggered = true;
 
-    const isLast = G.currentAge >= AGE_DATA.length - 1;
-
-    // 마지막 시대라도 아직 안 가 본 시대가 있으면 끝이 아니다.
-    // 시대를 자유로이 오가므로 "마지막"은 번호가 아니라 "다 봤는가"다.
-    if (!isLast || G.visitedAges.size < AGE_DATA.length) {
-        activateGate();
-        return (age.completeText || "흩어진 기록이 서로 맞물립니다.") +
-            "\n시간의 문이 깨어났습니다.";
-    }
-
-    // 마지막 시대 — 모든 시대가 하나로 이어진다
+    // 조선 단일 시대 — 증거 3개를 다 모으면 바로 에피소드 클리어
     AudioSystem.playGate();
     G.demoFinished = true;
     setTimeout(() => {

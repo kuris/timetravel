@@ -3,7 +3,6 @@
  */
 import { addBlob, addBox, addCone, addCylinder, addFlatCircle, makeBasicMat } from "./build.js";
 import { PLAYER_SPEED, SPRINT_MULTIPLIER, WORLD_LIMIT } from "./config.js";
-import { gatherPose } from "./gather.js";
 import { G, keys } from "./state.js";
 import { terrainHeight } from "./terrain.js";
 import { W } from "./weather.js";
@@ -204,18 +203,6 @@ export function updatePlayerAnimation(delta, isMoving, t) {
 
     // 서 있을 때는 아주 느리게 숨쉬는 느낌
     u.head.position.y = 0.64 + Math.sin(t * 1.6) * 0.006 * (1 - u.moving);
-
-    // 나무를 베거나 돌을 캐는 중이면 걷기 자세를 덮어쓴다.
-    // 두 팔이 함께 올라갔다 내려오고, 내리칠 때 상체가 따라 숙여진다.
-    const chop = gatherPose();
-    if (chop) {
-        u.armL.rotation.x = chop.arm;
-        u.armR.rotation.x = chop.arm;
-        u.body.rotation.x = chop.lean;
-        u.body.rotation.z = 0;
-        u.legL.rotation.x = 0.06;
-        u.legR.rotation.x = -0.06;
-    }
 }
 
 /******************************************************************
@@ -266,20 +253,10 @@ export function updateMovement(delta) {
     }
 
     if (usedDir) {
-        // Shift: 달리기. 스태미나가 있어야 달릴 수 있다.
-        const wantSprint = keys.has("ShiftLeft") || keys.has("ShiftRight");
-        sprinting = wantSprint && G.stamina > 0;
-
-        // 낮: 최대 스태미나 감소 (70%)
-        const isNight = W.dayT < 0.22 || W.dayT > 0.88;
-        G.maxStamina = isNight ? 70 : 100;
+        // Shift: 달리기. 원하는 만큼 달린다 — 게이지 없음.
+        sprinting = keys.has("ShiftLeft") || keys.has("ShiftRight");
 
         const speed = PLAYER_SPEED * (sprinting ? SPRINT_MULTIPLIER : 1);
-
-        // 스태미나 소모 / 회복
-        if (sprinting) {
-            G.stamina = Math.max(0, G.stamina - delta * 22);
-        }
 
         G.player.position.addScaledVector(usedDir, speed * delta);
         G.player.position.x = THREE.MathUtils.clamp(G.player.position.x, -WORLD_LIMIT, WORLD_LIMIT);
@@ -296,14 +273,10 @@ export function updateMovement(delta) {
             G.player.rotation.y += diff * Math.min(1, delta * 12);
         }
     } else {
-        // 멈춰 있으면 스태미나 회복
-        G.stamina = Math.min(G.maxStamina, G.stamina + delta * 18);
         if (G.isFirstPerson) {
             G.player.rotation.y = G.fpvYaw + Math.PI;
         }
     }
-
-    updateStaminaBar();
 
     if (!usedDir) sprinting = false;
 
@@ -317,19 +290,4 @@ export function updateMovement(delta) {
     }
 
     return Boolean(usedDir);
-}
-
-/**
- * 스태미나 바.
- *
- * 전투가 없는 게임이라 HP 는 없다. 이 막대는 Shift 달리기에만 쓰인다.
- */
-export function updateStaminaBar() {
-    const bar = document.getElementById("staminaFill");
-    if (!bar) return;
-    const pct = Math.max(0, G.stamina / G.maxStamina * 100);
-    bar.style.width = pct + "%";
-    if (pct > 50) bar.style.background = "linear-gradient(90deg, #1a6e9e, #2894cc)";
-    else if (pct > 20) bar.style.background = "linear-gradient(90deg, #9e7c1a, #c8a022)";
-    else bar.style.background = "linear-gradient(90deg, #7a1a1a, #aa2222)";
 }

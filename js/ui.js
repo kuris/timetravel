@@ -1,10 +1,9 @@
 /**
  * UI — DOM 참조, 메시지창, 인벤토리, 상단 정보
  */
-import { advisorText } from "./advisor.js";
+import { advisor } from "./advisor.js";
 import { AGE_DATA } from "./config.js";
-import { population } from "./settlers.js";
-import { G , progressGoal } from "./state.js";
+import { G } from "./state.js";
 import { weatherLabel } from "./weather.js";
 
 export const dom = {
@@ -19,7 +18,7 @@ export const dom = {
     progressText: document.getElementById("progressText"),
     prompt: document.getElementById("prompt"),
     message: document.getElementById("message"),
-    slots: [...document.querySelectorAll(".slot")],
+    slots: [...document.querySelectorAll("#relicSlots .slot")],
     flash: document.getElementById("flash"),
     glitch: document.getElementById("glitch"),
     completeOverlay: document.getElementById("completeOverlay"),
@@ -48,10 +47,6 @@ function setResource(el, text) {
 }
 
 export function updateResourceUI() {
-    setResource(dom.popText, String(population()));
-    setResource(dom.woodText, String(G.materials.wood));
-    setResource(dom.stoneText, String(G.materials.stone));
-    setResource(dom.progressText, G.progress + " / " + progressGoal());
 }
 
 /**
@@ -83,15 +78,19 @@ export function updateUI() {
 
     // 목표는 "유물 몇 개"가 아니라 마을이 얼마나 자랐는가다.
     // 지금 당장 무엇을 하면 되는지는 advisor 가 한 줄로 정해 준다.
-    dom.objectiveText.textContent = advisorText();
+    // 끝난 목표는 줄을 그어 "해냈다"가 눈에 보이게 한다.
+    const goal = advisor();
+    dom.objectiveText.textContent = goal.text;
+    dom.objectiveText.classList.toggle("done", !!goal.done);
     dom.countText.textContent = G.ageProgress + " / " + age.total;
     updateResourceUI();
     dom.weatherText.textContent = weatherLabel();
 
-    const visibleItems = G.inventory.slice(-5);
+    const icons = { "부러진 마패": "🎖️", "수탈 장부": "📜", "장승 밑 탄원서": "🗿" };
+    const visibleItems = G.inventory.slice(-3);
     for (let i = 0; i < dom.slots.length; i++) {
         const item = visibleItems[i];
-        dom.slots[i].textContent = item || "";
+        dom.slots[i].textContent = item ? ((icons[item] || "🏺") + " " + item) : "";
         dom.slots[i].classList.toggle("filled", Boolean(item));
     }
 }

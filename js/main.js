@@ -30,8 +30,8 @@ const seedParam = parseInt(params.get("seed"), 10);
 G.runSeed = Number.isFinite(seedParam) ? seedParam : 20260920;
 generateBaseMap(G.runSeed);
 
-/** 이야기가 시작되는 시대. 삼국(2). */
-export const START_AGE = 2;
+/** 이야기가 시작되는 시대. 조선(3) 단일 시대. */
+export const START_AGE = 3;
 
 /**
  * 시대를 건넌다.

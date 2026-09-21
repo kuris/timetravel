@@ -68,6 +68,25 @@ export function setupInput() {
             e.preventDefault();
         }
 
+        // M: 지도 토글 (미니맵 패널 접기/펴기)
+        if (e.code === "KeyM") {
+            if (!e.repeat) {
+                const p = document.getElementById("minimapPanel");
+                if (p) p.style.display = (p.style.display === "none") ? "" : "none";
+            }
+            e.preventDefault();
+        }
+
+        // N: 배경음악 켜기/끄기
+        if (e.code === "KeyN") {
+            if (!e.repeat) {
+                const on = AudioSystem.toggleMusic();
+                const btn = document.getElementById("musicBtn");
+                if (btn) btn.textContent = on ? "[N] ♪ 음악 끄기" : "[N] ♪ 음악 켜기";
+            }
+            e.preventDefault();
+        }
+
         // Escape: 대화/일지 닫기
         if (e.code === "Escape") {
             if (isDialogueOpen()) { closeDialogue(); e.preventDefault(); }
@@ -104,12 +123,45 @@ export function setupInput() {
         });
     }
 
+    const musicBtn = document.getElementById("musicBtn");
+    if (musicBtn) {
+        musicBtn.addEventListener("click", () => {
+            AudioSystem.start();
+            const on = AudioSystem.toggleMusic();
+            musicBtn.textContent = on ? "[N] ♪ 음악 끄기" : "[N] ♪ 음악 켜기";
+        });
+    }
+
     // 일지 뺄튼
     const journalBtn = document.getElementById("journalBtn");
     if (journalBtn) {
         journalBtn.addEventListener("click", () => {
             AudioSystem.start();
             toggleJournal();
+        });
+    }
+
+    // 하단 어드벤처 바: 조사 / 가방 / 지도 (모바일 터치용)
+    const verbInvestigate = document.getElementById("verbInvestigate");
+    if (verbInvestigate) {
+        verbInvestigate.addEventListener("click", () => {
+            AudioSystem.start();
+            tryInteract();
+        });
+    }
+    const verbBag = document.getElementById("verbBag");
+    if (verbBag) {
+        verbBag.addEventListener("click", () => {
+            AudioSystem.start();
+            toggleJournal();
+        });
+    }
+    const verbMap = document.getElementById("verbMap");
+    if (verbMap) {
+        verbMap.addEventListener("click", () => {
+            AudioSystem.start();
+            const p = document.getElementById("minimapPanel");
+            if (p) p.style.display = (p.style.display === "none") ? "" : "none";
         });
     }
 

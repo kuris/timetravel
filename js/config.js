@@ -3,7 +3,7 @@
  */
 import { grade } from "./postprocess.js";
 
-export const VIEW_SIZE = 27.5;  // 등각 시야 크기. 클수록 더 넓은 풍경이 보인다.
+export const VIEW_SIZE = 19.5;  // 등각 시야 크기. 클수록 더 넓은 풍경이 보인다.
 export const RENDER_SCALE = 0.78; // 내부 렌더 해상도 배율. 낮출수록 픽셀이 굵어진다.
 export const PLAYER_SPEED = 4.1;
 export const SPRINT_MULTIPLIER = 1.9;  // Shift 를 누르고 있을 때
@@ -106,7 +106,7 @@ export const AGE_DATA = [
             { dist: 30, height: 11, color: 0x5a3f2a, opacity: 0.78, base: -3 }
         ],
 
-        intro: "황토빛 언덕 위, 고인돌 제단이 낮게 울립니다.\n제단과 선돌뿐, 사는 사람은 제사장 하나입니다.\n내가 지은 집들이 그 자리에 다시 서 있습니다. 여기서 더 키우세요.",
+        intro: "황토빛 언덕 위, 고인돌 제단이 낮게 울립니다.\n제단과 선돌뿐, 사는 사람은 제사장 하나입니다.\n제사장에게 말을 걸어 보세요.",
 
         light: {
             hemiSky: 0xffc78c,
@@ -159,7 +159,7 @@ export const AGE_DATA = [
             { dist: 30, height: 10, color: 0x36484c, opacity: 0.75, base: -3 }
         ],
 
-        intro: "낙동강을 따라 토성이 쌓였습니다. 성 안은 아직 비어 있습니다.\n성벽이 한 자리에서만 바깥으로 꺾여 있습니다.\n그 안을 채우는 것은 내가 세운 집들입니다.",
+        intro: "낙동강을 따라 토성이 쌓였습니다.\n성벽이 한 자리에서만 바깥으로 꺾여 있습니다.\n사람들을 만나고 흔적을 살펴보세요.",
 
         light: {
             hemiSky: 0xe2f0fa,
@@ -186,55 +186,54 @@ export const AGE_DATA = [
 
     // ---------------------------------------------------------- 조선
     {
-        name: "조선 시대 · 한양 외곽",
-        completeText: "관아의 금기와 장승의 시선이 같은 곳을 향합니다.\n기억이 문서로 넘어왔습니다.",
-        night: true,
-        goal: "어두워지기 전에 마을을 더 키우세요.",
+        name: "조선 시대 · 한양 외곽 마을",
+        completeText: "탐관의 비리가 드러났습니다.\n어사가 마패를 들어 보입니다.",
+        night: false,
+        goal: "마을 안의 유물 3개를 조사하고 회수하세요.",
         total: 3,
         start: { x: 0.0, z: 0.0 },
 
-        // 저녁에서 밤으로. 고대에서 이어온 하루가 여기서 저문다.
-        // 이야기에서도 가장 어두운 지점이다 — 금기와 두려움의 시대.
+        // 늦은 오후~해질녘 직전. 첨부 이미지처럼 밝고 따뜻한 마을.
         weather: {
-            band: [0.56, 0.68],
-            speed: 0.0026,
+            band: [0.70, 0.79],
+            speed: 0.0016,
             start: "clear",
-            pool: ["clear", "haze", "overcast", "haze", "rain", "clear"]
+            pool: ["clear", "haze", "haze", "clear", "overcast"]
         },
-        fog: 0x7c8a86,
-        fogDensity: 0.0075,
+        fog: 0xd8b088,
+        fogDensity: 0.0042,
 
-        sky: { top: 0x3c5876, mid: 0x7d94a2, bottom: 0xcbd3d0 },
+        sky: { top: 0x5a6a9a, mid: 0xd89a6a, bottom: 0xf0c890 },
 
         ridges: [
-            { dist: 74, height: 32, color: 0x4b4557, opacity: 0.58, base: -6 },
-            { dist: 56, height: 24, color: 0x3d3846, opacity: 0.66, base: -5 },
-            { dist: 42, height: 16, color: 0x2f2b36, opacity: 0.76, base: -4 },
-            { dist: 30, height: 10, color: 0x241f28, opacity: 0.84, base: -3 }
+            { dist: 74, height: 32, color: 0x6a5a6e, opacity: 0.55, base: -6 },
+            { dist: 56, height: 24, color: 0x5a4a5e, opacity: 0.62, base: -5 },
+            { dist: 42, height: 16, color: 0x4a3d4e, opacity: 0.72, base: -4 },
+            { dist: 30, height: 10, color: 0x3a3040, opacity: 0.80, base: -3 }
         ],
 
-        intro: "저녁빛이 내려앉은 한양 외곽입니다.\n장승 셋과 연못, 그리고 누가 걸어 두고 간 등불 몇 개뿐입니다.\n내 집들만이 어둠 속에 서 있습니다.",
+        intro: "한양 외곽의 작은 마을입니다.\n논과 밭, 그리고 사람들의 일상이 이어지고 있습니다.\n마을 곳곳을 둘러보며 유물을 찾아보세요.",
 
         light: {
-            hemiSky: 0x8189b8,
-            hemiGround: 0x38302a,
-            hemiIntensity: 0.86,
-            ambient: 0x796f92,
-            ambientIntensity: 0.46,
-            sun: 0xdbe2f8,
-            sunIntensity: 2.46,
-            sunPos: [-11, 15, -15],
-            fillIntensity: 0.22
+            hemiSky: 0xffe2c0,
+            hemiGround: 0x6a5238,
+            hemiIntensity: 0.95,
+            ambient: 0xe8b888,
+            ambientIntensity: 0.50,
+            sun: 0xffc878,
+            sunIntensity: 2.9,
+            sunPos: [-14, 13, -10],
+            fillIntensity: 0.24
         },
 
-        // 밤이지만 전체 게임의 낡은 필터는 유지한다
+        // 해질녘 노을 — 따뜻하고 선명하게
         grade: {
-            tint: [0.98, 1.00, 1.04],
-            lift: [0.045, 0.045, 0.060],
-            sat: 1.12,
-            sepia: 0.01,
-            contrast: 1.06,
-            vignette: 0.34
+            tint: [1.04, 1.00, 0.94],
+            lift: [0.015, 0.012, 0.010],
+            sat: 1.14,
+            sepia: 0.04,
+            contrast: 1.10,
+            vignette: 0.38
         }
     },
 

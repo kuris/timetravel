@@ -3,14 +3,70 @@
  */
 import { G } from "./state.js";
 
+/**
+ * 암행어사 주제 — 원숭이섬 + 룸 + 조선, 그 시절 루카스 감성.
+ *
+ * 카피가 아니라 뼈대 오마주다. 8마디 루프:
+ *   A(4마디): 원숭이섬식 칼립소 — 베이스(1·3박)-뒷박 코드-셰이커 위에
+ *             계면조 5음 자작 리드(Dm - Bb - Gm - A). 장구 "쿵-딱"이 겹친다.
+ *   B(4마디): 룸식 어둠 — 하프타임 베이스(Gm - Eb - F - D)에
+ *             긴 패드와 성긴 가야금 뜯음, 대금 숨이 한 음씩 떨어진다.
+ * square 리드 + triangle 베이스가 OPL3 시절 그 얇고 쨍한 질감을 낸다.
+ */
+const EOSA_GROOVE = {
+    bpm: 98,
+    swing: 0.16,
+    loopBars: 8,
+    bassA: [82.41, 73.42, 65.41, 98.0, 82.41, 73.42, 110.0, 98.0],
+    chordsA: [
+        [164.81, 196.0, 246.94, 293.66],
+        [146.83, 185.0, 220.0, 261.63],
+        [130.81, 164.81, 196.0, 246.94],
+        [98.0, 123.47, 146.83, 196.0],
+        [164.81, 196.0, 246.94, 293.66],
+        [146.83, 185.0, 220.0, 261.63],
+        [110.0, 138.59, 164.81, 220.0],
+        [123.47, 146.83, 185.0, 246.94]
+    ],
+    leadA: [
+        329.63, 0, 392.0, 0, 440.0, 493.88, 440.0, 0,
+        392.0, 0, 440.0, 392.0, 329.63, 0, 293.66, 329.63,
+        392.0, 0, 440.0, 523.25, 493.88, 440.0, 392.0, 329.63,
+        293.66, 329.63, 369.99, 392.0, 0, 493.88, 440.0, 0,
+        329.63, 0, 392.0, 0, 440.0, 493.88, 523.25, 587.33,
+        587.33, 523.25, 493.88, 440.0, 392.0, 440.0, 329.63, 0,
+        392.0, 0, 440.0, 392.0, 493.88, 440.0, 369.99, 392.0,
+        329.63, 392.0, 440.0, 0, 493.88, 587.33, 659.25, 0
+    ],
+    leadA2tail: [
+        587.33, 523.25, 493.88, 440.0, 392.0, 440.0, 659.25, 0
+    ],
+    bassB: [98.0, 77.78, 87.31, 73.42],
+    chordsB: [
+        [98.0, 116.54, 146.83],
+        [77.78, 98.0, 116.54],
+        [87.31, 110.0, 130.81],
+        [73.42, 87.31, 110.0]
+    ],
+    leadB: [
+        587.33, 0, 0, 0, 523.25, 0, 466.16, 0,
+        440.0, 0, 0, 0, 440.0, 0, 466.16, 0,
+        440.0, 0, 392.0, 0, 349.23, 0, 0, 0,
+        440.0, 0, 0, 392.0, 0, 0, 0, 0
+    ]
+};
+
 export const AudioSystem = {
     ctx: null,
     master: null,
+    musicBus: null,
     started: false,
     era: 0,
     drumTimer: null,
     melodyTimer: null,
     ambientTimer: null,
+    grooveTimer: null,
+    grooveStep: 0,
     windFilter: null,
     windGain: null,
     waterGain: null,
@@ -26,6 +82,11 @@ export const AudioSystem = {
             this.master.gain.value = 0.56;
             this.master.connect(this.ctx.destination);
 
+            // 음악 버스 — 음소거/볼륨 조절용
+            this.musicBus = this.ctx.createGain();
+            this.musicBus.gain.value = 0.85;
+            this.musicBus.connect(this.master);
+
             this.createWind();
             this.createWater();
             this.createRain();
@@ -33,6 +94,7 @@ export const AudioSystem = {
             this.scheduleDrum();
             this.scheduleMelody();
             this.scheduleAmbient();
+            this.scheduleGroove();
             this.setEra(G.currentAge);
         }
 
@@ -573,6 +635,212 @@ export const AudioSystem = {
             this.ambientTimer = setTimeout(loop, lo + Math.random() * (hi - lo));
         };
         this.ambientTimer = setTimeout(loop, 3000);
+    },
+
+    /**
+     * 암행어사 그루브 시퀀서 — 원숭이섬 + 룸 + 조선.
+     * 8분음표 한 스텝씩 64스텝 루프: A(밝은 칼립소 4마디) → B(어두운 룸 4마디).
+     * 타이밍이 살짝 흔들려도 괜찮다 — 그게 맛이다.
+     * 조선 시대(era 3)에서만 돈다. 다른 시대는 각자 앰비언트만 남긴다.
+     */
+    scheduleGroove() {
+        const base = 60 / EOSA_GROOVE.bpm / 2;
+        const swing = EOSA_GROOVE.swing || 0;
+        const loop = () => {
+            if (!this.started) return;
+            if (this.era === 3 && this.ctx && this.ctx.state === "running") {
+                const s = this.grooveStep % 96;
+                this.playGrooveStep(s);
+                this.grooveStep++;
+                // 스윙: 홀수 스텝을 살짝 늦춘다
+                const odd = (s % 2) === 1;
+                this.grooveTimer = setTimeout(loop, base * 1000 * (odd ? (1 + swing) : (1 - swing)));
+                return;
+            }
+            this.grooveTimer = setTimeout(loop, base * 1000);
+        };
+        this.grooveTimer = setTimeout(loop, 800);
+    },
+
+    playGrooveStep(s) {
+        if (s < 64) this.playGrooveA(s);
+        else this.playGrooveB(s - 64);
+    },
+
+    playGrooveA(s) {
+        const bar = Math.floor(s / 8) % 8;
+        const pos = s % 8;
+        const root = EOSA_GROOVE.bassA[bar];
+
+        // 베이스 — 1박과 3박에 쿵, 4박 뒷자리에서 옥타브로 툭 친다
+        if (pos === 0) this.musicTone(root, 0.30, "triangle", 0.105);
+        if (pos === 4) this.musicTone(root, 0.24, "triangle", 0.095);
+        if (pos === 6) this.musicTone(root * 2, 0.12, "triangle", 0.050);
+
+        // 장구 — 쿵(북 편)에 딱(채 편)이 붙는다. 조선 장단.
+        if (pos === 0) this.musicTone(110, 0.22, "sine", 0.075);
+        if (pos === 2 || pos === 5) this.musicNoise(0.035, 0.016, "bandpass", 2600);
+
+        // 코드 스탭 — 스틸드럼 질감: sine 본음 + 2.76배 배음, 짧게
+        if (pos % 2 === 1) {
+            const chord = EOSA_GROOVE.chordsA[bar];
+            for (const f of chord) {
+                this.musicTone(f, 0.14, "sine", 0.030);
+                this.musicTone(f * 2.76, 0.08, "sine", 0.008);
+            }
+        }
+
+        // 리드 — square 두 겹을 살짝 어긋나게. OPL3 시절 그 쨍한 소리.
+        const lead = EOSA_GROOVE.leadA[s];
+        if (lead) {
+            this.musicTone(lead, 0.22, "square", 0.030);
+            this.musicTone(lead * 1.004, 0.22, "square", 0.020);
+        }
+
+        // 카운터멜로디 — 후반 4마디에서 코드 최고음을 한 옥타브 위에서 맞받는다
+        if (bar >= 4 && (pos === 2 || pos === 6)) {
+            const top = EOSA_GROOVE.chordsA[bar][3] * 2;
+            this.musicTone(top, 0.16, "triangle", 0.018);
+        }
+
+        // 셰이커 — 뒷박마다 쏴악
+        if (pos % 2 === 1) this.musicNoise(0.03, 0.010, "highpass", 7200);
+    },
+
+    playGrooveB(s) {
+        const bar = Math.floor(s / 8) % 4;
+        const pos = s % 8;
+        const root = EOSA_GROOVE.bassB[bar];
+
+        // 하프타임 베이스 — 룸의 그 묵직한 걸음
+        if (pos === 0) this.musicTone(root, 0.55, "triangle", 0.100);
+        if (pos === 5) this.musicTone(root * 1.5, 0.20, "triangle", 0.055);
+
+        // 긴 패드 — 마디 첫 박에 깔린다
+        if (pos === 0) {
+            const chord = EOSA_GROOVE.chordsB[bar];
+            for (const f of chord) this.musicTone(f, 1.6, "sine", 0.020);
+        }
+
+        // 가야금 뜯음 — 2박과 4박 뒷자리에 짧게
+        if (pos === 3 || pos === 6) {
+            const f = EOSA_GROOVE.chordsB[bar][2] * 2;
+            this.musicPluck(f, 0.020);
+        }
+
+        // 대금 숨 — 성기게 한 음씩. 어둠 속에서 혼자 운다.
+        const lead = EOSA_GROOVE.leadB[s];
+        if (lead) {
+            this.musicBreath(lead, 1.4, 0.028);
+        }
+    },
+
+    /** 가야금 뜯음 — 빠르게 서고 길게 죽는다 */
+    musicPluck(freq, volume = 0.020) {
+        if (!this.ctx) return;
+        const bus = this.musicBus || this.master;
+        if (!bus) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(freq, t);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.995, t + 0.3);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(volume, t + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+        osc.connect(gain);
+        gain.connect(bus);
+        osc.start(t);
+        osc.stop(t + 1.3);
+        this.musicNoise(0.05, volume * 0.5, "bandpass", freq * 3);
+    },
+
+    /** 대금 숨 — 느린 비브라토가 걸린 긴 음 */
+    musicBreath(freq, duration = 1.4, volume = 0.028) {
+        if (!this.ctx) return;
+        const bus = this.musicBus || this.master;
+        if (!bus) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, t);
+        const vib = this.ctx.createOscillator();
+        vib.type = "sine";
+        vib.frequency.value = 4.6;
+        const vibGain = this.ctx.createGain();
+        vibGain.gain.value = freq * 0.012;
+        vib.connect(vibGain);
+        vibGain.connect(osc.frequency);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(volume, t + 0.42);
+        gain.gain.setValueAtTime(volume, t + duration * 0.6);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+        osc.connect(gain);
+        gain.connect(bus);
+        osc.start(t);
+        osc.stop(t + duration + 0.1);
+        vib.start(t);
+        vib.stop(t + duration + 0.1);
+    },
+
+    /** 음악 버스 전용 음 — 음소거/볼륨 조절이 따로 된다 */
+    musicTone(freq, duration, type = "square", volume = 0.03, delay = 0) {
+        if (!this.ctx) return;
+        const bus = this.musicBus || this.master;
+        if (!bus) return;
+
+        const t = this.ctx.currentTime + delay;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(Math.max(1, freq), t);
+
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), t + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+
+        osc.connect(gain);
+        gain.connect(bus);
+        osc.start(t);
+        osc.stop(t + duration + 0.04);
+    },
+
+    musicNoise(duration, volume, filterType = "highpass", freq = 7000) {
+        if (!this.ctx) return;
+        const bus = this.musicBus || this.master;
+        if (!bus) return;
+
+        const t = this.ctx.currentTime;
+        const src = this.ctx.createBufferSource();
+        src.buffer = this.createNoiseBuffer(duration);
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = filterType;
+        filter.frequency.value = freq;
+        filter.Q.value = 0.8;
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(volume, t + 0.008);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(bus);
+        src.start(t);
+        src.stop(t + duration + 0.03);
+    },
+
+    /** 음악 켜기/끄기. 돌아온다 true = 켜짐. */
+    toggleMusic() {
+        if (!this.musicBus || !this.ctx) return true;
+        const g = this.musicBus.gain;
+        const on = g.value < 0.05;
+        g.setTargetAtTime(on ? 0.85 : 0.0, this.ctx.currentTime, 0.15);
+        return on;
     },
 
     tone(freq, duration, type = "sine", volume = 0.08, delay = 0, glideTo = null) {
