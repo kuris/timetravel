@@ -1067,6 +1067,28 @@ body.intro-on #ui {
     50% { opacity: 0; }
 }
 
+#introBegin {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    padding: 14px 28px;
+    border: 1px solid #c09354;
+    background: rgba(18, 10, 6, 0.72);
+    color: #ffdf9e;
+    font: inherit;
+    font-size: 18px;
+    letter-spacing: 0.18em;
+    cursor: pointer;
+}
+
+#introOverlay.live #introBegin,
+#introOverlay.out #introBegin {
+    opacity: 0;
+    pointer-events: none;
+}
+
 #introSkip {
     position: absolute;
     right: 22px;

@@ -2,7 +2,7 @@
  * 입력 — 키보드 / 마우스
  */
 import { AudioSystem } from "./audio.js";
-import { skipOpening } from "./intro.js";
+import { beginOpening, skipOpening } from "./intro.js";
 import { toggleViewMode } from "./camera.js";
 import { MOVE_CODES, SPRINT_CODES, WORLD_LIMIT } from "./config.js";
 import { toggleHint } from "./hint.js";
@@ -17,11 +17,17 @@ function beginAudio() {
     try { AudioSystem.start(); } catch (_) { /* 소리 없이도 입력은 받는다 */ }
 }
 
+/** 첫 클릭·키는 음악과 함께 오프닝을 연다. 그 다음부터는 건너뛴다. */
+function onOpeningGesture() {
+    beginAudio();
+    if (beginOpening()) return;
+    skipOpening();
+}
+
 export function setupInput() {
     window.addEventListener("keydown", (e) => {
         if (G.cinematic) {
-            beginAudio();
-            if (!e.repeat) skipOpening();
+            if (!e.repeat) onOpeningGesture();
             e.preventDefault();
             return;
         }
@@ -199,8 +205,7 @@ export function setupInput() {
     if (introOverlay) {
         introOverlay.addEventListener("pointerdown", (e) => {
             if (!G.cinematic || (e.button != null && e.button !== 0)) return;
-            beginAudio();
-            skipOpening();
+            onOpeningGesture();
         });
     }
 
@@ -225,8 +230,7 @@ export function setupInput() {
 
     G.renderer.domElement.addEventListener("pointerdown", (e) => {
         if (G.cinematic) {
-            beginAudio();
-            if (e.button == null || e.button === 0) skipOpening();
+            if (e.button == null || e.button === 0) onOpeningGesture();
             return;
         }
 

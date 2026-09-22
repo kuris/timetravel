@@ -34,6 +34,7 @@ let settle = null;
 let lineI = -1;
 let typed = 0;
 let lineAt = 0;
+let begun = false;
 
 function smooth(x) {
     const u = Math.max(0, Math.min(1, x));
@@ -142,18 +143,26 @@ export function startOpening() {
     settle = null;
     lineI = -1;
     typed = 0;
+    begun = false;
 
     G.cinematic = true;
     if (G.player) G.player.visible = false;
     document.body.classList.add("intro-on");
-    overlay.classList.remove("out");
+    overlay.classList.remove("out", "live");
     overlay.classList.add("show");
     pose(sample(0), 0);
-    requestAnimationFrame(() => overlay.classList.add("live"));
+}
+
+/** 첫 입력. 음악이 켜질 수 있는 순간이고, 오프닝 시계도 여기서 시작한다. */
+export function beginOpening() {
+    if (!G.cinematic || ended || begun) return false;
+    begun = true;
+    document.getElementById("introOverlay")?.classList.add("live");
+    return true;
 }
 
 export function updateIntro(delta) {
-    if (!G.cinematic || ended) return;
+    if (!G.cinematic || ended || !begun) return;
 
     if (mode === "settle" && settle) {
         settle.u = Math.min(1, settle.u + delta / 0.85);
