@@ -15,6 +15,25 @@ let dialogueOpen = false;
 let currentNPC = null;
 let typeTimer = null;
 
+/** 초상 파일 이름. 대화창과 하단 칸이 같은 표를 쓴다. */
+const FACES = {
+    "마을 주모": "jumo",
+    "늙은 유모": "nanny",
+    "객주 장석": "merchant",
+    "이방": "clerk",
+    "나루터 사공": "old_farmer",
+    "우물가 아낙": "well_woman",
+    "가판 상인": "peddler",
+    "빨래하는 아낙": "laundry_woman",
+    "대숲지기 노인": "straw_elder",
+    "아랑": "arang"
+};
+
+function portraitSrc(name) {
+    const key = FACES[name];
+    return key ? ("assets/portraits/" + key + ".png") : "assets/portraits/eosa.png";
+}
+
 export function isDialogueOpen() { return dialogueOpen; }
 
 /** 진행 중인 타자기 효과를 멈춘다 */
@@ -139,14 +158,7 @@ export function openChoiceDialogue(npc) {
     const portraitFace = document.getElementById("portraitFace");
     const portraitName = document.getElementById("portraitName");
     const dlgPortrait = document.getElementById("dialoguePortrait");
-    const faces = {
-        "마을 주모": "merchant", "늙은 유모": "straw_elder", "객주 장석": "peddler",
-        "이방": "clerk", "나루터 사공": "old_farmer", "우물가 아낙": "well_woman",
-        "가판 상인": "merchant", "빨래하는 아낙": "laundry_woman", "대숲지기 노인": "old_farmer",
-        "아랑": "well_woman"
-    };
-    const key = faces[npc.name];
-    const src = key ? ("assets/portraits/" + key + ".png") : "assets/portraits/eosa.png";
+    const src = portraitSrc(npc.name);
     if (portraitName) portraitName.textContent = npc.name;
     if (portraitFace) { portraitFace.src = src; portraitFace.alt = npc.name; }
     if (dlgPortrait) { dlgPortrait.src = src; dlgPortrait.alt = npc.name; }
@@ -234,16 +246,7 @@ function selectChoice(choice) {
         currentNPC.asked.add(choice.text);
     }
     const eosaSrc = "assets/portraits/eosa.png";
-    const npcSrc = (() => {
-        const faces = {
-            "마을 주모": "merchant", "늙은 유모": "straw_elder", "객주 장석": "peddler",
-            "이방": "clerk", "나루터 사공": "old_farmer", "우물가 아낙": "well_woman",
-            "가판 상인": "merchant", "빨래하는 아낙": "laundry_woman", "대숲지기 노인": "old_farmer",
-            "아랑": "well_woman"
-        };
-        const key = currentNPC && faces[currentNPC.name];
-        return key ? ("assets/portraits/" + key + ".png") : eosaSrc;
-    })();
+    const npcSrc = currentNPC ? portraitSrc(currentNPC.name) : eosaSrc;
     const lines = [
         { name: "암행어사", src: eosaSrc, text: choice.text },
         { name: currentNPC ? currentNPC.name : "NPC", src: npcSrc, text: '"' + choice.response + '"' }

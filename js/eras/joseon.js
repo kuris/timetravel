@@ -192,7 +192,7 @@ export function buildJoseon() {
     // 질문은 아는 것이 생긴 뒤에만 열린다.
     // 아랑 → 유모 → 향을 판 상인 → 비녀·기록 → 장석의 방 → 칼집을 들이민다.
     addVillager([P(-2, 4), P(4, 2), P(8, 6), P(2, 9), P(-4, 7)], "joseon", {
-        name: "마을 주모", hat: "gat",
+        name: "마을 주모",
         greeting: "어허, 나그네. 요즘 이 마을이 좀 조용해졌지 않소?",
         choices: [
             {
