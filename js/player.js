@@ -129,7 +129,7 @@ function clearOcclusionFade() {
 
 export function updatePlayerOcclusion() {
     clearOcclusionFade();
-    if (!G.player || !G.camera || G.isFirstPerson) return;
+    if (!G.player || !G.camera || G.isFirstPerson || G.dialogueShot) return;
     if (!G.player.visible) return;
 
     _occOrigin.copy(G.camera.position);
@@ -214,6 +214,8 @@ export let sprinting = false;
 
 export function updateMovement(delta) {
     if (!G.player) return false;
+    // 선택지 대화는 시네마틱 장면이다. 대사를 읽는 동안 캐릭터가 걸어가면 안 된다.
+    if (G.dialogueShot) return false;
 
     prevPos.copy(G.player.position);
     const move = new THREE.Vector3();

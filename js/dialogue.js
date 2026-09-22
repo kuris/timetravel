@@ -10,6 +10,7 @@ import { AGE_DATA, ERA_OPENED_BY } from "./config.js";
 import { addJournalEntry } from "./journal.js";
 import { AudioSystem } from "./audio.js";
 import { showMessage } from "./ui.js";
+import { startDialogueShot, stopDialogueShot } from "./camera.js";
 
 let dialogueOpen = false;
 let currentNPC = null;
@@ -175,6 +176,8 @@ export function openChoiceDialogue(npc) {
 
     overlay.classList.add("open");
     document.body.classList.add("dialogue-open");
+    // 걷는 화면에서 대화 장면으로 전환한다. 조작 1인칭이 아닌 어깨 너머 샷이다.
+    startDialogueShot(npc);
     overlay.focus();
 
     // 대화창 클릭도 타자기 넘기기로 (왼쪽 말풍선 전체)
@@ -297,6 +300,7 @@ export function closeDialogue() {
     lineQueue = [];
     dialogueOpen = false;
     currentNPC = null;
+    stopDialogueShot();
     const portraitName = document.getElementById("portraitName");
     if (portraitName) portraitName.textContent = "암행어사";
     const portraitFace = document.getElementById("portraitFace");

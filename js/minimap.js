@@ -1,6 +1,7 @@
 /**
  * 미니맵
  */
+import { getHintTarget } from "./hint.js";
 import { G, clock } from "./state.js";
 import { dom } from "./ui.js";
 
@@ -147,6 +148,26 @@ export function drawMinimap() {
             if (cx < -fowTileSize || cx > S + fowTileSize || cy < -fowTileSize || cy > S + fowTileSize) continue;
             ctx.fillStyle = "rgba(8, 5, 3, 0.84)";
             ctx.fillRect(cx - fowTileSize / 2 - 1, cy - fowTileSize / 2 - 1, fowTileSize + 2, fowTileSize + 2);
+        }
+    }
+
+    // 지금 갈 곳. 안개 위에 찍어서, 아직 안 가 본 월영루도 방향이 보이게 한다.
+    if (G.currentAge === 3 && !G.cinematic && !G.demoFinished) {
+        const goal = getHintTarget();
+        if (goal && goal.distance > 5) {
+            const [gx, gy] = worldToMap(goal.x, goal.z, S);
+            const pulse = 0.55 + Math.sin(clock.elapsedTime * 4) * 0.35;
+            ctx.globalAlpha = pulse;
+            ctx.strokeStyle = "#ffd071";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(gx, gy, 5, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = "#ffd071";
+            ctx.beginPath();
+            ctx.arc(gx, gy, 2.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
         }
     }
 

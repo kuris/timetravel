@@ -11,6 +11,7 @@ import { dom, showMessage } from "./ui.js";
 export let hintActive = false;
 export let hintSign = null;     // 플레이어 옆에 세워지는 3D 이정표
 export let hintTimer = null;
+let routeLine = null;           // 발밑에서 목표까지 이어지는 GTA식 안내선
 
 export const HINT_DURATION = 9000; // ms
 
@@ -165,42 +166,120 @@ export function hideHint() {
     if (hintSign) hintSign.visible = false;
 }
 
+function guideLabel(name) {
+    const labels = {
+        "아랑": "월영루 — 아랑",
+        "늙은 유모": "강가 마을길 — 늙은 유모",
+        "가판 상인": "장터 — 가판 상인",
+        "대숲의 비녀": "강가 대숲 — 비녀",
+        "찢긴 순찰 기록": "관아 문서고 — 순찰 기록",
+        "문양이 같은 칼집": "주막 뒤 — 장석의 방",
+        "객주 장석": "객주 앞 — 장석"
+    };
+    return labels[name] || name;
+}
+
+/**
+ * 다음 목표까지의 바닥 안내선.
+ * 길을 찾게 하려는 게임이 아니므로 조선 사건에서는 목적지를 항상 명확히 보여 준다.
+ * 플레이어가 조금 움직였을 때만 다시 그려, 매 프레임 geometry를 만들지 않는다.
+ */
+function updateRouteLine(target, visible) {
+    if (!visible || !target || !G.player || !G.scene) {
+        if (routeLine) routeLine.visible = false;
+        return;
+    }
+
+    const p = G.player.position;
+    const last = routeLine && routeLine.userData.last;
+    const moved = !last
+        || last.name !== target.name
+        || Math.hypot(last.x - p.x, last.z - p.z) > 0.35;
+
+    if (!routeLine) {
+        routeLine = new THREE.Line(
+            new THREE.BufferGeometry(),
+            new THREE.LineDashedMaterial({
+                color: 0xffd071,
+                dashSize: 0.34,
+                gapSize: 0.20,
+                transparent: true,
+                opacity: 0.88,
+                depthTest: false,
+                depthWrite: false
+            })
+        );
+        routeLine.renderOrder = 3;
+        G.scene.add(routeLine);
+    }
+
+    if (moved) {
+        const distance = Math.hypot(target.x - p.x, target.z - p.z);
+        const steps = Math.max(10, Math.min(42, Math.ceil(distance * 1.15)));
+        const points = [];
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const x = THREE.MathUtils.lerp(p.x, target.x, t);
+            const z = THREE.MathUtils.lerp(p.z, target.z, t);
+            points.push(new THREE.Vector3(x, terrainHeight(x, z) + 0.10, z));
+        }
+        routeLine.geometry.dispose();
+        routeLine.geometry = new THREE.BufferGeometry().setFromPoints(points);
+        routeLine.computeLineDistances();
+        routeLine.userData.last = { x: p.x, z: p.z, name: target.name };
+    }
+    routeLine.visible = true;
+}
+
+/** 화면 화살표. 등각이라 월드 방향을 화면 방향으로 돌린다. */
+function paintSign(target) {
+    const dx = target.x - G.player.position.x;
+    const dz = target.z - G.player.position.z;
+    const dist = Math.hypot(dx, dz);
+    const sx = (dx - dz) * Math.SQRT1_2;
+    const syUp = -(dx + dz) * Math.SQRT1_2 * 0.54;
+    const angle = Math.atan2(sx, syUp) * (180 / Math.PI);
+    if (dom.signArrow) dom.signArrow.style.transform = "rotate(" + angle.toFixed(1) + "deg)";
+    if (dom.signText) dom.signText.innerHTML = "<b>" + guideLabel(target.name) + "</b>";
+    if (dom.signDist) {
+        dom.signDist.textContent = "약 " + Math.round(dist * 1.4) + "걸음 · " + compassName(dx, dz);
+    }
+    return { dx, dz, dist };
+}
+
 /** 매 프레임 이정표의 방향과 거리 갱신 */
 export function updateHint() {
-    if (!hintActive || !G.player) return;
+    if (!G.player || !dom.signpost) return;
 
     const target = getHintTarget();
+    // 지금 할 일은 버튼을 누르지 않아도 방향을 보여 준다.
+    // 가까이 가면 대화 안내와 겹치지 않게 거둔다.
+    const guide = G.currentAge === 3 && target && !G.cinematic && !G.demoFinished
+        && target.distance > 5;
+    if (guide) {
+        paintSign(target);
+        dom.signpost.classList.add("show");
+    } else if (!hintActive) {
+        dom.signpost.classList.remove("show");
+    }
+    updateRouteLine(target, guide);
+
+    if (!hintActive) return;
     if (!target) {
         hideHint();
         return;
     }
 
-    const dx = target.x - G.player.position.x;
-    const dz = target.z - G.player.position.z;
-    const dist = Math.hypot(dx, dz);
+    const { dx, dz } = paintSign(target);
 
-    // ---- 3D 이정표: 플레이어 옆에 서서 목표를 가리킨다 ----
     if (hintSign) {
         hintSign.position.set(
             G.player.position.x - 1.15,
             terrainHeight(G.player.position.x - 1.15, G.player.position.z + 0.5),
             G.player.position.z + 0.5
         );
-        // 판자가 목표를 향하도록 (로컬 +X 가 화살표 방향)
         hintSign.userData.board.rotation.y = -Math.atan2(dz, dx);
     }
-
-    // ---- 화면 아래 표시 ----
-    // 등각 화면 기준으로 방향을 계산한다.
-    // 화면 오른쪽 = 월드 (1,0,-1)/√2, 화면 위쪽 = 월드 -(1,0,1)/√2
-    const sx = (dx - dz) * Math.SQRT1_2;
-    const syUp = -(dx + dz) * Math.SQRT1_2 * 0.54; // 등각 수직 압축
-
-    const angle = Math.atan2(sx, syUp) * (180 / Math.PI);
-    dom.signArrow.style.transform = "rotate(" + angle.toFixed(1) + "deg)";
-
-    dom.signText.innerHTML = "이정표 — <b>" + target.name + "</b>";
-    dom.signDist.textContent = "약 " + Math.round(dist * 1.4) + "걸음 · " + compassName(dx, dz);
 }
 
 /** 월드 방향을 한국식 방위로 (지도의 北 과 같은 기준) */
@@ -214,7 +293,12 @@ export function compassName(dx, dz) {
 
 /** 시대가 바뀔 때 호출. 이전 scene 에 붙어 있던 이정표 참조를 버린다. */
 export function resetHint() {
+    if (routeLine) {
+        if (routeLine.parent) routeLine.parent.remove(routeLine);
+        routeLine.geometry.dispose();
+        routeLine.material.dispose();
+        routeLine = null;
+    }
     hintSign = null;
     hideHint();
 }
-

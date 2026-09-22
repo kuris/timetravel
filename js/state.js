@@ -33,6 +33,7 @@ export const G = {
     ageCompleteTriggered: false,
     transitioning: false,
     cinematic: false, // 오프닝 카메라가 플레이어를 따라가지 않는다
+    dialogueShot: null, // 대화 중 어깨 너머 시네마틱 카메라 상태
     demoFinished: false,
     prologue: false, // 현대 프롤로그 진행 중 (전용 플로우)
     prologueDone: false,
@@ -113,4 +114,3 @@ export const mouse = new THREE.Vector2();
 export const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
 export const keys = new Set();
-

@@ -220,7 +220,7 @@ export function buildJoseon() {
                 journal: true
             },
             {
-                text: "그날 밤, 누구를 루로 모셨습니까.",
+                text: "아랑은 당신이 자신을 월영루로 데려갔다고 했소.",
                 requires: "arang_who",
                 response: "그날 밤... 내가 아가씨를 루로 모셨지... 통인 나으리가 기다린다 하여... 용서하소서...",
                 clue: "arang_lured", journal: true, hideAfter: true,
@@ -239,14 +239,14 @@ export function buildJoseon() {
                 journal: true
             },
             {
-                text: "통인이 월영루에서 기다렸다는데.",
+                text: "유모는 통인이 월영루에서 기다렸다고 했소.",
                 requires: "arang_lured",
                 response: "난 그날 루에 간 적 없소! ...왜 날 그런 눈으로 보시오. 난 장석이 아니오!",
                 clue: "arang_jangseok", journal: true, hideAfter: true,
                 followUp: "(장석이 보따리를 움켜쥔다)"
             },
             {
-                text: "이 칼집을 보여준다.",
+                text: "비녀와 순찰 기록이 가리킨 칼집을 보여준다.",
                 requires: "arang_lured",
                 requiresItem: "문양이 같은 칼집",
                 response: "그건... 어디서 났소. 내 것이 아니오! 통인 장석이는 죽었소. 죽었다고!",
@@ -306,7 +306,7 @@ export function buildJoseon() {
                 journal: true
             },
             {
-                text: "죽은 부사들이 피운 향은 누가 팔았소.",
+                text: "유모의 말대로라면 누군가 그날 밤을 준비했소. 향은 누가 팔았소?",
                 requires: "arang_lured",
                 response: "셋 다 첫날밤 월영루에 묵었소. 향을 피우고... 그 향, 객주 장석이 팔았지. 증거는 문서고 장부에 있소.",
                 clue: "arang_incense", journal: true, hideAfter: true,
