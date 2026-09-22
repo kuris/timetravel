@@ -62,7 +62,35 @@ export function registerInteractable({
     }
 
     G.interactables.push(item);
+    if (item.locked && !item.done) sealItem(item, true);
     return item;
+}
+
+function glowAnim(group) {
+    return G.animated.find((a) => a.type === "glow" && a.group === group);
+}
+
+/** 잠긴 증거는 빛도, 물건도, 지도 점도 내지 않는다. */
+function sealItem(item, sealed) {
+    const anim = glowAnim(item.glow);
+    if (anim) anim.sealed = sealed;
+    if (item.marker) item.marker.hidden = sealed;
+    if (sealed) {
+        if (item.glow) item.glow.visible = false;
+        if (item.group) item.group.visible = false;
+    } else if (item.group) {
+        item.group.visible = true;
+    }
+}
+
+/** 새로 얻은 단서가 있으면 잠긴 증거를 연다. */
+export function refreshLocks() {
+    for (const item of G.interactables) {
+        if (!item.unlockClue || item.done) continue;
+        const open = G.clues.has(item.unlockClue);
+        item.locked = !open;
+        sealItem(item, !open);
+    }
 }
 
 /** 조사 기록의 열쇠. 시대와 이름을 함께 묶는다. */
@@ -187,7 +215,7 @@ export function updatePrompt() {
     if (action.kind === "object") {
         const isLocked = action.item.locked && action.item.unlockClue && !G.clues.has(action.item.unlockClue);
         dom.prompt.textContent = isLocked
-            ? "🔒 " + action.item.name + " (단서 필요)"
+            ? "[E] 살펴본다"
             : "[E] 조사 · " + action.item.name;
     } else if (action.kind === "npc") {
         dom.prompt.textContent = "[E] " + (action.npc.isAnimal ? "교감 · " : "대화 · ") + action.npc.name;
@@ -323,7 +351,7 @@ export function investigateObject(item) {
     // 잠금 확인
     if (item.locked && item.unlockClue && !G.clues.has(item.unlockClue)) {
         AudioSystem.playInvestigate();
-        showMessage("🔒 " + (item.lockedMsg || "이 유물을 조사하려면 먼저 단서가 필요합니다.\nNPC와 대화하여 단서를 수집해 보세요."));
+        showMessage(item.lockedMsg || "아직 여기서 무엇을 찾아야 하는지 모른다.");
         return;
     }
 
@@ -346,16 +374,41 @@ export function investigateObject(item) {
     // 일지 기록
     addJournalEntry("artifact", item.name, item.description);
 
+    // 비녀와 기록이 모이면 장석의 방이 열린다. 줍는 것만으로 사건은 끝나지 않는다.
+    let roomNote = "";
+    if (G.currentAge === 3) {
+        const pin = G.investigated.has(investigateKey("대숲의 비녀"));
+        const doc = G.investigated.has(investigateKey("찢긴 순찰 기록"));
+        if (pin && doc && !G.clues.has("arang_room")) {
+            G.clues.add("arang_room");
+            refreshLocks();
+            roomNote = "\n\n비녀와 찢긴 기록이 한 사람을 가리킨다.\n객주 장석의 방을 뒤질 이유가 생겼다.";
+        }
+    }
+
     const extra = handleAgeCompletion();
-    showMessage(item.description + (extra ? "\n\n" + extra : ""));
+    showMessage(item.description + roomNote + (extra ? "\n\n" + extra : ""));
     updateUI();
+}
+
+/** 칼집을 장석에게 보여 준 뒤. 증거 세 개를 주운 순간이 끝이 아니다. */
+export function finishArangEpisode() {
+    if (G.ageCompleteTriggered) return;
+    G.clues.add("arang_confess");
+    G.ageCompleteTriggered = true;
+    G.demoFinished = true;
+    AudioSystem.playGate();
+    updateUI();
+    // 대사를 읽는 동안에는 기다린다. 대화를 닫으면 바로 뜬다.
+    setTimeout(() => {
+        dom.completeOverlay.classList.add("show");
+    }, 9000);
 }
 
 /**
  * 한 시대의 조사를 모두 마쳤을 때.
  *
- * 조선 단일 시대: 유물 3개를 다 모으면 에피소드 클리어다.
- * 시간의 문은 쓰지 않는다.
+ * 조선은 여기서 끝나지 않는다. 칼집을 장석에게 보여야 끝이 난다.
  */
 export function handleAgeCompletion() {
     const age = AGE_DATA[G.currentAge];
@@ -364,10 +417,13 @@ export function handleAgeCompletion() {
     // 문을 여는 것은 마을이 아니라 "본 것"이다.
     // 이 게임에서 앞으로 나아가게 하는 힘은 집이 아니라 궁금증이어야 한다.
     // 마을 짓기는 남겨 두되, 시대를 넘는 조건에서는 뺀다.
+    // 조선은 칼집을 장석에게 보여주는 선택이 끝이다.
+    if (G.currentAge === 3) return "";
+
     if (G.ageProgress < (age.total || 3) || G.ageCompleteTriggered) return "";
     G.ageCompleteTriggered = true;
 
-    // 조선 단일 시대 — 증거 3개를 다 모으면 바로 에피소드 클리어
+    // 그 외 시대 — 유물을 다 보면 클리어
     AudioSystem.playGate();
     G.demoFinished = true;
     setTimeout(() => {

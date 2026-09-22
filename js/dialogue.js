@@ -2,7 +2,8 @@
  * dialogue.js — 선택지 대화 UI
  *
  * NPC에 choices 배열이 있으면 이 모듈이 오버레이를 띄운다.
- * 각 선택지는 { text, response, clue?, journal? } 형태.
+ * 각 선택지는 { text, response, clue?, requires?, requiresItem?, hideIf?, journal? } 형태.
+ * requires 단서(또는 가방의 물건)가 없으면 질문은 목록에 나오지 않는다.
  */
 import { G } from "./state.js";
 import { AGE_DATA, ERA_OPENED_BY } from "./config.js";
@@ -176,13 +177,23 @@ export function openChoiceDialogue(npc) {
  * 단서 질문(hideAfter)은 단서를 얻으면 숨기고,
  * 일반 질문은 한 번 답하면 숨긴다.
  */
+/** 지금 물을 수 있는 질문인가. 아는 것이 바뀌기 전에는 다음 질문이 없다. */
+function choiceOpen(c, asked) {
+    if (G.demoFinished) return false;
+    if (asked.has(c.text)) return false;
+    if (c.hideIf && G.clues.has(c.hideIf)) return false;
+    if (c.clue && G.clues.has(c.clue) && c.hideAfter) return false;
+    if (c.requires) {
+        const need = Array.isArray(c.requires) ? c.requires : [c.requires];
+        if (!need.every((id) => G.clues.has(id))) return false;
+    }
+    if (c.requiresItem && !G.inventory.includes(c.requiresItem)) return false;
+    return true;
+}
+
 function renderChoices(choicesEl) {
     const asked = currentNPC.asked || (currentNPC.asked = new Set());
-    const list = (currentNPC.choices || []).filter((c) => {
-        if (asked.has(c.text)) return false;
-        if (c.clue && G.clues.has(c.clue) && c.hideAfter) return false;
-        return true;
-    });
+    const list = (currentNPC.choices || []).filter((c) => choiceOpen(c, asked));
     // 첨부처럼 항상 3칸: 남은 선택지 + "그냥 간다."
     const shown = list.slice(0, 2);
     const items = [...shown.map((c) => ({ choice: c })), { leave: true }];
@@ -257,6 +268,8 @@ function selectChoice(choice) {
         }
 
         addJournalEntry("clue", "단서: " + choice.text, choice.response);
+        // 그 단서가 잠겨 있던 증거를 연다.
+        import("./interaction.js").then((m) => m.refreshLocks());
     } else if (choice.journal) {
         addJournalEntry("npc", currentNPC ? currentNPC.name : "NPC", choice.response);
     }
@@ -291,6 +304,9 @@ export function closeDialogue() {
     const overlay = document.getElementById("dialogueOverlay");
     if (overlay) overlay.classList.remove("open");
     document.body.classList.remove("dialogue-open");
+    if (G.demoFinished) {
+        document.getElementById("completeOverlay")?.classList.add("show");
+    }
 }
 
 /** 숫자키 1-3으로 선택지 선택 — 화면에 보이는 순서와 같게 */
@@ -302,11 +318,7 @@ export function handleDialogueKey(key) {
     const idx = parseInt(key) - 1;
     if (isNaN(idx) || idx < 0 || idx > 2) return;
     const asked = currentNPC.asked || (currentNPC.asked = new Set());
-    const list = (currentNPC.choices || []).filter((c) => {
-        if (asked.has(c.text)) return false;
-        if (c.clue && G.clues.has(c.clue) && c.hideAfter) return false;
-        return true;
-    });
+    const list = (currentNPC.choices || []).filter((c) => choiceOpen(c, asked));
     const shown = list.slice(0, 2);
     if (idx < shown.length) {
         selectChoice(shown[idx]);

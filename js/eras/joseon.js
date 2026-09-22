@@ -3,7 +3,7 @@
  */
 import { addBlob, addBox, addCone, addCylinder, addCylinderBetween, addFlatCircle, makeBasicMat, makeMat } from "../build.js";
 import { addFence } from "./neolithic.js";
-import { registerInteractable } from "../interaction.js";
+import { finishArangEpisode, registerInteractable } from "../interaction.js";
 import { addMapMarker } from "../minimap.js";
 import { pick, rand, randRange } from "../rng.js";
 import { addBanner, addBridge, addCart, addCropField, addHayStack, addJarPlatform, addLaundryLine, addMarketStall, addStoneWallRun } from "../props.js";
@@ -189,15 +189,15 @@ export function buildJoseon() {
     }
 
     // ---- 사람과 짐승 ----
-    // 월영루 편: 아랑의 죽음을 아는 자와 모르는 척하는 자가 섞여 있다.
-    // 낮에는 입을 닫고, 밤에는 문을 걸어잠근다.
+    // 질문은 아는 것이 생긴 뒤에만 열린다.
+    // 아랑 → 유모 → 향을 판 상인 → 비녀·기록 → 장석의 방 → 칼집을 들이민다.
     addVillager([P(-2, 4), P(4, 2), P(8, 6), P(2, 9), P(-4, 7)], "joseon", {
         name: "마을 주모", hat: "gat",
         greeting: "어허, 나그네. 요즘 이 마을이 좀 조용해졌지 않소?",
         choices: [
             {
                 text: "월영루에 대해 묻는다.",
-                response: "묻지 마시오. 산 사람도 죽은 사람 곁에 오래 머물면, 끝내 제 이름을 잊는다 하였소.",
+                response: "묻지 마시오. 산 사람도 죽은 사람 곁에 오래 머물면, 끝내 제 이름을 잊는다 하였소. 그래도 루에는 가 보시오. 거기 서 있는 여인이 답을 알고 있소.",
                 clue: "arang_pavilion", journal: true, hideAfter: true,
                 followUp: "(주모가 술잔을 닦으며 눈을 피한다)"
             },
@@ -214,40 +214,57 @@ export function buildJoseon() {
         greeting: "아랑 아가씨... 아가씨가... 불렀어...",
         choices: [
             {
-                text: "월영루에 대해 묻는다.",
+                text: "아랑이라는 이름을 아십니까.",
+                hideIf: "arang_who",
+                response: "그 이름을 입에 올리지 마소. 부르면 나도 따라간단 말이오.",
+                journal: true
+            },
+            {
+                text: "그날 밤, 누구를 루로 모셨습니까.",
+                requires: "arang_who",
                 response: "그날 밤... 내가 아가씨를 루로 모셨지... 통인 나으리가 기다린다 하여... 용서하소서...",
                 clue: "arang_lured", journal: true, hideAfter: true,
                 followUp: "(유모가 덜덜 떤다)"
-            },
-            {
-                text: "죽은 부사들에 대해 묻는다.",
-                response: "부사 나으리들은 아가씨가 불렀던 게여. 억울하다, 억울하다... 나도 들었어...",
-                journal: true,
-                followUp: "(유모가 귀를 막는다)"
             }
         ]
     });
     addVillager([P(10, -2), P(16, -4), P(18, 2), P(12, 4)], "joseon", {
         name: "객주 장석", speed: 1.0,
-        greeting: "물건은 없소. 관아에 다 뜯겼소... 아니, 난 객주요, 객주!",
+        greeting: "묵으려거든 다른 데 가시오. 여긴 객주요.",
         choices: [
             {
-                text: "월영루에 대해 묻는다.",
+                text: "묵을 방이 있소.",
+                hideIf: "arang_lured",
+                response: "만실이오. 다른 데로 가시오.",
+                journal: true
+            },
+            {
+                text: "통인이 월영루에서 기다렸다는데.",
+                requires: "arang_lured",
                 response: "난 그날 루에 간 적 없소! ...왜 날 그런 눈으로 보시오. 난 장석이 아니오!",
                 clue: "arang_jangseok", journal: true, hideAfter: true,
                 followUp: "(장석이 보따리를 움켜쥔다)"
+            },
+            {
+                text: "이 칼집을 보여준다.",
+                requires: "arang_lured",
+                requiresItem: "문양이 같은 칼집",
+                response: "그건... 어디서 났소. 내 것이 아니오! 통인 장석이는 죽었소. 죽었다고!",
+                journal: true,
+                followUp: "(마패를 드니 장석의 무릎이 꺾인다)",
+                onSelect: () => finishArangEpisode()
             }
         ]
     });
     addVillager([P(6, 13), P(12, 14), P(14, 10), P(8, 9)], "joseon", {
         name: "이방", hat: "gat", speed: 0.9,
-        greeting: "신분高的 분 같으신데... 관아 일에 참견 마시지요.",
+        greeting: "어디 관원 같으신데... 관아 일에 참견 마시지요.",
         choices: [
             {
                 text: "죽은 부사들에 대해 묻는다.",
                 response: "귀신의 소행이지요. 아랑 귀신이 새 부사를 잡아간다는 소문... 자네도 밤에 루 근처엔 가지 마시게.",
                 clue: "arang_rumor", journal: true, hideAfter: true,
-                followUp: "(이방이 씨익 웃는다 — 귀신은 무섭지만, 산 사람의 입은 더 무섭지요)"
+                followUp: "(이방이 씨익 웃는다)"
             }
         ]
     });
@@ -264,55 +281,69 @@ export function buildJoseon() {
         ]
     });
 
-    // 우물가에서 물 긷는 아낙 — 붉은 나비를 보았다
+    // 우물가에서 물 긷는 아낙 — 나비가 루를 가리킨다는 소문만 안다
     q = P(-1, 4); addWorker(q[0], q[1], "joseon", {
         name: "우물가 아낙", rot: 0.8, hat: "straw",
         greeting: "밤에 붉은 나비를 보거든 뒤돌아보지 마십시오.",
         choices: [
             {
-                text: "월영루에 대해 묻는다.",
+                text: "붉은 나비를 보았소.",
                 response: "그 나비를 따라간 사내들은 하나같이 새벽에 얼어 죽은 낯으로 발견됐지요. 월영루, 그곳입니다.",
                 clue: "arang_butterfly", journal: true, hideAfter: true,
                 followUp: "(아낙이 치마폭으로 눈물을 닦는다)"
             }
         ]
     });
-    // 가판 지키는 상인 — 죽은 부사들의 공통점을 안다
+    // 가판 상인 — 유모의 말 뒤에야 향과 장부를 꺼낸다
     q = P(4, 6); addWorker(q[0], q[1], "joseon", {
         name: "가판 상인", rot: 0.1, hat: "gat",
         greeting: "어서 오시오. ...아, 손님이 아니시오?",
         choices: [
             {
-                text: "죽은 부사들에 대해 묻는다.",
+                text: "장사가 되시오.",
+                hideIf: "arang_lured",
+                response: "수령이 죽을 때마다 장이 파하니, 될 리가 있겠소.",
+                journal: true
+            },
+            {
+                text: "죽은 부사들이 피운 향은 누가 팔았소.",
+                requires: "arang_lured",
                 response: "셋 다 첫날밤 월영루에 묵었소. 향을 피우고... 그 향, 객주 장석이 팔았지. 증거는 문서고 장부에 있소.",
                 clue: "arang_incense", journal: true, hideAfter: true,
                 followUp: "(상인이 좌판을 두드린다)"
             }
         ]
     });
-    // 빨래하는 아낙 — 피 묻은 관복을 빨았다
+    // 빨래하는 아낙 — 통인 이야기가 나온 뒤에야 피 묻은 관복을 말한다
     q = P(-11, 0); addWorker(q[0], q[1], "joseon", {
         name: "빨래하는 아낙", rot: -0.6,
         greeting: "이 물로 관아의 더러운 것도 씻겨 냈으면 좋겠소.",
         choices: [
             {
-                text: "특별한 것을 보았는지 묻는다.",
+                text: "오늘 물은 맑소.",
+                hideIf: "arang_lured",
+                response: "맑기만 하면 뭘 하오. 관아에서 내려오는 것은 물이 아니라 때요.",
+                journal: true
+            },
+            {
+                text: "관아에서 무엇을 빨았소.",
+                requires: "arang_lured",
                 response: "피 묻은 관복을 빨았소. 아랑 아가씨의 피인지, 부사 나으리들의 피인지는 모르겠소.",
                 journal: true,
                 followUp: "(아낙이 빨랫감을 세게 문지른다)"
             }
         ]
     });
-    // 대숲지기 늙은이 — 대숲을 본 목격자
+    // 대숲지기 — 장소를 귀띔만 한다. 비녀의 자리는 아랑이 연다.
     q = P(-12, -14); addWorker(q[0], q[1], "joseon", {
         name: "대숲지기 노인", rot: 1.2, hat: "straw",
         greeting: "대숲에는 가지 마시오. 밤이면 여인의 울음소리가 난다오.",
         choices: [
             {
-                text: "월영루에 대해 묻는다.",
-                response: "아랑 아가씨가 마지막으로 향한 곳이 루요. 그 뒤로는 대숲에서만 냄새가 났지... 비녀가 있을 거요.",
-                clue: "arang_thicket", journal: true, hideAfter: true,
-                followUp: "(노인이 대숲 쪽을 가리킨다)"
+                text: "대숲에는 왜 가지 말라고 하시오.",
+                response: "파지 마시오. 파면 나오는 것이 있소. 그 여인이 허락하기 전에는.",
+                journal: true,
+                followUp: "(노인이 대숲 쪽을 막아서듯 손을 든다)"
             }
         ]
     });
@@ -325,13 +356,14 @@ export function buildJoseon() {
         choices: [
             {
                 text: "그대가 누구인지 묻는다.",
-                response: "저는 밀양 부사의 딸, 아랑입니다. 월영루에 나갔다가 돌아오지 못했습니다.",
+                response: "저는 밀양 부사의 딸, 아랑입니다. 월영루에 나갔다가 돌아오지 못했습니다. 유모가 저를 루로 데려갔습니다. 대숲을 파 보십시오. 비녀가 남아 있습니다. 그 밤의 나머지는 은장도가 입을 막습니다.",
                 clue: "arang_who", journal: true, hideAfter: true,
                 followUp: "(목에 박힌 은장도에서 피가 흐른다)"
             },
             {
                 text: "누가 죽였는지 묻는다.",
-                response: "입이... 열리지 않습니다. 은장도가 막습니다. 증거를... 대숲과 객주와 문서고에서 찾아 주십시오.",
+                requires: "arang_who",
+                response: "입이 열리지 않습니다. 유모를 찾으십시오. 그 사람이 저를 누구의 손에 넘겼는지 압니다.",
                 journal: true,
                 followUp: "(아랑이 붉은 나비 쪽을 바라본다)"
             }
@@ -353,7 +385,10 @@ export function buildJoseon() {
         pickup: true,
         range: 1.8,
         glowColor: 0xffd36d,
-        description: "찢긴 순찰 기록\n\n관아 문서고에 봉인된 채 버려져 있던 순찰 기록입니다.\n아랑이 사라진 밤의 기록이 찢겨 있습니다.\n세곡 장부의 날짜와 일치합니다."
+        locked: true,
+        unlockClue: "arang_incense",
+        lockedMsg: "문서고는 봉인되어 있다.\n어떤 장부를 찾아야 하는지 모른다.",
+        description: "찢긴 순찰 기록\n\n관아 문서고에 봉인된 채 버려져 있던 순찰 기록입니다.\n아랑이 사라진 밤의 기록이 찢겨 있습니다.\n세곡 장부의 날짜와 일치합니다.\n향을 사들인 이름으로 객주 장석이 적혀 있습니다."
     });
 
     // 2) 강가 대숲의 비녀 — 대숲 자리(개울 아래 대숲)
@@ -365,6 +400,9 @@ export function buildJoseon() {
         pickup: true,
         range: 1.8,
         glowColor: 0xffe0a0,
+        locked: true,
+        unlockClue: "arang_who",
+        lockedMsg: "대숲은 울창할 뿐이다.\n어디를 파야 할지 모른다.",
         description: "대숲의 비녀\n\n강가 대숲 땅속에서 나온 아랑의 비녀입니다.\n찢어진 저고리 조각과 함께 묻혀 있었습니다.\n아랑은 혼자 월영루에 간 것이 아니었습니다."
     });
 
@@ -377,6 +415,9 @@ export function buildJoseon() {
         pickup: true,
         range: 1.8,
         glowColor: 0x9fe0ff,
+        locked: true,
+        unlockClue: "arang_room",
+        lockedMsg: "방문은 잠겨 있다.\n이 방을 뒤질 이름이 아직 없다.",
         description: "문양이 같은 칼집\n\n객주 장석의 방에서 나온 칼집입니다.\n아랑의 목에 박힌 은장도와 같은 문양입니다.\n통인 장석 — 이름을 바꾸고 객주 일을 하고 있습니다."
     });
 }

@@ -128,38 +128,28 @@
         <div id="completeBox" class="panel">
             <h1>암행어사 출두</h1>
             <div class="sub">ARANG EPISODE CLEAR</div>
-            <p>찢긴 순찰 기록, 대숲의 비녀, 문양이 같은 칼집.
-세 증거가 한 자리에서 맞물렸습니다.
+            <p>칼집의 문양이 아랑의 은장도와 같았다.
+객주 장석은 통인 장석이었다.
 
 “암행어사 출두야!”
-새벽 안개 속에서 마패가 번쩍이고, 관아의 문이 열립니다.
+마패가 번쩍이자 그의 무릎이 꺾였고,
+관아의 문이 열렸다.
 
-그날 밤, 월영루에는 더 이상 붉은 나비가 날지 않았습니다.</p>
+그날 밤, 월영루에는 더 이상 붉은 나비가 날지 않았다.</p>
         </div>
     </div>
 
-    <!-- 오프닝 인트로: 첫 사건 소개 -->
-    <div id="introOverlay" class="show">
-        <div id="introBox" class="panel">
-            <div class="sub">조선 · 밀양 월영루</div>
-            <h1>첫 사건 — 붉은 나비</h1>
-            <p>왕명을 받고 밀양 고을에 잠입하였다.
-밤마다 월영루에 붉은 나비가 나는데,
-새로 부임한 수령마다 첫날밤 죽었다 한다.
-
-귀신의 소행이라 하나, 민심이 흉흉하고
-관아의 장부도 수상하다. 진상을 밝히라.
-
-아랑이 마지막으로 향한 곳을 알아내고,
-관아의 거짓 기록을 찾고,
-원혼이 가리키는 진범의 증거를 확보하라.</p>
-            <div id="introControls">
-                <div class="ctl"><span class="ctl-key">✛</span><span class="ctl-text">WASD / 방향키 : 이동</span></div>
-                <div class="ctl"><span class="ctl-key">E</span><span class="ctl-text">조사 / 대화</span></div>
-                <div class="ctl"><span class="ctl-key">◉</span><span class="ctl-text">마우스 클릭 : 이동</span></div>
-            </div>
-            <button id="introStart" class="verb-btn">▶ 수사를 시작한다</button>
+    <!-- 오프닝: 마을 위를 카메라가 지나간다. 글은 한 줄씩. -->
+    <div id="introOverlay">
+        <div id="introVeil"></div>
+        <div id="introBarTop" class="intro-bar"></div>
+        <div id="introBarBot" class="intro-bar"></div>
+        <div id="introCaption">
+            <div id="introKicker">조선 · 밀양</div>
+            <h1 id="introTitle"></h1>
+            <p id="introLine"></p>
         </div>
+        <div id="introSkip">클릭하거나 아무 키 · 건너뛰기</div>
     </div>
     <!-- Three.js 는 전역 THREE 로 먼저 불러온다 (모듈보다 먼저 실행된다) -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>

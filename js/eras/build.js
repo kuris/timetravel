@@ -145,12 +145,15 @@ export function buildAge(index, opts = {}) {
     // ---- 플레이어 배치 ----
     G.player = createPlayer();
     G.player.position.set(age.start.x, terrainHeight(age.start.x, age.start.z), age.start.z);
-    G.player.visible = !G.isFirstPerson;
+    // 오프닝 동안에는 화면 한가운데 서 있지 않는다. 카메라가 돌아올 때 나타난다.
+    G.player.visible = !opts.opening && !G.isFirstPerson;
     G.scene.add(G.player);
 
     cameraTarget.set(G.player.position.x, 0.6, G.player.position.z);
     updateCamera(0, true);
     updateUI();
-    showMessage(age.intro + "\n\n▶ " + advisorText()
-        + "\n첫 키 입력 또는 클릭 후 소리가 켜집니다.");
+    if (!opts.opening) {
+        showMessage(age.intro + "\n\n▶ " + advisorText()
+            + "\n첫 키 입력 또는 클릭 후 소리가 켜집니다.");
+    }
 }

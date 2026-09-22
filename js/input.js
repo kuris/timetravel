@@ -2,6 +2,7 @@
  * 입력 — 키보드 / 마우스
  */
 import { AudioSystem } from "./audio.js";
+import { skipOpening } from "./intro.js";
 import { toggleViewMode } from "./camera.js";
 import { MOVE_CODES, SPRINT_CODES, WORLD_LIMIT } from "./config.js";
 import { toggleHint } from "./hint.js";
@@ -12,9 +13,20 @@ import { G, groundPlane, keys, mouse, raycaster } from "./state.js";
 import { dom, hideMessage, showMessage } from "./ui.js";
 import { cycleTime, cycleWeather, weatherLabel } from "./weather.js";
 
+function beginAudio() {
+    try { AudioSystem.start(); } catch (_) { /* 소리 없이도 입력은 받는다 */ }
+}
+
 export function setupInput() {
     window.addEventListener("keydown", (e) => {
-        AudioSystem.start();
+        if (G.cinematic) {
+            beginAudio();
+            if (!e.repeat) skipOpening();
+            e.preventDefault();
+            return;
+        }
+
+        beginAudio();
 
         if (MOVE_CODES.has(e.code)) {
             keys.add(e.code);
@@ -183,12 +195,12 @@ export function setupInput() {
         dom.message.addEventListener("click", () => hideMessage());
     }
 
-    // 인트로 시작 버튼 — 오버레이 닫기
-    const introStart = document.getElementById("introStart");
-    if (introStart) {
-        introStart.addEventListener("click", () => {
-            AudioSystem.start();
-            document.getElementById("introOverlay")?.classList.remove("show");
+    const introOverlay = document.getElementById("introOverlay");
+    if (introOverlay) {
+        introOverlay.addEventListener("pointerdown", (e) => {
+            if (!G.cinematic || (e.button != null && e.button !== 0)) return;
+            beginAudio();
+            skipOpening();
         });
     }
 
@@ -212,7 +224,13 @@ export function setupInput() {
     });
 
     G.renderer.domElement.addEventListener("pointerdown", (e) => {
-        AudioSystem.start();
+        if (G.cinematic) {
+            beginAudio();
+            if (e.button == null || e.button === 0) skipOpening();
+            return;
+        }
+
+        beginAudio();
 
         if (G.transitioning || G.demoFinished || e.button !== 0) return;
 

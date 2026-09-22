@@ -6,6 +6,7 @@ import { AudioSystem } from "./audio.js";
 import { updateCamera } from "./camera.js";
 import { updateGateAura } from "./gateaura.js";
 import { updateHint } from "./hint.js";
+import { updateIntro } from "./intro.js";
 import { updatePrompt } from "./interaction.js";
 import { drawMinimap, updateExploration } from "./minimap.js";
 import { updateMorph } from "./morph.js";
@@ -28,6 +29,10 @@ export function updateAnimated(t, delta) {
 
     for (const a of G.animated) {
         if (a.type === "glow") {
+            if (a.sealed) {
+                a.group.visible = false;
+                continue;
+            }
             a.group.position.y = a.baseY + Math.sin(t * 2.1 * a.speed + a.phase) * 0.07;
             a.ring.rotation.z += delta * 1.1;
             a.mote.position.y = 0.50 + Math.sin(t * 3.0 + a.phase) * 0.06;
@@ -237,8 +242,10 @@ export function animate() {
     const delta = Math.min(clock.getDelta(), 0.05);
     const t = clock.elapsedTime;
 
+    if (G.cinematic) updateIntro(delta);
+
     let moving = false;
-    if (!G.transitioning && !G.demoFinished) {
+    if (!G.transitioning && !G.demoFinished && !G.cinematic) {
         moving = updateMovement(delta);
     }
 

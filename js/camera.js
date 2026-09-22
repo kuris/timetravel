@@ -5,8 +5,34 @@ import { G, cameraOffset, cameraTarget } from "./state.js";
 
 const fpvEuler = new THREE.Euler(0, 0, 0, "YXZ");
 
+function applyIsoRig() {
+    G.camera = G.isoCamera;
+    G.isoCamera.position.copy(cameraTarget).add(cameraOffset);
+    G.isoCamera.lookAt(cameraTarget);
+
+    if (G.backdrop) {
+        G.backdrop.position.x = cameraTarget.x;
+        G.backdrop.position.z = cameraTarget.z;
+    }
+
+    if (G.sunLight) {
+        G.sunLight.position.set(
+            cameraTarget.x + G.sunLight.userData.ox,
+            G.sunLight.userData.oy,
+            cameraTarget.z + G.sunLight.userData.oz
+        );
+        G.sunLight.target.position.set(cameraTarget.x, 0, cameraTarget.z);
+        G.sunLight.target.updateMatrixWorld();
+    }
+}
+
 export function updateCamera(delta, immediate = false) {
     if (!G.player) return;
+
+    if (G.cinematic) {
+        applyIsoRig();
+        return;
+    }
 
     if (G.isFirstPerson && G.fpvCamera) {
         G.camera = G.fpvCamera;
@@ -50,29 +76,11 @@ export function updateCamera(delta, immediate = false) {
         cameraTarget.lerp(desired, t);
     }
 
-    G.isoCamera.position.copy(cameraTarget).add(cameraOffset);
-    G.isoCamera.lookAt(cameraTarget);
-
-    // 배경판은 항상 지평선에 붙어 있어야 하므로 카메라를 따라다닌다
-    if (G.backdrop) {
-        G.backdrop.position.x = cameraTarget.x;
-        G.backdrop.position.z = cameraTarget.z;
-    }
-
-    // 그림자 카메라를 플레이어 주변에 집중시켜 해상도를 아낀다
-    if (G.sunLight) {
-        G.sunLight.position.set(
-            cameraTarget.x + G.sunLight.userData.ox,
-            G.sunLight.userData.oy,
-            cameraTarget.z + G.sunLight.userData.oz
-        );
-        G.sunLight.target.position.set(cameraTarget.x, 0, cameraTarget.z);
-        G.sunLight.target.updateMatrixWorld();
-    }
+    applyIsoRig();
 }
 
 export function toggleViewMode() {
-    if (G.transitioning || G.demoFinished || !G.player) return;
+    if (G.cinematic || G.transitioning || G.demoFinished || !G.player) return;
 
     G.isFirstPerson = !G.isFirstPerson;
     G.camera = G.isFirstPerson ? G.fpvCamera : G.isoCamera;

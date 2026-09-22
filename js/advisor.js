@@ -13,6 +13,7 @@
  * 나무를 베라는 말이 이 게임의 첫 문장이 되어서는 안 된다.
  */
 import { AGE_DATA } from "./config.js";
+import { joseonObjective } from "./story.js";
 import { G } from "./state.js";
 import { josa } from "./ui.js";
 
@@ -56,7 +57,10 @@ const LABEL = { wood: "나무", stone: "돌" };
  * 목표가 바뀌면 직전 목표를 2.5초간 줄 그어 보여 주고 다음으로 넘어간다.
  */
 export function advisor() {
-    if (G.demoFinished) return { text: "데모 완료", done: true };
+    if (G.demoFinished) {
+        if (G.currentAge === 3) return { text: "장석을 압송했다", done: true };
+        return { text: "데모 완료", done: true };
+    }
     if (G.currentAge < 0) return { text: "길 한가운데 낯선 돌을 조사하세요", done: false };
 
     // 방금 끝낸 목표는 잠시 줄 그어 보여 준다
@@ -107,6 +111,8 @@ export function advisorText() {
 
 /** 시대 진입 시점에 목표 하나를 정한다 */
 function pickObjective() {
+    if (G.currentAge === 3) return joseonObjective();
+
     const unmet = G.npcs.filter((n) => !n.isAnimal && !n.met);
     if (unmet.length) {
         const n = unmet[0];

@@ -87,6 +87,7 @@ export function drawMinimap() {
         if (px < -6 || px > S + 6 || py < -6 || py > S + 6) continue;
 
         if (m.kind === "artifact") {
+            if (m.hidden) continue;
             // 아직 못 찾은 것은 지도에 없다.
             // 미리 다 찍어 주면 탐험이 아니라 심부름이 된다.
             if (!m.done && !isExplored(m.x, m.z)) continue;

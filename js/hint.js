@@ -3,6 +3,7 @@
  */
 import { AudioSystem } from "./audio.js";
 import { addBlob, addBox, addCylinder } from "./build.js";
+import { joseonFocusName } from "./story.js";
 import { G } from "./state.js";
 import { terrainHeight } from "./terrain.js";
 import { dom, showMessage } from "./ui.js";
@@ -15,11 +16,38 @@ export const HINT_DURATION = 9000; // ms
 
 /** 지금 안내할 목표를 고른다 */
 export function getHintTarget() {
+    if (G.currentAge === 3 && G.player) {
+        const name = joseonFocusName();
+        const npc = name && G.npcs.find((n) => n.name === name && n.group);
+        if (npc) {
+            const x = npc.group.position.x;
+            const z = npc.group.position.z;
+            return {
+                name,
+                x,
+                z,
+                distance: Math.hypot(x - G.player.position.x, z - G.player.position.z)
+            };
+        }
+        const storyItem = name && G.interactables.find((it) => it.name === name && !it.done);
+        if (storyItem) {
+            return {
+                name,
+                x: storyItem.position.x,
+                z: storyItem.position.z,
+                distance: Math.hypot(
+                    storyItem.position.x - G.player.position.x,
+                    storyItem.position.z - G.player.position.z
+                )
+            };
+        }
+    }
+
     // 1) 아직 조사하지 않은 대상 중 가장 가까운 것
     let best = null, bestDist = Infinity;
 
     for (const item of G.interactables) {
-        if (item.done) continue;
+        if (item.done || item.locked) continue;
         const d = Math.hypot(
             item.position.x - G.player.position.x,
             item.position.z - G.player.position.z

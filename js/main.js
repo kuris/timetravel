@@ -13,6 +13,7 @@ import { initThree } from "./renderer.js";
 import { setupInput } from "./input.js";
 import { buildAge } from "./eras/build.js";
 import { buildPrologue } from "./prologue.js";
+import { startOpening } from "./intro.js";
 import { animate } from "./loop.js";
 import { generateBaseMap } from "./basemap.js";
 import { transitionToAge } from "./transition.js";
@@ -52,7 +53,8 @@ if (eraParam === "prologue") {
 } else if (eraParam !== null) {
     buildAge(THREE.MathUtils.clamp(parseInt(eraParam, 10) || 0, 0, AGE_DATA.length - 1));
 } else {
-    buildAge(START_AGE);
+    buildAge(START_AGE, { opening: true });
+    startOpening();
 }
 animate();
 
